@@ -153,6 +153,7 @@ export async function executarPreTool(entrada) {
           items: pack.items.length,
           durationMs: handlerDurationMs(),
         });
+        await anotarResposta(root, sid, rota.locs.map((loc) => loc.file));
         return JSON.stringify({
           hookSpecificOutput: {
             hookEventName: 'PreToolUse',
@@ -172,12 +173,26 @@ export async function executarPreTool(entrada) {
 
   const corpo = linhas.join('\n').slice(0, MAX_BLOCO);
   recordMetric(root, 'pretool', { host: ferramenta, outcome: 'hit', patternLength: padrao.length, hits: acertos, durationMs: handlerDurationMs() });
+  const { filesFromAnswer } = await import('./lib/follow-through.mjs');
+  await anotarResposta(root, sid, filesFromAnswer(linhas));
   return JSON.stringify({
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
       additionalContext: `${t('pre.cabecalho', { busca })}\n${corpo}`,
     },
   });
+}
+
+/**
+ * Anota os arquivos indicados para o Stop julgar depois se o agente os usou (lib/follow-through).
+ * Import tardio pelo mesmo motivo do índice; falha aqui nunca derruba a resposta.
+ */
+async function anotarResposta(root, sid, files) {
+  if (sid === 'sem-sessao' || !files.length) return;
+  try {
+    const { recordAnswer } = await import('./lib/follow-through.mjs');
+    recordAnswer(root, sid, [...new Set(files)].slice(0, 20));
+  } catch { /* M4 */ }
 }
 
 async function main() {

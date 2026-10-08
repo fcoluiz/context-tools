@@ -47,12 +47,44 @@ function marketplaceListArray(data) {
   return data?.marketplaces ?? data?.results ?? null;
 }
 
-// A remoção de hooks locais duplicados só existe no lado Codex hoje: a instalação standalone do
-// Codex (`install-codex.mjs`) grava `.codex/hooks.json`, e quando o plugin passa a fornecer os
-// mesmos hooks o setup guiado limpa a cópia local para não rodar duas vezes. O plugin Claude não
-// tem esse cenário de duplicação (a instalação standalone do Claude nunca escreveu hooks que o
-// plugin também declara sob o mesmo nome de arquivo), então o adapter Claude não define esta
-// função e o motor pula a etapa.
+// Remoção de hooks locais duplicados. A instalação standalone grava hooks no projeto
+// (`.codex/hooks.json` no Codex, `.claude/settings.json` no Claude); quando o plugin passa a
+// fornecer os mesmos hooks, o setup guiado limpa a cópia local para não rodar tudo duas vezes —
+// o dobro de partidas de Node e, sem a deduplicação de saída, o dobro de contexto.
+// Só sai o que o próprio instalador escreveu: hook do usuário ou de outra ferramenta fica.
+const CLAUDE_STANDALONE_HOOK = /^node\s+"?\$(?:\{CLAUDE_PROJECT_DIR\}|CLAUDE_PROJECT_DIR)\/\.claude\/scripts\/(?:context-maps|context-docs|coupling|handoff|pre-tool|verify|claude-md-hint)\.mjs"?(?:\s|$)/;
+
+export function isManagedClaudeHook(command) {
+  return typeof command === 'string' && CLAUDE_STANDALONE_HOOK.test(command.trim());
+}
+
+function removeManagedHooksFrom(path, isManaged) {
+  if (!existsSync(path)) return false;
+  let settings;
+  try { settings = JSON.parse(readFileSync(path, 'utf8')); } catch { return false; }
+  if (!settings || !settings.hooks || typeof settings.hooks !== 'object' || Array.isArray(settings.hooks)) return false;
+  let changed = false;
+  for (const [event, groups] of Object.entries(settings.hooks)) {
+    if (!Array.isArray(groups)) continue;
+    for (const group of groups) {
+      if (!Array.isArray(group?.hooks)) continue;
+      const before = group.hooks.length;
+      group.hooks = group.hooks.filter((hook) => !isManaged(hook?.command));
+      changed ||= group.hooks.length !== before;
+    }
+    const next = groups.filter((group) => Array.isArray(group?.hooks) ? group.hooks.length : true);
+    changed ||= next.length !== groups.length;
+    if (next.length) settings.hooks[event] = next;
+    else { delete settings.hooks[event]; changed = true; }
+  }
+  if (changed) writeJson(path, settings);
+  return changed;
+}
+
+function removeManagedClaudeProjectHooks(root) {
+  return removeManagedHooksFrom(join(root, '.claude', 'settings.json'), isManagedClaudeHook);
+}
+
 function removeManagedCodexProjectHooks(root) {
   const path = join(root, '.codex', 'hooks.json');
   if (!existsSync(path)) return false;
@@ -152,7 +184,7 @@ export const TARGETS = {
     findInstalled: (data, plugin, marketplace) => findByNameAndMarketplace(pluginListArray(data), plugin, marketplace),
     findMarketplace: (data, marketplace) => marketplaceListArray(data)?.find((item) => item?.name === marketplace),
     bootstrapArgs: (repoRoot, projectRoot) => [join(repoRoot, 'install.mjs'), projectRoot, '--target=claude', '--no-hooks'],
-    removeManagedProjectHooks: null,
+    removeManagedProjectHooks: removeManagedClaudeProjectHooks,
     needsHookTrustReminder: false,
     verifyCommands: [
       'symbols.mjs --stats',

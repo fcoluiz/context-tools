@@ -3,7 +3,7 @@
 // configure/help igual para Codex e Claude — só o que o adapter fornece muda de um para o outro.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { installedRef, isManagedCodexHook } from './setup-targets.mjs';
+import { installedRef, isManagedClaudeHook, isManagedCodexHook } from './setup-targets.mjs';
 import {
   say, isDir, isFile, run, jsonOutput, latestTag, relativeExtra, parseExtraSelection, t, useSetupConfigLang,
   normalizeSetupLanguage, ask, confirm, explainFailure, workspaceCandidates,
@@ -240,6 +240,14 @@ export function projectStatus(adapter, ctx, root) {
     let settings = null;
     try { settings = JSON.parse(readFileSync(join(root, adapter.stateDir, 'hooks.json'), 'utf8')); } catch { issues.push(t('setup.issue.hooksUnreadable')); }
     const duplicate = Object.values(settings?.hooks || {}).some((groups) => Array.isArray(groups) && groups.some((group) => Array.isArray(group?.hooks) && group.hooks.some((hook) => isManagedCodexHook(hook?.command, root))));
+    if (duplicate) issues.push(t('setup.issue.duplicateHooks'));
+  }
+  // Claude: plugin ativo + hooks gravados por uma instalação standalone antiga em
+  // `.claude/settings.json` = todo hook roda duas vezes. O setup guiado limpa no bootstrap.
+  if (adapter.id === 'claude' && files.pluginHooks && files.hooks) {
+    let settings = null;
+    try { settings = JSON.parse(readFileSync(join(root, '.claude', 'settings.json'), 'utf8')); } catch { /* settings alheio ilegível: não é diagnóstico nosso */ }
+    const duplicate = Object.values(settings?.hooks || {}).some((groups) => Array.isArray(groups) && groups.some((group) => Array.isArray(group?.hooks) && group.hooks.some((hook) => isManagedClaudeHook(hook?.command))));
     if (duplicate) issues.push(t('setup.issue.duplicateHooks'));
   }
   if (marker && mode === 'standalone' && marker.version !== ctx.packageVersion) issues.push(t('setup.issue.stale', { local: marker.version, fonte: ctx.packageVersion }));

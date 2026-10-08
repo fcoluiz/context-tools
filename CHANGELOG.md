@@ -8,6 +8,32 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **`grep`/`rg` typed in Claude's Bash reach the index.** The symbol answer already preceded the
+  Grep tool and Codex shell searches; Claude agents that search through Bash bypassed it. A
+  `PreToolUse` Bash group now runs `pre-tool.mjs` only for `Bash(grep *)` and `Bash(rg *)` (the
+  hook `if` filter), so other Bash commands pay nothing.
+- **Did the agent use the answer?** The `PreToolUse` hook notes which files it pointed to; on
+  Claude, the `Stop` hook checks the transcript for a Read or edit of one of them within the next 6
+  tool calls and records only the verdict. `health.mjs` shows "answers used: X/Y" — correlation,
+  not cause; Codex answers expire unjudged.
+
+### Changed
+
+- **Shorter `Stop` notes.** On Claude every `Stop` note makes the model take one more turn, so its
+  length is paid again in every following message. The session-cost notice and its handoff request
+  went from ~800 to ~330 characters, the verification note from four lines to three, and the
+  "code with no map" header was trimmed — same facts, same actions.
+
+### Fixed
+
+- **Hooks running twice on Claude after moving from standalone to the plugin.** The guided setup
+  now removes the hooks a previous `install.mjs` wrote into `.claude/settings.json` (only those —
+  user hooks stay), as it already did for Codex, and `status`/`doctor` report the duplication.
+- **The standalone installer kept one hook group per event.** A second `PreToolUse` group would
+  have silently replaced the first; groups and their `if` filters are now copied as declared.
+
 ## [2.3.0] — 2026-10-08
 
 Each hook message reaches the agent once, the end of a session notes code left untested, and SQL

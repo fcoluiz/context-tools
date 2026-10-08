@@ -774,7 +774,7 @@ directory; `--project <path>` is only needed when administering another project.
 
 | event | what it does | cost |
 |---|---|---|
-| `PreToolUse` (Grep / Bash) | answers before Claude Grep or a Codex `rg`/`grep` command when the pattern is a symbol | only when it answers |
+| `PreToolUse` (Grep / Bash) | answers before Claude Grep, a Claude `grep`/`rg` Bash command (hook `if` filter: no cost for other commands) or a Codex `rg`/`grep` command when the pattern is a symbol; notes the files it pointed to so `health.mjs` can report whether the agent used them (Claude) | only when it answers |
 | `UserPromptSubmit` (Codex) | locally checks each explicitly named file against its own context-map fingerprint; emits context only for stale, uncovered, or unverifiable files | no model call; one local hook process per prompt |
 | `Stop` | Claude warns when the session gets expensive and writes the handoff; Codex only records metrics | **once per session** |
 | `Stop` | hands over the resume prompt, once the volatile block is filled in | once per session |

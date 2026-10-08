@@ -100,7 +100,7 @@ const STATE_FILES_FALLBACK = [
   '.pre-tool-state.json', '.context-tools-metrics.json', '.auto-review-candidates.json', '.documentation-cache.json', '.source-fingerprints.json',
   '.documentation-stop-state.json', '.handoff-aviso.json', '.mtime-probe*', 'handoff-*.md',
   '.context-maps-session-notice.json', '.documentation-session-notice.json', '.codex-auto-review-state.json',
-  '.session-write-journal/', '.hook-emissions/', '.verify-state.json', '*.tmp', '*.lock', '.claude-md-hint-done', 'context-tools-install.json',
+  '.session-write-journal/', '.hook-emissions/', '.verify-state.json', '.pre-tool-answers.json', '*.tmp', '*.lock', '.claude-md-hint-done', 'context-tools-install.json',
 ];
 let STATE_FILES;
 try {
@@ -153,15 +153,20 @@ if (noHooks) {
     // chamada (Edit, Bash, Read…) para no fim calar em quase todas — desperdício que a
     // própria medição desaconselha. `''` continua sendo "qualquer" nos outros eventos.
     const manifesto = JSON.parse(readFileSync(join(HERE, 'hooks', 'hooks.json'), 'utf8'));
-    const wanted = {};
+    // Uma entrada por GRUPO, não por evento: o PreToolUse tem dois (Grep e Bash), e indexar por
+    // evento fazia o segundo grupo sobrescrever o primeiro em silêncio. `if` (filtro do Claude
+    // Code por conteúdo da chamada) é copiado junto — sem ele o hook de Bash rodaria em TODO
+    // comando, não só em `grep`/`rg`.
+    const wanted = [];
     for (const [event, grupos] of Object.entries(manifesto.hooks)) {
       for (const g of grupos) {
-        wanted[event] = {
+        wanted.push([event, {
           matcher: g.matcher ?? '',
-          cmds: g.hooks.map((h) => h.command.replace(
-            '${CLAUDE_PLUGIN_ROOT}/scripts/', '$CLAUDE_PROJECT_DIR/.claude/scripts/',
-          )),
-        };
+          handlers: g.hooks.map((h) => ({
+            command: h.command.replace('${CLAUDE_PLUGIN_ROOT}/scripts/', '$CLAUDE_PROJECT_DIR/.claude/scripts/'),
+            ...(h.if ? { if: h.if } : {}),
+          })),
+        }]);
       }
     }
     // O `settings.json` é do USUÁRIO e pode ter qualquer forma — inclusive uma que este
@@ -181,7 +186,7 @@ if (noHooks) {
       }
     }
     let added = 0;
-    for (const [event, { matcher, cmds }] of settings.hooks === null ? [] : Object.entries(wanted)) {
+    for (const [event, { matcher, handlers }] of settings.hooks === null ? [] : wanted) {
       if (!Array.isArray(settings.hooks[event])) {
         if (settings.hooks[event] !== undefined) {
           say(`  ⚠️  hooks.${event} não é lista — pulado, seu settings.json não foi tocado.`);
@@ -192,11 +197,12 @@ if (noHooks) {
       let group = settings.hooks[event].find((g) => g && typeof g === 'object' && g.matcher === matcher);
       if (!group) { group = { matcher, hooks: [] }; settings.hooks[event].push(group); }
       if (!Array.isArray(group.hooks)) group.hooks = [];
-      for (const command of cmds) {
-        const already = group.hooks.some((h) => (h.command || '').includes(command.split('/').pop().split('"')[0]));
+      for (const { command, if: condition } of handlers) {
+        const script = command.split('/').pop().split('"')[0];
+        const already = group.hooks.some((h) => (h.command || '').includes(script) && (h.if || null) === (condition || null));
         if (already) { act(`hook ${event} já presente — mantido`); continue; }
-        act(`hook ${event}: ${command.replace('$CLAUDE_PROJECT_DIR/.claude/scripts/', '')}`);
-        group.hooks.push({ type: 'command', command });
+        act(`hook ${event}: ${command.replace('$CLAUDE_PROJECT_DIR/.claude/scripts/', '')}${condition ? ` (${condition})` : ''}`);
+        group.hooks.push({ type: 'command', ...(condition ? { if: condition } : {}), command });
         added++;
       }
     }

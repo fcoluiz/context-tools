@@ -1457,7 +1457,7 @@ test('E2E: o Stop entrega o prompt sozinho, mas SÓ depois do bloco preenchido',
     // FASE 1 — avisa e grava o arquivo, e NÃO cospe prompt: o bloco acabou de nascer em branco.
     const f1 = stop();
     assert.equal(f1.status, 0);
-    assert.match(f1.stdout, /tokens of context/, `esperava o aviso, veio: ${f1.stdout}`);
+    assert.match(f1.stdout, /Session at \d+k tokens/, `esperava o aviso, veio: ${f1.stdout}`);
     assert.ok(existsSync(doc), 'o handoff tinha de ser gerado');
     assert.doesNotMatch(f1.stdout, /Continuing work from a previous session/,
       'com o bloco em branco, entregar o prompt seria entregar a versão inútil');

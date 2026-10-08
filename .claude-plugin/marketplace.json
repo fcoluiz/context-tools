@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "context-tools",
+  "description": "Code navigation and documentation hygiene for AI coding agents.",
+  "owner": {
+    "name": "Luiz Nogueira"
+  },
+  "plugins": [
+    {
+      "name": "context-tools",
+      "description": "Code navigation and documentation hygiene for coding agents: cross-file symbol index, outlines for large files, git-discovered change coupling, documentation audit, per-symbol history and session handoff. Zero dependencies, self-configuring, generated on the spot.",
+      "author": {
+        "name": "Luiz Nogueira"
+      },
+      "homepage": "https://github.com/fcoluiz/context-tools",
+      "repository": "https://github.com/fcoluiz/context-tools",
+      "license": "MIT",
+      "category": "development",
+      "source": "./"
+    }
+  ]
+}

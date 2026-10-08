@@ -1,0 +1,32 @@
+node_modules/
+
+# Estado gerado pelas próprias ferramentas neste repo. A lista canônica, que o `install.mjs`
+# replica para quem instala, é `.claude/.gitignore` — esta aqui é só do repositório da fonte.
+.claude/.coupling-state
+.claude/.coupling-sessions.json
+.claude/.stop-report-state
+.claude/.context-maps-session-baseline.json
+.claude/.pre-tool-state.json
+.claude/.source-fingerprints.json
+.claude/.handoff-aviso.json
+.claude/handoff-*.md
+.claude/.claude-md-hint-done
+
+# Instalação local do plugin neste próprio repositório. O código-fonte é scripts/ e skills/;
+# estas pastas só existem quando um smoke-test roda o instalador contra a raiz.
+.claude/scripts/
+.codex/*
+.agents/*
+# Exceções versionadas: os hooks de desenvolvimento do Codex para este repo e o catálogo do
+# marketplace Codex (distribuição). O resto dessas pastas é instalação local.
+!.codex/hooks.json
+!.agents/plugins/
+
+# Handoff de sessão da equipe que mantém o plugin: estado de trabalho de UM time, com caminhos
+# de máquina e nomes de projeto. Não é documentação do plugin, e quem clona não tem o workspace
+# a que ele se refere. Fica no disco de quem trabalha aqui, fora do git.
+.claude/HANDOFF.md
+
+# Gold sets locais de benchmark: descrevem projetos de terceiros (caminhos, arquivos, linhas) e
+# nunca entram no repositório. O formato está em docs/benchmarks/cases.example.json.
+*.local.json

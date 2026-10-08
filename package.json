@@ -1,0 +1,43 @@
+{
+  "name": "context-tools",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Code navigation and documentation hygiene for AI coding agents. No dependencies, self-configuring, generated on the spot.",
+  "license": "MIT",
+  "author": "Luiz Nogueira",
+  "homepage": "https://github.com/fcoluiz/context-tools#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fcoluiz/context-tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fcoluiz/context-tools/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "codex",
+    "ai-agents",
+    "code-navigation",
+    "symbols",
+    "documentation",
+    "developer-tools"
+  ],
+  "type": "module",
+  "bin": {
+    "context-tools-setup": "./setup-codex.mjs",
+    "context-tools-setup-claude": "./setup-claude.mjs",
+    "context-tools-setup-all": "./setup.mjs"
+  },
+  "scripts": {
+    "test": "node tests/run.mjs",
+    "benchmark:controlled": "node scripts/benchmark-controlled.mjs",
+    "benchmark:pretool": "node scripts/benchmark-pretool.mjs",
+    "benchmark:prompt-audit": "node scripts/benchmark-prompt-audit.mjs",
+    "setup:codex": "node setup-codex.mjs",
+    "setup:claude": "node setup-claude.mjs",
+    "setup": "node setup.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

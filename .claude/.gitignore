@@ -1,0 +1,28 @@
+# estado gerado pelos context-tools — não versionar.
+#
+# ESTA LISTA É A FONTE ÚNICA: o `install.mjs` a lê daqui e a replica no projeto de quem
+# instala. Entrada nova de estado entra AQUI, e só aqui. Mantenha-a genérica — nada
+# específico deste repositório, porque tudo que estiver nela viaja para os outros projetos.
+.stop-report-state
+.coupling-state
+.coupling-sessions.json
+.context-maps-session-baseline.json
+.symbols-cache.json
+.context-tools-snapshot.json
+.pre-tool-state.json
+.context-tools-metrics.json
+.auto-review-candidates.json
+.documentation-cache.json
+.documentation-stop-state.json
+.source-fingerprints.json
+.handoff-aviso.json
+.mtime-probe*
+handoff-*.md
+.claude-md-hint-done
+.context-maps-session-notice.json
+.documentation-session-notice.json
+.codex-auto-review-state.json
+.session-write-journal/
+*.tmp
+*.lock
+context-tools-install.json

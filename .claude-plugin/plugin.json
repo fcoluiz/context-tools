@@ -1,0 +1,19 @@
+{
+  "name": "context-tools",
+  "description": "Code navigation and documentation hygiene: cross-file symbol index, outlines for large files, git-discovered change coupling and documentation audit. Zero dependencies, self-configuring, generated on the spot (never stale).",
+  "version": "2.0.0",
+  "author": {
+    "name": "Luiz Nogueira"
+  },
+  "homepage": "https://github.com/fcoluiz/context-tools",
+  "repository": "https://github.com/fcoluiz/context-tools",
+  "keywords": [
+    "context",
+    "navigation",
+    "symbols",
+    "coupling",
+    "docs",
+    "audit"
+  ],
+  "license": "MIT"
+}

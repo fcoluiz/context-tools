@@ -1,0 +1,69 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    # Três SOs de propósito: toda medição de desenvolvimento foi feita em Windows/NTFS, e
+    # duas decisões dependem do sistema de arquivos — a granularidade de mtime que autoriza
+    # o cache, e o separador de caminho. Rodar só num SO deixaria esses dois sem cobertura.
+    runs-on: ${{ matrix.os }}
+    # O job leva ~20 s; 10 min é folga de 30×. Sem isto o default do GitHub são 6 HORAS:
+    # em 2026-08-03 um runner macOS pendurou e teria queimado esse tempo inteiro antes de
+    # desistir — e, pior, a matriz fica sem veredito enquanto isso. Melhor falhar rápido e
+    # visível do que ficar "in_progress" por meio dia.
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [18, 22]
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Os testes de mapa de contexto comparam commits; sem histórico, git diff falha.
+          fetch-depth: 0
+
+      # `@v5` nas duas: o `@v4` roda em Node 20, que o GitHub já anuncia como depreciado e força
+      # para 24. É a versão do RUNTIME DA ACTION, não a do projeto — a matriz 18/22 abaixo é
+      # premissa de compatibilidade e continua valendo; se `setup-node@v5` deixar de instalar
+      # Node 18, este bump volta atrás, porque a matriz vale mais que o aviso.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+
+      # Sem `npm ci`: o projeto não tem dependência nenhuma, e é assim que deve continuar.
+      - name: testes
+        run: npm test
+
+      - name: as ferramentas rodam no próprio repo
+        shell: bash
+        run: |
+          node scripts/symbols.mjs --stats
+          node scripts/outline.mjs README.md
+          node scripts/audit-docs.mjs
+          node scripts/coupling.mjs
+          node scripts/context-maps.mjs --session-start
+
+  sem-dependencia:
+    # Guarda de arquitetura: "zero dependência" é uma promessa do README, não um detalhe.
+    # Se alguém adicionar um pacote, isto falha antes de virar hábito.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - shell: bash
+        run: |
+          if grep -qE '"(dependencies|devDependencies)"' package.json; then
+            echo "❌ package.json ganhou dependências — o projeto é deliberadamente sem nenhuma."
+            exit 1
+          fi
+          if ls package-lock.json yarn.lock pnpm-lock.yaml 2>/dev/null | grep -q .; then
+            echo "❌ apareceu lockfile — sinal de dependência instalada."
+            exit 1
+          fi
+          echo "✅ sem dependências, como esperado"

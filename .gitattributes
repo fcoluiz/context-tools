@@ -1,0 +1,5 @@
+# Store text with LF in the repository; Windows batch files are checked out with CRLF so cmd.exe
+# parses labels and line continuations reliably.
+* text=auto
+*.bat text eol=crlf
+*.cmd text eol=crlf

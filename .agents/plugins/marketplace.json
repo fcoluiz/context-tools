@@ -1,0 +1,21 @@
+{
+  "name": "context-tools-codex",
+  "interface": {
+    "displayName": "Context Tools"
+  },
+  "plugins": [
+    {
+      "name": "context-tools",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/fcoluiz/context-tools.git",
+        "ref": "v2.0.0"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

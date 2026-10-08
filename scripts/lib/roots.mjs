@@ -9,7 +9,7 @@
 // repositórios lado a lado (cada subpasta tem .git). Sem essa distinção o mesmo script não
 // serve para os dois, que é o principal motivo de ferramenta assim não viajar entre projetos.
 
-import { readdirSync, existsSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, existsSync, readFileSync, statSync, realpathSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname, resolve, sep, basename, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -188,11 +188,25 @@ export function isGitRepo(dir) {
     stdio: ['ignore', 'pipe', 'ignore'],
   }).trim(), '');
   if (!topo) return false;
-  const normaliza = (p) => {
-    const abs = resolve(String(p)).replace(/[\\/]$/, '');
-    return process.platform === 'win32' ? abs.toLowerCase() : abs;
-  };
-  return normaliza(topo) === normaliza(dir);
+  return samePath(topo, dir);
+}
+
+/**
+ * Identidade de caminho no disco. O Git devolve `--show-toplevel` já resolvido (symlink,
+ * junction, nome curto 8.3), enquanto `os.tmpdir()`/cwd podem chegar pelo apelido: no macOS
+ * `/var/...` é `/private/var/...`; no Windows o TEMP do runner é `C:\Users\RUNNER~1\...`.
+ * Comparar a string crua fazia um repositório válido parecer "sem git" e os hooks ficavam
+ * calados. `realpathSync.native` canoniza os dois lados; se falhar, cai no `resolve`.
+ */
+export function canonicalPath(p) {
+  const abs = resolve(String(p));
+  const real = safe(() => realpathSync.native(abs), abs);
+  const semBarra = real.replace(/(.)[\\/]+$/, '$1');
+  return process.platform === 'win32' ? semBarra.toLowerCase() : semBarra;
+}
+
+export function samePath(a, b) {
+  return canonicalPath(a) === canonicalPath(b);
 }
 
 /**

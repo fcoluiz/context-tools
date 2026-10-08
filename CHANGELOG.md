@@ -8,6 +8,11 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-10-08
+
+One command installs or updates context-tools for every agent you use, and updating the Claude
+plugin through the setup actually updates it.
+
 ### Added
 
 - **One command to install or update globally:** `context-tools-setup-all --global --yes`. It

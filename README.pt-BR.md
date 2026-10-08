@@ -45,7 +45,7 @@ mas não foram editados juntos.
 ### Claude Code
 
 ```bash
-claude plugin marketplace add fcoluiz/context-tools@v2.0.0 --scope project
+claude plugin marketplace add fcoluiz/context-tools@v2.1.0 --scope project
 claude plugin install context-tools@context-tools --scope project
 ```
 
@@ -54,7 +54,7 @@ O plugin traz as ferramentas **e** os hooks. Os hooks rodam assim que o plugin �
 ### Codex
 
 ```bash
-codex plugin marketplace add fcoluiz/context-tools --ref v2.0.0
+codex plugin marketplace add fcoluiz/context-tools --ref v2.1.0
 ```
 
 Depois abra o `codex`, rode `/plugins` e instale o **context-tools**. Na primeira máquina, abra

@@ -28,10 +28,9 @@ jobs:
           # Os testes de mapa de contexto comparam commits; sem histórico, git diff falha.
           fetch-depth: 0
 
-      # `@v5` nas duas: o `@v4` roda em Node 20, que o GitHub já anuncia como depreciado e força
-      # para 24. É a versão do RUNTIME DA ACTION, não a do projeto — a matriz 18/22 abaixo é
-      # premissa de compatibilidade e continua valendo; se `setup-node@v5` deixar de instalar
-      # Node 18, este bump volta atrás, porque a matriz vale mais que o aviso.
+      # A versão das actions (atualizada pelo Dependabot) é o RUNTIME DA ACTION, não a do projeto —
+      # a matriz 18/22 abaixo é premissa de compatibilidade. Se um bump de `setup-node` deixar de
+      # instalar Node 18, ele volta atrás: a matriz vale mais que o aviso de depreciação.
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}

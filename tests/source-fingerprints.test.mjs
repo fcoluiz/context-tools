@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -396,5 +397,71 @@ test('Codex mantém o pedido de revisão pendente entre sessões', () => {
     assert.equal(shouldStartAutoReview(root, 'pending A', start + 1000), false);
     assert.equal(shouldStartAutoReview(root, 'pending B', start + 2000), true);
     assert.equal(shouldStartAutoReview(root, 'pending A', start + 25 * 60 * 60 * 1000), false);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+// Fingerprint igual em qualquer SO: com core.autocrlf, o mesmo arquivo chega com CRLF no
+// Windows e LF no Linux/macOS. Antes, o hash era dos bytes crus e um mapa revisado num SO
+// aparecia defasado no outro.
+test('fingerprint ignora fim de linha: o mesmo texto em CRLF e LF tem o mesmo hash', () => {
+  const lf = mkdtempSync(join(tmpdir(), 'context-tools-eol-lf-'));
+  const crlf = mkdtempSync(join(tmpdir(), 'context-tools-eol-crlf-'));
+  try {
+    writeFileSync(join(lf, 'a.js'), 'export function a() {\n  return 1;\n}\n');
+    writeFileSync(join(crlf, 'a.js'), 'export function a() {\r\n  return 1;\r\n}\r\n');
+    const fromLf = fingerprintSourcesInRoot(lf, ['a.js']);
+    const fromCrlf = fingerprintSourcesInRoot(crlf, ['a.js']);
+    assert.equal(fromCrlf.sources['a.js'], fromLf.sources['a.js']);
+    assert.equal(fromCrlf.digest, fromLf.digest);
+
+    // Mudança real de conteúdo continua sendo mudança.
+    writeFileSync(join(crlf, 'a.js'), 'export function a() {\r\n  return 2;\r\n}\r\n');
+    assert.notEqual(fingerprintSourcesInRoot(crlf, ['a.js']).sources['a.js'], fromLf.sources['a.js']);
+  } finally {
+    rmSync(lf, { recursive: true, force: true });
+    rmSync(crlf, { recursive: true, force: true });
+  }
+});
+
+test('arquivo binário (com byte NUL) não é normalizado', () => {
+  const root = mkdtempSync(join(tmpdir(), 'context-tools-eol-bin-'));
+  try {
+    const bytes = Buffer.from([0x00, 0x0d, 0x0a, 0x41]);
+    writeFileSync(join(root, 'b.bin'), bytes);
+    const result = fingerprintSourcesInRoot(root, ['b.bin']);
+    assert.equal(result.sources['b.bin'], `sha256:${createHash('sha256').update(bytes).digest('hex')}`);
+    assert.equal(result.legacyDigest, null, 'sem normalização, não há formato anterior a aceitar');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+// Metadados gravados pela 2.0.0 no Windows (hash dos bytes CRLF) não podem virar "defasado" só
+// porque o plugin foi atualizado: o formato anterior é aceito enquanto o conteúdo for o mesmo.
+test('fingerprints e digest gravados no formato anterior (bytes CRLF) continuam válidos', () => {
+  const root = mkdtempSync(join(tmpdir(), 'context-tools-eol-legacy-'));
+  try {
+    mkdirSync(join(root, 'src'), { recursive: true });
+    mkdirSync(join(root, '.claude', 'context'), { recursive: true });
+    const raw = Buffer.from('export function area() {\r\n  return 1;\r\n}\r\n');
+    writeFileSync(join(root, 'src', 'area.js'), raw);
+    // Exatamente o que a versão anterior gravava: sha256 dos bytes crus, e o digest agregado
+    // sobre esses hashes.
+    const rawHex = createHash('sha256').update(raw).digest('hex');
+    const legacyDigest = `sha256:${createHash('sha256').update(Buffer.from(JSON.stringify({ sources: [['src/area.js', rawHex]], markers: [] }))).digest('hex')}`;
+
+    const current = fingerprintSourcesInRoot(root, ['src/area.js']);
+    assert.notEqual(current.digest, legacyDigest, 'o digest canônico agora é o normalizado');
+    assert.equal(current.legacyDigest, legacyDigest);
+    const comparison = compareReviewedSources(current, { 'src/area.js': `sha256:${rawHex}` });
+    assert.deepEqual(comparison.changed, []);
+    assert.equal(comparison.complete, true);
+
+    withSession(root, () => {
+      writeFileSync(join(root, '.claude', 'context', 'area.md'), `---\narea: "area"\ncovers:\n  - "src/area.js"\nverified_at: 2021-01-01\nsource_fingerprints: {"src/area.js":"sha256:${rawHex}"}\nsource_digest: ${legacyDigest}\n---\n`);
+      assert.equal(contextMapsStopReport(root), '', 'mapa gravado no formato anterior segue fresco');
+      assert.deepEqual(mapasRelevantes(root, ['src/area.js']).map((m) => m.defasado), [false], 'handoff também aceita o formato anterior');
+
+      writeFileSync(join(root, 'src', 'area.js'), 'export function area() {\r\n  return 2;\r\n}\r\n');
+      assert.match(contextMapsStopReport(root), /src\/area\.js/, 'mudança real ainda é detectada');
+    });
   } finally { rmSync(root, { recursive: true, force: true }); }
 });

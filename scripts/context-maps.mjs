@@ -22,7 +22,7 @@ import { makeT, detectLang } from './lib/i18n.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
 import { markdownSectionsForSources } from './lib/markdown-sections.mjs';
 import { selectAutomaticReviewCandidates } from './lib/auto-review-candidates.mjs';
-import { compareReviewedSources, fingerprintKey, fingerprintSourcesInRoot, loadFingerprintState, parseSourceFingerprints, rememberFingerprint, saveFingerprintState } from './lib/source-fingerprints.mjs';
+import { compareReviewedSources, fingerprintKey, fingerprintSourcesInRoot, loadFingerprintState, parseSourceFingerprints, rememberFingerprint, sameDigest, sameSource, saveFingerprintState } from './lib/source-fingerprints.mjs';
 import { sessionWriteFiles } from './lib/session-write-journal.mjs';
 import { reviewFinding } from './lib/review-findings.mjs';
 const t = makeT(detectLang(safe(() => loadConfig(resolveRoot()), {})));
@@ -101,7 +101,7 @@ function fingerprintMap(m, state, cache = null, strict = false) {
   if (strict && !m.source_fingerprints && !m.source_digest) return { current, key, status: 'unknown', changed: Object.keys(current.sources), unverifiableSources: true };
   const trustedDigest = m.source_digest || (!m.source_fingerprints ? previous?.digest : null);
   const comparison = compareReviewedSources(current, m.source_fingerprints, previous, trustedDigest);
-  if (comparison.valid && !current.markers.length && (m.source_digest === current.digest
+  if (comparison.valid && !current.markers.length && (sameDigest(current, m.source_digest)
     || ((!strict && !m.source_fingerprints && previous?.digest === current.digest)
       || (comparison.complete && (!strict || m.source_fingerprints || m.source_digest))))) {
     const updated = previous?.digest !== current.digest;
@@ -109,7 +109,7 @@ function fingerprintMap(m, state, cache = null, strict = false) {
     return {
       current, key, status: 'fresh', changed: [], updated,
       metadataOutdated: comparison.valid && comparison.metadataComplete
-        && typeof m.source_digest === 'string' && m.source_digest !== current.digest,
+        && typeof m.source_digest === 'string' && !sameDigest(current, m.source_digest),
     };
   }
   if (!comparison.valid) return { current, key, status: 'unknown', changed: Object.keys(current.sources), invalidSourceFingerprints: true };
@@ -983,7 +983,6 @@ function resolvePromptFile(token, root, repos, basenameFiles) {
 
 function mapStatusForPrompt(map, state, targetFile) {
   const current = fingerprintSourcesInRoot(map.repo, [targetFile]);
-  const currentDigest = current.sources[targetFile];
   const parsed = parseSourceFingerprints(map.source_fingerprints);
   if (!parsed.valid) return { status: 'unknown', basis: 'invalid-source-fingerprints' };
   const key = `map:${fingerprintKey(map.path)}`;
@@ -996,7 +995,7 @@ function mapStatusForPrompt(map, state, targetFile) {
   );
   const reviewedDigest = reviewed.baseline[targetFile];
   if (typeof reviewedDigest === 'string') {
-    return currentDigest === reviewedDigest
+    return sameSource(current, targetFile, reviewedDigest)
       ? { status: 'fresh', basis: 'source-fingerprint' }
       : { status: 'stale', basis: 'source-fingerprint', changed: [targetFile] };
   }
@@ -1005,7 +1004,7 @@ function mapStatusForPrompt(map, state, targetFile) {
   // for this compatibility check; once it differs, use verified_at against the named source.
   if (/^sha256:[a-f\d]{64}$/i.test(map.source_digest || '')) {
     const aggregate = fingerprintSourcesInRoot(map.repo, map.covers);
-    if (aggregate.digest === map.source_digest) {
+    if (sameDigest(aggregate, map.source_digest)) {
       if (previous?.digest !== aggregate.digest) rememberFingerprint(state, key, aggregate);
       return { status: 'fresh', basis: 'aggregate-digest', updated: previous?.digest !== aggregate.digest };
     }

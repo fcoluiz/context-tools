@@ -5,7 +5,9 @@ import { safe, statePath } from './roots.mjs';
 import { transactState } from './state-store.mjs';
 
 const STATE_FILE = '.source-fingerprints.json';
-const STATE_FORMAT = 1;
+// 2: hashes passaram a ignorar fim de linha. O estado local do formato 1 guarda hashes de bytes
+// crus e é descartado (vira baseline nova), em vez de ser comparado com hashes de outra natureza.
+const STATE_FORMAT = 2;
 
 function pathKey(path) {
   const absolute = resolve(path).replace(/\\/g, '/');
@@ -16,14 +18,27 @@ function hashBytes(bytes) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
+// O fingerprint precisa ser o mesmo para o mesmo arquivo em qualquer SO. Com core.autocrlf, o
+// checkout no Windows grava CRLF e o do Linux/macOS grava LF: hash de bytes crus fazia um mapa
+// revisado num SO aparecer defasado no outro. Texto é normalizado para LF antes do hash; arquivo
+// com byte NUL é tratado como binário e vai cru. Devolve null quando não há o que normalizar.
+function eolNormalized(bytes) {
+  if (bytes.includes(0) || !bytes.includes(13)) return null;
+  const text = bytes.toString('latin1');
+  return text.includes('\r\n') ? Buffer.from(text.replace(/\r\n/g, '\n'), 'latin1') : null;
+}
+
 export function createFingerprintCache() {
   return { files: new Map(), reads: 0, bytes: 0, hits: 0 };
 }
 
 export function fingerprintSources(paths, markers = [], cache = null) {
   const files = {};
+  const legacyFiles = {};
   const sources = {};
   const rawSources = {};
+  const legacyRawSources = {};
+  const legacySources = {};
   const sourcePaths = {};
   const errors = [];
   for (const entry of paths) {
@@ -38,7 +53,10 @@ export function fingerprintSources(paths, markers = [], cache = null) {
           if (size > 64 * 1024 * 1024) throw Object.assign(new Error('source exceeds hash budget'), { code: 'HASH_LIMIT' });
           if (cache && cache.bytes + size > 256 * 1024 * 1024) throw Object.assign(new Error('review exceeds hash budget'), { code: 'HASH_BUDGET' });
           const bytes = readFileSync(path);
-          value = { hash: hashBytes(bytes) };
+          const normalized = eolNormalized(bytes);
+          value = normalized
+            ? { hash: hashBytes(normalized), legacy: hashBytes(bytes) }
+            : { hash: hashBytes(bytes) };
           if (cache) { cache.reads++; cache.bytes += bytes.length; }
         } catch (error) {
           value = error.code === 'ENOENT' ? { hash: 'missing' } : { hash: null, error: error.code || 'SOURCE_UNAVAILABLE' };
@@ -46,15 +64,34 @@ export function fingerprintSources(paths, markers = [], cache = null) {
         cache?.files.set(path, value);
       }
       files[path] = value.hash;
+      if (value.legacy) legacyFiles[path] = value.legacy;
       if (value.error) errors.push({ path, code: value.error });
     }
     rawSources[identity] = files[path];
     sources[identity] = files[path] === null ? null : files[path] === 'missing' ? 'missing' : `sha256:${files[path]}`;
+    legacyRawSources[identity] = legacyFiles[path] || files[path];
+    if (legacyFiles[path]) legacySources[identity] = `sha256:${legacyFiles[path]}`;
     sourcePaths[identity] = path;
   }
   const stableMarkers = [...new Set([...markers, ...errors.map((error) => `unavailable:${error.path}:${error.code}`)])].sort();
-  const digest = `sha256:${hashBytes(Buffer.from(JSON.stringify({ sources: Object.entries(rawSources).sort(), markers: stableMarkers })))}`;
-  return { digest, files, sources, sourcePaths, markers: stableMarkers, errors };
+  const aggregate = (entries) => `sha256:${hashBytes(Buffer.from(JSON.stringify({ sources: Object.entries(entries).sort(), markers: stableMarkers })))}`;
+  const digest = aggregate(rawSources);
+  // Digest e hashes por fonte no formato anterior (bytes crus), só quando diferem: metadados
+  // gravados antes da normalização continuam válidos, sem exigir revisão nem reescrita.
+  const legacyDigest = Object.keys(legacySources).length ? aggregate(legacyRawSources) : null;
+  return { digest, legacyDigest, files, sources, legacySources, sourcePaths, markers: stableMarkers, errors };
+}
+
+/** O digest gravado num mapa/documento corresponde às fontes atuais (formato atual ou anterior)? */
+export function sameDigest(current, stored) {
+  if (typeof stored !== 'string' || !stored) return false;
+  return stored === current?.digest || (Boolean(current?.legacyDigest) && stored === current.legacyDigest);
+}
+
+/** O fingerprint gravado para uma fonte corresponde ao conteúdo atual (formato atual ou anterior)? */
+export function sameSource(current, id, stored) {
+  if (typeof stored !== 'string') return false;
+  return stored === current?.sources?.[id] || (Boolean(current?.legacySources?.[id]) && stored === current.legacySources[id]);
 }
 
 export function fingerprintSourcesInRoot(root, paths, cache = null) {
@@ -155,7 +192,7 @@ export function compareReviewedSources(current, metadata, previous = null, legac
     }
   }
 
-  const changed = Object.keys(currentSources).filter((id) => baseline[id] !== currentSources[id]);
+  const changed = Object.keys(currentSources).filter((id) => !sameSource(current, id, baseline[id]));
   const removed = Object.keys(parsed.sources).filter((id) => !Object.hasOwn(currentSources, id));
   changed.push(...removed);
   const metadataComplete = parsed.present
@@ -178,7 +215,11 @@ export function rememberFingerprint(state, key, fingerprint) {
 export function saveFingerprintState(root, state) {
   const destination = statePathFor(root);
   const result = transactState(destination, () => ({ format: STATE_FORMAT, entries: {} }), (latest) => {
-    if (latest.format !== STATE_FORMAT || !latest.entries) throw new Error('unsupported fingerprint state');
+    // Estado de formato anterior é descartado (ver STATE_FORMAT), não um erro permanente.
+    if (latest.format !== STATE_FORMAT || !latest.entries || typeof latest.entries !== 'object') {
+      latest.format = STATE_FORMAT;
+      latest.entries = {};
+    }
     for (const [key, entry] of Object.entries(state.entries)) {
       if ((entry?.at || 0) >= (latest.entries[key]?.at || 0)) latest.entries[key] = entry;
     }

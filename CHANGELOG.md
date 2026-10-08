@@ -18,6 +18,13 @@ reconstructed from git history.
   sides are now canonicalized with `fs.realpathSync.native`. This is what kept the macOS and Windows
   CI jobs red (21 failing tests); reproduced locally by pointing `TEMP` at a junction. Regression
   test in `tests/comportamento.test.mjs`.
+- **Context maps and documents no longer look stale on another operating system.** Source
+  fingerprints hashed the bytes on disk, so with `core.autocrlf` the same file hashed differently on
+  Windows (CRLF) and on Linux/macOS (LF): a map reviewed on one system showed as stale on the other.
+  Text is now normalized to LF before hashing (files containing a NUL byte are treated as binary
+  and hashed as is). Fingerprints and digests written by earlier versions keep matching as long as
+  the content is the same, so upgrading does not mark anything stale. The local fingerprint cache
+  (`.source-fingerprints.json`) moves to format 2; the old one is discarded and rebuilt.
 
 ## [2.0.0] — 2026-10-08
 

@@ -5,7 +5,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { isManagedCodexHook } from './setup-targets.mjs';
 import {
-  say, isDir, isFile, run, jsonOutput, latestTag, relativeExtra, parseExtraSelection,
+  say, isDir, isFile, run, jsonOutput, latestTag, relativeExtra, parseExtraSelection, t, useSetupConfigLang,
   normalizeSetupLanguage, ask, confirm, explainFailure, workspaceCandidates,
 } from './setup-shared.mjs';
 
@@ -46,13 +46,13 @@ async function ensureCli(adapter, flags) {
   const version = run(adapter.bin, ['--version']);
   if (version.status === 0) return true;
   if (flags['skip-cli-install'] || flags['skip-codex-install']) {
-    say(`${adapter.label} CLI não encontrado; instalação automática desativada.`);
+    say(t('setup.cli.autoDisabled', { agente: adapter.label }));
     return false;
   }
-  const ok = await confirm(`${adapter.label} CLI não encontrado. Instalar ${adapter.npmPackage} globalmente?`, true, flags.yes);
+  const ok = await confirm(t('setup.cli.installAsk', { agente: adapter.label, pacote: adapter.npmPackage }), true, flags.yes);
   if (!ok) return false;
   const installed = run('npm', ['install', '--global', adapter.npmPackage], { stdio: 'inherit' });
-  if (installed.status !== 0) explainFailure(`instalar o ${adapter.label} CLI`, installed);
+  if (installed.status !== 0) explainFailure(t('setup.cli.installStep', { agente: adapter.label }), installed);
   return installed.status === 0;
 }
 
@@ -62,14 +62,14 @@ async function ensureMarketplace(adapter, ref, flags) {
 
   const marketplace = marketplaceInfo(adapter).marketplace;
   if (marketplace) {
-    const replace = await confirm(`O marketplace ${adapter.marketplaceName} já existe. Atualizar para ${ref}?`, true, flags.yes);
+    const replace = await confirm(t('setup.mkt.replaceAsk', { nome: adapter.marketplaceName, ref }), true, flags.yes);
     if (!replace) return false;
     const removed = run(adapter.bin, adapter.marketplaceRemoveArgs(adapter.marketplaceName), { stdio: 'inherit' });
-    if (removed.status !== 0) { explainFailure(`remover o marketplace antigo ${adapter.marketplaceName}`, removed); return false; }
+    if (removed.status !== 0) { explainFailure(t('setup.mkt.removeStep', { nome: adapter.marketplaceName }), removed); return false; }
   }
   const added = run(adapter.bin, adapter.marketplaceAddArgs(adapter.repository, ref), { stdio: 'inherit' });
-  if (added.status !== 0) { explainFailure(`adicionar o marketplace ${adapter.marketplaceName}`, added); return false; }
-  say(`Marketplace ${adapter.marketplaceName} configurado em ${ref}.`);
+  if (added.status !== 0) { explainFailure(t('setup.mkt.addStep', { nome: adapter.marketplaceName }), added); return false; }
+  say(t('setup.mkt.done', { nome: adapter.marketplaceName, ref }));
   warnLegacyMarketplaces(adapter);
   return true;
 }
@@ -83,15 +83,15 @@ function warnLegacyMarketplaces(adapter) {
   const data = jsonOutput(run(adapter.bin, adapter.marketplaceListArgs).stdout);
   for (const name of legacy) {
     if (!adapter.findMarketplace(data, name)) continue;
-    say(`Aviso: o marketplace antigo ${name} ainda está configurado. Para não rodar os hooks em dobro, remova-o:`);
+    say(t('setup.mkt.legacy', { nome: name }));
     say(`  ${adapter.bin} ${adapter.marketplaceRemoveArgs(name).join(' ')}`);
   }
 }
 
 function installPlugin(adapter) {
   const result = run(adapter.bin, adapter.pluginInstallArgs('context-tools', adapter.marketplaceName), { stdio: 'inherit' });
-  if (result.status !== 0) { explainFailure(`instalar o plugin context-tools`, result); return false; }
-  say(`Plugin context-tools instalado/atualizado para ${adapter.label}.`);
+  if (result.status !== 0) { explainFailure(t('setup.plugin.installStep'), result); return false; }
+  say(t('setup.plugin.done', { agente: adapter.label }));
   return true;
 }
 
@@ -99,7 +99,7 @@ function bootstrap(adapter, ctx, root, flags) {
   if (flags['no-bootstrap']) return true;
   const args = adapter.bootstrapArgs(ctx.repoRoot, root);
   const result = run(process.execPath, args, { stdio: 'inherit' });
-  if (result.status !== 0) { explainFailure('preparar os scripts locais do projeto', result); return false; }
+  if (result.status !== 0) { explainFailure(t('setup.bootstrap.step'), result); return false; }
   adapter.removeManagedProjectHooks?.(root);
   return true;
 }
@@ -120,16 +120,16 @@ async function configure(adapter, root, flags, forcePrompt = false) {
     || existingIndexLanguage;
   let language = normalizeSetupLanguage(flags.lang);
   if (flags.lang !== undefined && !language) {
-    say('Idioma inválido; use pt/português ou en/inglês. Português será usado.');
+    say(t('setup.lang.invalid'));
     language = 'pt';
   }
   if (!language) language = configuredLanguage;
   if (!language) {
     if (flags.yes) language = 'pt';
     else {
-      const answer = await ask('Idioma do ai-context [P]ortuguês/[E]nglish (Enter = Português): ', 'pt');
+      const answer = await ask(t('setup.lang.ask'), 'pt');
       language = normalizeSetupLanguage(answer) || 'pt';
-      if (!normalizeSetupLanguage(answer) && answer) say('Idioma não reconhecido; Português será usado.');
+      if (!normalizeSetupLanguage(answer) && answer) say(t('setup.lang.unknown'));
     }
   }
   let selected = null;
@@ -137,28 +137,28 @@ async function configure(adapter, root, flags, forcePrompt = false) {
   if (requested) {
     const parsed = parseExtraSelection(requested.join(','), [], root);
     selected = parsed.selected;
-    if (parsed.invalid.length) say(`Caminho(s) ignorado(s): ${parsed.invalid.join(', ')}`);
+    if (parsed.invalid.length) say(t('setup.extra.ignored', { lista: parsed.invalid.join(', ') }));
   }
   const current = Array.isArray(config.extraRepos) ? config.extraRepos : [];
   if (!selected && (forcePrompt || !flags['no-workspace'])) {
     candidates = workspaceCandidates(root);
-    if (candidates.length && (flags.yes || await confirm(`Foram encontrados ${candidates.length} repositório(s) próximo(s). Configurar extraRepos agora?`, false, false))) {
+    if (candidates.length && (flags.yes || await confirm(t('setup.extra.foundAsk', { n: candidates.length }), false, false))) {
       if (flags.yes) selected = candidates;
       else {
         say(candidates.map((item, index) => `  ${index + 1}. ${item}`).join('\n'));
-        const answer = await ask('Digite números e/ou caminhos separados por vírgula (Enter para nenhum): ', '');
+        const answer = await ask(t('setup.extra.ask'), '');
         if (answer) {
           const parsed = parseExtraSelection(answer, candidates, root);
           selected = parsed.selected;
-          if (parsed.invalid.length) say(`Caminho(s) ignorado(s): ${parsed.invalid.join(', ')}`);
+          if (parsed.invalid.length) say(t('setup.extra.ignored', { lista: parsed.invalid.join(', ') }));
         }
       }
     } else if (forcePrompt) {
-      const answer = await ask('Informe caminhos adicionais separados por vírgula (Enter para nenhum): ', '');
+      const answer = await ask(t('setup.extra.askManual'), '');
       if (answer) {
         const parsed = parseExtraSelection(answer, candidates, root);
         selected = parsed.selected;
-        if (parsed.invalid.length) say(`Caminho(s) ignorado(s): ${parsed.invalid.join(', ')}`);
+        if (parsed.invalid.length) say(t('setup.extra.ignored', { lista: parsed.invalid.join(', ') }));
       }
     }
   }
@@ -170,7 +170,7 @@ async function configure(adapter, root, flags, forcePrompt = false) {
   const removed = new Set(remove.map((value) => relativeExtra(root, value) || value));
   next.extraRepos = [...new Set(base)].filter((value) => !removed.has(value));
   writeConfig(adapter, root, next);
-  say(`Configuração salva em ${path}`);
+  say(t('setup.config.saved', { caminho: path }));
   return { changed: true, path, config: next };
 }
 
@@ -207,18 +207,18 @@ export function projectStatus(adapter, ctx, root) {
   };
   const issues = [];
   const mode = marker?.mode || (files.pluginHooks && adapter.id === 'codex' ? 'global' : 'standalone');
-  if (mode === 'global' && !plugin.available) issues.push(`${adapter.label} CLI não está disponível no PATH; versão global não verificada.`);
-  if (mode === 'global' && !plugin.installed) issues.push(`Plugin context-tools não está instalado no marketplace configurado.`);
-  if (mode === 'standalone' && (!files.scripts || !files.skill || !files.hooks)) issues.push('Bootstrap/hook do projeto está incompleto.');
-  if (mode === 'global' && !files.pluginHooks) issues.push('Plugin global não está ativo.');
-  if (mode === 'global' && files.skill) issues.push('Skill local context-tools pode ocultar a skill do plugin global; confira a cópia antes de removê-la.');
+  if (mode === 'global' && !plugin.available) issues.push(t('setup.issue.cliMissingGlobal', { agente: adapter.label }));
+  if (mode === 'global' && !plugin.installed) issues.push(t('setup.issue.notInstalled'));
+  if (mode === 'standalone' && (!files.scripts || !files.skill || !files.hooks)) issues.push(t('setup.issue.bootstrap'));
+  if (mode === 'global' && !files.pluginHooks) issues.push(t('setup.issue.globalInactive'));
+  if (mode === 'global' && files.skill) issues.push(t('setup.issue.localSkill'));
   if (mode === 'global' && files.hooks) {
     let settings = null;
-    try { settings = JSON.parse(readFileSync(join(root, adapter.stateDir, 'hooks.json'), 'utf8')); } catch { issues.push('Hooks locais não puderam ser analisados.'); }
+    try { settings = JSON.parse(readFileSync(join(root, adapter.stateDir, 'hooks.json'), 'utf8')); } catch { issues.push(t('setup.issue.hooksUnreadable')); }
     const duplicate = Object.values(settings?.hooks || {}).some((groups) => Array.isArray(groups) && groups.some((group) => Array.isArray(group?.hooks) && group.hooks.some((hook) => isManagedCodexHook(hook?.command, root))));
-    if (duplicate) issues.push('Hooks locais context-tools coexistem com o plugin global.');
+    if (duplicate) issues.push(t('setup.issue.duplicateHooks'));
   }
-  if (marker && mode === 'standalone' && marker.version !== ctx.packageVersion) issues.push(`Bootstrap local está em ${marker.version}; fonte atual ${ctx.packageVersion}.`);
+  if (marker && mode === 'standalone' && marker.version !== ctx.packageVersion) issues.push(t('setup.issue.stale', { local: marker.version, fonte: ctx.packageVersion }));
   return {
     agent: adapter.label,
     projectRoot: root,
@@ -230,52 +230,48 @@ export function projectStatus(adapter, ctx, root) {
 
 export function printStatus(status, json = false) {
   if (json) { console.log(JSON.stringify(status, null, 2)); return; }
-  say(`Agente: ${status.agent}`);
-  say(`Projeto: ${status.projectRoot}`);
-  say(`Plugin: ${status.plugin ? `${status.plugin.version}${status.plugin.ref ? ` (${status.plugin.ref})` : ''}` : 'não instalado'}`);
-  say(`Bootstrap: ${status.project.version || 'não registrado'}`);
+  const okOuFalta = (valor) => t(valor ? 'setup.value.ok' : 'setup.value.missing');
+  say(t('setup.status.agent', { agente: status.agent }));
+  say(t('setup.status.project', { raiz: status.projectRoot }));
+  say(t('setup.status.plugin', {
+    valor: status.plugin
+      ? `${status.plugin.version}${status.plugin.ref ? ` (${status.plugin.ref})` : ''}`
+      : t('setup.value.notInstalled'),
+  }));
+  say(t('setup.status.bootstrap', { valor: status.project.version || t('setup.value.notRecorded') }));
   const global = status.project.mode === 'global';
-  const hookStatus = global ? (status.project.files.pluginHooks ? 'plugin' : 'faltando') : status.project.files.hooks ? 'local' : 'faltando';
-  say(`Modo: ${status.project.mode}; scripts=${global ? 'plugin' : status.project.files.scripts ? 'ok' : 'faltando'}, skill=${global ? 'plugin' : status.project.files.skill ? 'ok' : 'faltando'}, hooks=${hookStatus}, ai-context=${status.project.docs ? 'ok' : 'ainda não criado'}`);
-  if (status.issues.length) status.issues.forEach((issue) => say(`Aviso: ${issue}`));
-  else say('Diagnóstico: instalação disponível.');
-  if (status.project.hookTrust === 'unknown') say('Confiança dos hooks: não verificada; confira /hooks no Codex.');
+  const viaPlugin = t('setup.value.plugin');
+  say(t('setup.status.files', {
+    modo: status.project.mode,
+    scripts: global ? viaPlugin : okOuFalta(status.project.files.scripts),
+    skill: global ? viaPlugin : okOuFalta(status.project.files.skill),
+    hooks: global
+      ? (status.project.files.pluginHooks ? viaPlugin : t('setup.value.missing'))
+      : (status.project.files.hooks ? t('setup.value.local') : t('setup.value.missing')),
+    docs: status.project.docs ? t('setup.value.ok') : t('setup.value.notCreated'),
+  }));
+  if (status.issues.length) status.issues.forEach((issue) => say(t('setup.status.warning', { aviso: issue })));
+  else say(t('setup.status.allGood'));
+  if (status.project.hookTrust === 'unknown') say(t('setup.status.hookTrustUnknown'));
 }
 
 export function help(adapter) {
-  say(`context-tools setup — instalação e manutenção do plugin ${adapter.label}
-
-Uso:
-  node setup-${adapter.id}.mjs [install|update] [--project <diretório>]
-  node setup-${adapter.id}.mjs status [--project <diretório>] [--json]
-  node setup-${adapter.id}.mjs doctor [--project <diretório>] [--json]
-  node setup-${adapter.id}.mjs latest
-  node setup-${adapter.id}.mjs configure [--project <diretório>]
-
-Opções:
-  --yes                 aceita os padrões e inclui repositórios detectados
-  --guided              solicita/confirma a pasta do projeto automaticamente
-  --no-workspace        não pergunta sobre extraRepos
-  --no-bootstrap        atualiza o plugin sem copiar arquivos para o projeto
-  --extra-repos=...     grava caminhos separados por vírgula em extraRepos
-  --remove-extra-repos=... remove caminhos de extraRepos
-  --lang=pt|en         define o idioma do ai-context (novo projeto usa português)
-  --ref=vX.Y.Z          usa uma tag específica
-  --dry-run             simula sem alterar projeto, instalar dependências ou acessar a rede
-  --keep-open           mantém o launcher guiado aberto ao terminar
-`);
+  say(t('setup.help.agent', { agente: adapter.label, id: adapter.id, opcoes: t('setup.help.options') }));
 }
 
 async function chooseGuidedRoot(root, flags) {
   if (!flags.guided || flags.yes) return root;
-  say(`\nProjeto detectado: ${root}`);
-  const answer = await ask('Pressione Enter para usar este projeto ou informe outro caminho: ', root);
+  say(t('setup.guided.detected', { raiz: root }));
+  const answer = await ask(t('setup.guided.ask'), root);
   return resolve(answer);
 }
 
 export async function runSetup(adapter, ctx, { command, root, flags }) {
+  // Um projeto que já declarou `lang` fala nesse idioma daqui em diante — inclusive nas mensagens
+  // do próprio setup, não só no ai-context que ele gera.
+  if (root) useSetupConfigLang(readConfig(adapter, root).config);
   if (command === 'help') { help(adapter); return 0; }
-  if (command === 'latest') { say(latestTag(adapter.repositoryUrl) || `v${ctx.packageVersion} (fallback local)`); return 0; }
+  if (command === 'latest') { say(latestTag(adapter.repositoryUrl) || t('setup.run.localFallback', { versao: ctx.packageVersion })); return 0; }
   if (command === 'status' || command === 'doctor') {
     const status = projectStatus(adapter, ctx, root);
     printStatus(status, flags.json);
@@ -284,26 +280,27 @@ export async function runSetup(adapter, ctx, { command, root, flags }) {
   }
   if (command === 'configure') { await configure(adapter, root, flags, true); return 0; }
   if (flags['dry-run']) {
-    say(`[${adapter.label}] Projeto detectado automaticamente: ${root}`);
-    say(`[${adapter.label}] Versão selecionada: ${flags.ref || `v${ctx.packageVersion} (simulação local)`}`);
-    say(`[${adapter.label}] Simulação: nenhuma alteração foi feita e nenhuma dependência/rede foi acionada.`);
+    say(t('setup.run.detected', { agente: adapter.label, raiz: root }));
+    say(t('setup.run.version', {
+      agente: adapter.label,
+      ref: flags.ref || t('setup.run.localSim', { versao: ctx.packageVersion }),
+    }));
+    say(t('setup.run.dryRun', { agente: adapter.label }));
     return 0;
   }
   if (!(await ensureCli(adapter, flags))) return 1;
 
   const ref = flags.ref || latestTag(adapter.repositoryUrl) || `v${ctx.packageVersion}`;
-  say(`[${adapter.label}] Projeto detectado automaticamente: ${root}`);
-  say(`[${adapter.label}] Versão selecionada: ${ref}`);
+  say(t('setup.run.detected', { agente: adapter.label, raiz: root }));
+  say(t('setup.run.version', { agente: adapter.label, ref }));
   if (!(await ensureMarketplace(adapter, ref, flags)) || !installPlugin(adapter) || !bootstrap(adapter, ctx, root, flags)) {
-    say(`\n[${adapter.label}] Instalação não concluída. Corrija o problema indicado e execute o mesmo arquivo novamente.`);
+    say(t('setup.run.failed', { agente: adapter.label }));
     return 1;
   }
   if (!flags['no-workspace']) await configure(adapter, root, flags);
-  say(`\n[${adapter.label}] Instalação concluída com sucesso.`);
-  say(`Abra uma nova sessão do ${adapter.label} para carregar a versão atualizada.`);
-  if (adapter.needsHookTrustReminder) {
-    say('Se o Codex solicitar confiança dos hooks, abra /hooks e aprove os hooks do context-tools uma vez nesta máquina.');
-  }
+  say(t('setup.run.done', { agente: adapter.label }));
+  say(t('setup.run.newSession', { agente: adapter.label }));
+  if (adapter.needsHookTrustReminder) say(t('setup.run.hookTrust'));
   return 0;
 }
 

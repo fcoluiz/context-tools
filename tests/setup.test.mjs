@@ -15,7 +15,10 @@ test('resolveTargets expande "both" e recusa agente desconhecido', () => {
   assert.deepEqual(resolveTargets('both').map((a) => a.id), ['codex', 'claude']);
   assert.deepEqual(resolveTargets(['claude']).map((a) => a.id), ['claude']);
   assert.deepEqual(resolveTargets(['claude', 'codex', 'claude']).map((a) => a.id), ['claude', 'codex']);
-  assert.throws(() => resolveTargets(['bogus']), /agente inválido/);
+  // A mensagem sai no idioma resolvido pelo i18n; o que importa aqui é que ela nomeia o agente
+  // recusado e as opções válidas, não a língua em que isso é dito.
+  assert.throws(() => resolveTargets(['bogus']), /bogus/);
+  assert.throws(() => resolveTargets(['bogus']), /claude, codex/);
 });
 
 test('setup.mjs --dry-run com --target=claude só simula o Claude', () => {
@@ -79,9 +82,51 @@ test('setup.mjs recusa --target inválido de forma explícita', () => {
   const raiz = mkdtempSync(join(tmpdir(), 'context-tools-setup-bad-target-'));
   const SETUP = localPath('../setup.mjs');
   try {
-    const r = spawnSync(process.execPath, [SETUP, '--dry-run', '--project', raiz, '--target=bogus'], { encoding: 'utf8' });
+    const r = spawnSync(process.execPath, [SETUP, '--dry-run', '--project', raiz, '--target=bogus'], {
+      encoding: 'utf8',
+      env: { ...process.env, CONTEXT_TOOLS_LANG: 'en' },
+    });
     assert.notEqual(r.status, 0);
-    assert.match(r.stdout + r.stderr, /agente inválido/);
+    assert.match(r.stdout + r.stderr, /invalid agent: bogus/);
+  } finally { rmSync(raiz, { recursive: true, force: true }); }
+});
+
+// O setup era o único lugar do projeto com português fixo no código, ignorando o i18n que todas
+// as outras ferramentas já usavam. Estes dois testes são o que impede a regressão: a mesma
+// execução, só mudando CONTEXT_TOOLS_LANG, tem que sair nos dois idiomas.
+test('as mensagens do setup seguem CONTEXT_TOOLS_LANG, com inglês como padrão', () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'context-tools-setup-lang-'));
+  const SETUP = localPath('../setup.mjs');
+  const rodar = (lang) => spawnSync(
+    process.execPath,
+    [SETUP, '--dry-run', '--project', raiz, '--target=claude'],
+    { encoding: 'utf8', env: { ...process.env, CONTEXT_TOOLS_LANG: lang } },
+  );
+  try {
+    const en = rodar('en');
+    assert.equal(en.status, 0, `falhou: ${en.stdout}${en.stderr}`);
+    assert.match(en.stdout, /Project detected automatically/);
+    assert.doesNotMatch(en.stdout, /Projeto detectado/);
+
+    const pt = rodar('pt');
+    assert.equal(pt.status, 0, `falhou: ${pt.stdout}${pt.stderr}`);
+    assert.match(pt.stdout, /Projeto detectado automaticamente/);
+    assert.doesNotMatch(pt.stdout, /Project detected/);
+  } finally { rmSync(raiz, { recursive: true, force: true }); }
+});
+
+test('o "lang" gravado no projeto também escolhe o idioma do próprio setup', () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'context-tools-setup-lang-config-'));
+  const SETUP = localPath('../setup.mjs');
+  try {
+    mkdirSync(join(raiz, '.claude'), { recursive: true });
+    writeFileSync(join(raiz, '.claude', 'context-tools.json'), '{"lang":"pt"}\n', 'utf8');
+    // CONTEXT_TOOLS_LANG ausente de propósito: quem responde aqui é o context-tools.json.
+    const env = { ...process.env };
+    delete env.CONTEXT_TOOLS_LANG;
+    const r = spawnSync(process.execPath, [SETUP, '--dry-run', '--project', raiz, '--target=claude'], { encoding: 'utf8', env });
+    assert.equal(r.status, 0, `falhou: ${r.stdout}${r.stderr}`);
+    assert.match(r.stdout, /Projeto detectado automaticamente/);
   } finally { rmSync(raiz, { recursive: true, force: true }); }
 });
 

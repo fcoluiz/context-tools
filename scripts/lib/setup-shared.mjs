@@ -31,12 +31,14 @@ export function useSetupConfigLang(config = {}) {
 }
 
 const KNOWN_COMMANDS = new Set(['install', 'update', 'status', 'doctor', 'latest', 'configure', 'help']);
+// No Windows, estas CLIs são chamadas pelo nome via cmd.exe, que resolve a extensão pelo PATHEXT:
+// o npm instala `claude.cmd`/`codex.cmd`, mas o instalador nativo do Claude Code instala
+// `claude.exe` — forçar ".cmd" quebrava nesse caso.
 const WINDOWS_BATCH = new Set(['codex', 'claude', 'npm']);
 
 export const say = (message = '') => console.log(message);
 export const isDir = (path) => { try { return statSync(path).isDirectory(); } catch { return false; } };
 export const isFile = (path) => existsSync(path) && !isDir(path);
-const executable = (name) => process.platform === 'win32' && WINDOWS_BATCH.has(name) ? `${name}.cmd` : name;
 const quoteCmd = (value) => {
   const text = String(value);
   return /^[A-Za-z0-9_./:=+@%-]+$/.test(text) ? text : `"${text.replace(/"/g, '\\"')}"`;
@@ -100,9 +102,9 @@ export function detectProjectRoot(start = process.cwd(), explicit = null) {
 
 export function run(command, args, options = {}) {
   const batch = process.platform === 'win32' && WINDOWS_BATCH.has(command);
-  const file = batch ? (process.env.ComSpec || 'cmd.exe') : executable(command);
+  const file = batch ? (process.env.ComSpec || 'cmd.exe') : command;
   const commandArgs = batch
-    ? ['/d', '/s', '/c', [executable(command), ...args].map(quoteCmd).join(' ')]
+    ? ['/d', '/s', '/c', [command, ...args].map(quoteCmd).join(' ')]
     : args;
   const result = spawnSync(file, commandArgs, {
     encoding: 'utf8',
@@ -117,10 +119,16 @@ export function run(command, args, options = {}) {
   };
 }
 
+// Saída `--json` das CLIs: o Codex devolve um objeto; o Claude devolve uma LISTA no topo
+// (`[{ "id": ... }]`). Procurar só `{` cortava o `[` inicial e o parse falhava calado, então o setup
+// nunca enxergava o plugin já instalado. Tenta a partir de cada linha que abre JSON, em ordem.
 export function jsonOutput(text) {
-  const start = text.indexOf('{');
-  if (start < 0) return null;
-  try { return JSON.parse(text.slice(start)); } catch { return null; }
+  const lines = String(text || '').split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    if (!/^\s*[[{]/.test(lines[i])) continue;
+    try { return JSON.parse(lines.slice(i).join('\n')); } catch { /* tenta a próxima linha */ }
+  }
+  return null;
 }
 
 export function compareVersions(a, b) {

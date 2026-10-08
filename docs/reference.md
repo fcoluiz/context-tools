@@ -613,6 +613,18 @@ sends the user down a dead end.
 
 ## Installation
 
+### Global install or update (recommended)
+
+```bash
+npx --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes
+```
+
+Installs or updates the latest release for every agent whose CLI is on the machine (Claude Code in
+the `user` scope, Codex globally), without touching any project. Running it again updates: on
+Claude it uses `claude plugin update` when the plugin is already installed; on Codex it re-adds the
+marketplace at the new tag, which the Codex CLI requires to change versions. `--target=claude|codex`
+limits it to one agent. The sections below describe the per-project and manual alternatives.
+
 ### As a plugin (recommended)
 
 ```bash

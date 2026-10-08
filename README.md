@@ -40,38 +40,38 @@ The agent does not need to remember any of this. **Hooks** bring the tools in on
 that went stale, and the end of a session flags files that historically change together but were
 not edited together.
 
-## Quick start
+## Install or update
 
-### Claude Code
-
-```bash
-claude plugin marketplace add fcoluiz/context-tools@v2.1.0 --scope project
-claude plugin install context-tools@context-tools --scope project
-```
-
-The plugin brings the tools **and** the hooks. Hooks run as soon as the plugin is enabled.
-
-### Codex
+One command installs context-tools for **every agent you have** (Claude Code and/or Codex), for
+your user — every project, not just the current one. Run the same command again to update to the
+latest release:
 
 ```bash
-codex plugin marketplace add fcoluiz/context-tools --ref v2.1.0
+npx --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes
 ```
 
-Then open `codex`, run `/plugins` and install **context-tools**. On the first machine, open
-`/hooks` and trust the context-tools hooks once.
+Requires Node.js 18+ and the CLI of at least one agent (`claude` or `codex`). It never changes the
+folder you run it from, and never installs an agent CLI you do not already use. Open a new session
+afterwards. On Codex, the first time, open `/hooks` and trust the context-tools hooks once.
 
-### Guided setup (both agents)
+The plugin brings the tools **and** the hooks. Use `--target=claude` or `--target=codex` to limit it
+to one agent, and drop `--global` to set up only the current project instead.
 
-From your project directory:
+### With the agent's own CLI
+
+Claude Code:
 
 ```bash
-npx --yes --package github:fcoluiz/context-tools context-tools-setup-all
+claude plugin marketplace add fcoluiz/context-tools
+claude plugin install context-tools@context-tools
 ```
 
-It detects which agent the project uses (or asks), configures the marketplace, installs or updates
-the plugin and prepares the project. The same utility handles `update`, `status`, `doctor`,
-`latest` and `configure`. Double-click launchers are also included: `setup.bat`, `setup.ps1`,
-`setup.sh` and `setup.command`.
+Codex:
+
+```bash
+codex plugin marketplace add fcoluiz/context-tools
+codex plugin add context-tools@context-tools-codex
+```
 
 ### Standalone, without a plugin
 

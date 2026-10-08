@@ -232,6 +232,8 @@ const CAT = {
     'setup.value.plugin': () => 'plugin',
     'setup.value.notCreated': () => 'not created yet',
     'setup.run.detected': (p) => `[${p.agente}] Project detected automatically: ${p.raiz}`,
+    'setup.run.global': (p) => `[${p.agente}] Global installation (your user, every project); no project files are changed.`,
+    'setup.global.noCli': () => 'Neither the Claude Code CLI nor the Codex CLI was found on PATH. Install one of them, or choose explicitly with --target=claude|codex.',
     'setup.run.version': (p) => `[${p.agente}] Selected version: ${p.ref}`,
     'setup.run.dryRun': (p) => `[${p.agente}] Simulation: nothing was changed and no dependency or network access was triggered.`,
     'setup.run.localSim': (p) => `v${p.versao} (local simulation)`,
@@ -268,6 +270,8 @@ ${p.opcoes}`,
   --extra-repos=...     write comma-separated paths into extraRepos
   --remove-extra-repos=... remove paths from extraRepos
   --lang=pt|en          set the ai-context language (a new project uses Portuguese)
+  --global              install/update for your user (all projects) without changing this project;
+                        without --target, covers every agent whose CLI is installed
   --ref=vX.Y.Z          use a specific tag
   --dry-run             simulate without changing the project, installing dependencies or using the network
   --keep-open           keep the guided launcher open when it finishes
@@ -498,6 +502,8 @@ ${p.opcoes}`,
     'setup.value.plugin': () => 'plugin',
     'setup.value.notCreated': () => 'ainda não criado',
     'setup.run.detected': (p) => `[${p.agente}] Projeto detectado automaticamente: ${p.raiz}`,
+    'setup.run.global': (p) => `[${p.agente}] Instalação global (seu usuário, todos os projetos); nenhum arquivo de projeto é alterado.`,
+    'setup.global.noCli': () => 'Nem o CLI do Claude Code nem o do Codex foram encontrados no PATH. Instale um deles, ou escolha explicitamente com --target=claude|codex.',
     'setup.run.version': (p) => `[${p.agente}] Versão selecionada: ${p.ref}`,
     'setup.run.dryRun': (p) => `[${p.agente}] Simulação: nenhuma alteração foi feita e nenhuma dependência/rede foi acionada.`,
     'setup.run.localSim': (p) => `v${p.versao} (simulação local)`,
@@ -534,6 +540,8 @@ ${p.opcoes}`,
   --extra-repos=...     grava caminhos separados por vírgula em extraRepos
   --remove-extra-repos=... remove caminhos de extraRepos
   --lang=pt|en          define o idioma do ai-context (novo projeto usa português)
+  --global              instala/atualiza para o seu usuário (todos os projetos) sem alterar este
+                        projeto; sem --target, cobre todo agente cujo CLI está instalado
   --ref=vX.Y.Z          usa uma tag específica
   --dry-run             simula sem alterar projeto, instalar dependências ou acessar a rede
   --keep-open           mantém o launcher guiado aberto ao terminar

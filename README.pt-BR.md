@@ -40,38 +40,38 @@ O agente não precisa lembrar de nada disso. **Hooks** trazem as ferramentas soz
 contexto que ficaram defasados, e o fim da sessão aponta arquivos que historicamente mudam juntos
 mas não foram editados juntos.
 
-## Começo rápido
+## Instalar ou atualizar
 
-### Claude Code
-
-```bash
-claude plugin marketplace add fcoluiz/context-tools@v2.1.0 --scope project
-claude plugin install context-tools@context-tools --scope project
-```
-
-O plugin traz as ferramentas **e** os hooks. Os hooks rodam assim que o plugin é habilitado.
-
-### Codex
+Um comando instala o context-tools para **todos os agentes que você tem** (Claude Code e/ou Codex),
+no seu usuário — vale para todos os projetos, não só o atual. Rodar o mesmo comando de novo
+atualiza para a última versão:
 
 ```bash
-codex plugin marketplace add fcoluiz/context-tools --ref v2.1.0
+npx --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes
 ```
 
-Depois abra o `codex`, rode `/plugins` e instale o **context-tools**. Na primeira máquina, abra
-`/hooks` e aprove os hooks do context-tools uma vez.
+Requer Node.js 18+ e o CLI de pelo menos um agente (`claude` ou `codex`). Ele nunca altera a pasta
+onde é executado e nunca instala o CLI de um agente que você ainda não usa. Depois, abra uma sessão
+nova. No Codex, na primeira vez, abra `/hooks` e aprove os hooks do context-tools uma vez.
 
-### Setup guiado (os dois agentes)
+O plugin traz as ferramentas **e** os hooks. Use `--target=claude` ou `--target=codex` para limitar a
+um agente, e tire o `--global` para preparar só o projeto atual.
 
-No diretório do seu projeto:
+### Pelo próprio CLI do agente
+
+Claude Code:
 
 ```bash
-npx --yes --package github:fcoluiz/context-tools context-tools-setup-all
+claude plugin marketplace add fcoluiz/context-tools
+claude plugin install context-tools@context-tools
 ```
 
-Ele detecta qual agente o projeto usa (ou pergunta), configura o marketplace, instala ou atualiza o
-plugin e prepara o projeto. O mesmo utilitário faz `update`, `status`, `doctor`, `latest` e
-`configure`. Há também launchers para clique duplo: `setup.bat`, `setup.ps1`, `setup.sh` e
-`setup.command`.
+Codex:
+
+```bash
+codex plugin marketplace add fcoluiz/context-tools
+codex plugin add context-tools@context-tools-codex
+```
 
 ### Standalone, sem plugin
 

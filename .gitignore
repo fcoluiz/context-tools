@@ -30,3 +30,8 @@ node_modules/
 # Gold sets locais de benchmark: descrevem projetos de terceiros (caminhos, arquivos, linhas) e
 # nunca entram no repositório. O formato está em docs/benchmarks/cases.example.json.
 *.local.json
+
+# Notas de trabalho de quem mantém o plugin (mapas de contexto e documentação operacional). As
+# ferramentas rodam neste repo e as leem, mas são pessoais: não fazem parte da distribuição.
+.claude/context/
+ai-context/

@@ -1,5 +1,4 @@
 {
-  "lang": "pt",
   "contextMaps": {
     "_comment": "Decidido NÃO mapear, com o porquê registrado nos mapas: install.mjs em doc-audit.md (~130 linhas diretas, roda uma vez por instalação) e lib/i18n.mjs em session-cost.md (tabela de tradução, não lógica). Sem esta lista o aviso de 'sem mapa' reclamaria dos dois para sempre, e aviso que nunca some ensina a ignorar a categoria inteira. Os testes NÃO entram aqui: DEFAULT_UNMAPPED_PATTERNS já os cobre.",
     "intentionallyUnmapped": [

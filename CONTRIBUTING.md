@@ -79,15 +79,14 @@ project that is not yours, with every reported line read raw from the file and v
 the declaration. That is how the Pascal comment bug, Python's docstrings, and Go's grouped blocks
 were all found.
 
-## Context maps
+## Context maps and operational docs
 
-`.claude/context/*.md` describes an area and carries `verified_at`, the commit at which someone last
-checked it. The hooks compare that commit against the covered files and flag the map as stale.
-
-If you touch a covered file, revalidate **the sections about the files that changed** and bump
-`verified_at`. Never bump only the date: "up to date" means *has not changed since it was verified*,
-never *is correct*, and nothing in this repository bumps `verified_at` automatically — that is the
-central guarantee of the whole system.
+The tool is developed with its own features turned on: the hooks in `.claude/settings.json` and
+`.codex/hooks.json` run from `scripts/`. The context maps (`.claude/context/`) and operational docs
+(`ai-context/`) they read are **personal working notes** and are ignored by git in this repository —
+create your own if they help you. When you rely on one, remember the rule the tool enforces for
+everyone: "up to date" means *has not changed since it was verified*, never *is correct*, and
+nothing bumps `verified_at` automatically.
 
 ## Pull requests
 

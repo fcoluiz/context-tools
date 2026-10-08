@@ -11,7 +11,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   parseArgs, detectProjectRoot, compareVersions, latestTagFromLsRemote, relativeExtra,
-  parseExtraSelection, normalizeSetupLanguage, waitBeforeExit, isDir,
+  parseExtraSelection, normalizeSetupLanguage, waitBeforeExit, isDir, t,
 } from './scripts/lib/setup-shared.mjs';
 import { TARGETS } from './scripts/lib/setup-targets.mjs';
 import { runSetup, chooseGuidedRoot, projectStatus as projectStatusFor } from './scripts/lib/setup-engine.mjs';
@@ -38,13 +38,13 @@ async function main() {
   }
   const detectedRoot = detectProjectRoot(process.cwd(), explicitProject);
   const root = await chooseGuidedRoot(detectedRoot, flags);
-  if (!isDir(root)) throw new Error(`Projeto não encontrado: ${root}`);
+  if (!isDir(root)) throw new Error(t('setup.notFound', { raiz: root }));
   process.exitCode = await runSetup(ADAPTER, ctx, { command, root, flags });
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
   const { flags } = parseArgs();
   main()
-    .catch((error) => { console.error(`context-tools setup: ${error.message}`); process.exitCode = 1; })
+    .catch((error) => { console.error(t('setup.error', { mensagem: error.message })); process.exitCode = 1; })
     .finally(() => waitBeforeExit(flags));
 }

@@ -8,6 +8,27 @@ import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { dirname, join, relative, resolve } from 'node:path';
 import { extraReposDoCodeWorkspace } from './roots.mjs';
+import { detectLang, makeT } from './i18n.mjs';
+
+// O setup fala o mesmo idioma que o resto das ferramentas, pela mesma cadeia de resolução:
+// CONTEXT_TOOLS_LANG → "lang" no context-tools.json → locale do sistema → inglês. A configuração
+// do projeto ainda não foi lida quando as primeiras mensagens saem (é ela que o setup vai
+// escrever), então aqui valem a variável de ambiente e o locale; `useSetupConfigLang` reaproveita
+// o `lang` do projeto assim que ele é conhecido.
+let lang = detectLang({});
+let translate = makeT(lang);
+
+export const t = (key, params = {}) => translate(key, params);
+export const setupLang = () => lang;
+
+export function useSetupConfigLang(config = {}) {
+  if (process.env.CONTEXT_TOOLS_LANG) return lang;
+  const next = detectLang(config);
+  if (next === lang) return lang;
+  lang = next;
+  translate = makeT(lang);
+  return lang;
+}
 
 const KNOWN_COMMANDS = new Set(['install', 'update', 'status', 'doctor', 'latest', 'configure', 'help']);
 const WINDOWS_BATCH = new Set(['codex', 'claude', 'npm']);
@@ -184,22 +205,24 @@ export async function ask(question, fallback = '') {
 
 export async function confirm(question, fallback = true, yes = false) {
   if (yes) return true;
-  const answer = (await ask(`${question} [${fallback ? 'S/n' : 's/N'}] `, '')).toLowerCase();
+  const answer = (await ask(`${question} ${t('setup.confirmSuffix', { padrao: fallback })} `, '')).toLowerCase();
   if (!answer) return fallback;
+  // Aceita as duas línguas sempre, independentemente do idioma da pergunta: quem digita "s" num
+  // prompt em inglês quis dizer sim, e recusar isso só cria confusão.
   return ['s', 'sim', 'y', 'yes'].includes(answer);
 }
 
 export function explainFailure(step, result) {
   const detail = [result?.stderr, result?.stdout].map((value) => String(value || '').trim()).find(Boolean);
-  say(`Falha: ${step}.`);
+  say(t('setup.fail.step', { etapa: step }));
   if (/auth|permission|denied|private|repository not found|could not read/i.test(detail || '')) {
-    say('O Git não conseguiu ler o repositório do plugin. Confira a conexão e o endereço; se estiver usando um fork privado, configure o acesso do Git nesta máquina (SSH ou credencial) e tente novamente.');
+    say(t('setup.fail.auth'));
   }
-  if (detail) say(`Detalhe: ${detail.split(/\r?\n/).slice(-3).join(' ')}`);
-  say('Nenhuma etapa posterior foi considerada concluída.');
+  if (detail) say(t('setup.fail.detail', { detalhe: detail.split(/\r?\n/).slice(-3).join(' ') }));
+  say(t('setup.fail.noFurther'));
 }
 
 export async function waitBeforeExit(flags) {
   if (!flags['keep-open'] || !input.isTTY || !output.isTTY) return;
-  await ask('\nPressione Enter para fechar esta janela... ', '');
+  await ask(t('setup.pressEnter'), '');
 }

@@ -5,7 +5,7 @@ if [ -f "$SCRIPT_DIR/setup.sh" ]; then
 fi
 
 if ! command -v npx >/dev/null 2>&1; then
-  printf '%s\n' 'Node.js 18 ou superior nao foi encontrado no PATH.' >&2
+  printf '%s\n' 'Node.js 18 or later was not found on PATH.' >&2
   exit 1
 fi
 

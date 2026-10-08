@@ -9,6 +9,7 @@
 // de pular, nunca corromper configuração.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { t } from './setup-shared.mjs';
 
 const REPOSITORY = 'fcoluiz/context-tools';
 const REPOSITORY_URL = 'https://github.com/fcoluiz/context-tools.git';
@@ -147,6 +148,6 @@ export const TARGETS = {
 export function resolveTargets(ids) {
   const list = (Array.isArray(ids) ? ids : [ids]).flatMap((id) => id === 'both' ? ['codex', 'claude'] : [id]);
   const unknown = list.filter((id) => !TARGETS[id]);
-  if (unknown.length) throw new Error(`agente inválido: ${unknown.join(', ')} (use claude, codex ou both)`);
+  if (unknown.length) throw new Error(t('setup.target.invalid', { lista: unknown.join(', ') }));
   return [...new Set(list)].map((id) => TARGETS[id]);
 }

@@ -32,7 +32,7 @@ jobs:
       # para 24. É a versão do RUNTIME DA ACTION, não a do projeto — a matriz 18/22 abaixo é
       # premissa de compatibilidade e continua valendo; se `setup-node@v5` deixar de instalar
       # Node 18, este bump volta atrás, porque a matriz vale mais que o aviso.
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
 

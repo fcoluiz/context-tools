@@ -8,6 +8,11 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-10-08
+
+Each hook message reaches the agent once, the end of a session notes code left untested, and SQL
+schemas are searchable like code.
+
 ### Added
 
 - **Each hook message is delivered once.** When the plugin and a standalone copy (or two

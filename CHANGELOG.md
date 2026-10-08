@@ -8,6 +8,11 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.4.0] — 2026-10-08
+
+Searches typed in Claude's terminal reach the index, end-of-session notes are shorter, hooks no
+longer run twice after moving to the plugin, and health reports whether index answers were used.
+
 ### Added
 
 - **`grep`/`rg` typed in Claude's Bash reach the index.** The symbol answer already preceded the

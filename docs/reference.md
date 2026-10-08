@@ -689,7 +689,7 @@ The repository also carries a Codex repo marketplace at `.agents/plugins/marketp
 configure that marketplace and install the tagged plugin from Codex:
 
 ```bash
-codex plugin marketplace add fcoluiz/context-tools --ref v2.3.0
+codex plugin marketplace add fcoluiz/context-tools --ref v2.4.0
 codex
 /plugins
 ```
@@ -706,7 +706,7 @@ Claude Code's CLI has non-interactive `plugin marketplace`/`plugin` subcommands 
 Codex ones above:
 
 ```bash
-claude plugin marketplace add fcoluiz/context-tools@v2.3.0 --scope project
+claude plugin marketplace add fcoluiz/context-tools@v2.4.0 --scope project
 claude plugin install context-tools@context-tools --scope project
 ```
 

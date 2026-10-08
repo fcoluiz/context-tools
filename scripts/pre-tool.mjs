@@ -26,6 +26,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { resolveRoot, safe, loadConfig, isMain, statePath } from './lib/roots.mjs';
+import { writeHookOutput } from './lib/hook-output.mjs';
 
 // Identificador, ou alternância de identificadores. Qualquer metacaractere de regex
 // (`\d`, `^`, `.*`, classe) reprova: aí a intenção é busca textual, não "onde X está".
@@ -181,7 +182,7 @@ export async function executarPreTool(entrada) {
 
 async function main() {
   const saida = await executarPreTool(stdin());
-  if (saida) process.stdout.write(saida);
+  if (saida) writeHookOutput(resolveRoot(), saida);
 }
 
 if (isMain(import.meta.url)) {

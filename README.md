@@ -34,11 +34,13 @@ never out of date.
 | what does the next session need to know? | `handoff.mjs [--salvar]` |
 | give me a bounded evidence pack for a symbol or file | `context-pack.mjs <symbol-or-file> [--budget=N]` |
 | how healthy is the local setup? | `health.mjs [--days=30] [--audit] [--json]` |
+| which tests cover this file, and how do I run them? | `verify.mjs <file> [<file>…]` |
 
 The agent does not need to remember any of this. **Hooks** bring the tools in on their own: before a
 `grep` for a symbol the index answers first, a session starts with a short list of the context maps
 that went stale, and the end of a session flags files that historically change together but were
-not edited together.
+not edited together — and, once per session, code edited after the last test run. Each message is
+delivered once, even when the plugin and a standalone copy are both installed.
 
 ## Install or update
 
@@ -113,6 +115,7 @@ as a file, never presented as a definition.
 | `.pas .dpr .dpk .inc` (Delphi/Pascal) | ✅ | ✅ |
 | `.dfm .fmx` (Delphi forms) | — deliberately | ✅ |
 | `.md` | — | ✅ (sections) |
+| `.sql` (tables, columns, views, procedures…) | ✅ index only | ✅ |
 
 `coupling` and `audit-docs` work with any language. Every parser is checked against third-party
 production code — about **6,200 files and 147,000 symbols** across Python, Go, Delphi/Pascal, Rust

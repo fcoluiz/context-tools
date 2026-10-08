@@ -160,6 +160,18 @@ mostra p50/p95 e o tempo inicial para comandos ignorados, padrões de busca text
 de símbolo. Não exibe nem persiste o texto dos comandos. Na instalação standalone do Codex, use
 `node .codex/scripts/benchmark-pretool.mjs --samples=5`.
 
+## Que testes cobrem este arquivo? → `verify.mjs`
+
+```
+node "${PLUGIN_ROOT}/scripts/verify.mjs" <arquivo> [<arquivo>…] [--json]
+```
+
+Lista testes relacionados (mesmo nome ou que importam o arquivo — pista, não prova de cobertura) e
+o comando de teste do projeto. Use depois de editar código e antes de declarar a tarefa concluída.
+Não executa nada: rodar o teste continua sendo decisão do agente.
+
+`symbols` também indexa `.sql`: tabelas, colunas, views, procedures, triggers, sequences.
+
 ## Navegar arquivo grande → `outline.mjs`
 
 ```

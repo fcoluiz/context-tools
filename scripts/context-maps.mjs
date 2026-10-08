@@ -17,6 +17,7 @@ import { readdirSync, readFileSync, existsSync, writeFileSync, statSync, mkdirSy
 import { execFileSync } from 'node:child_process';
 import { join, relative, basename, dirname, resolve, isAbsolute, sep } from 'node:path';
 import { resolveRoot, findRepos, safe, loadConfig, isMain, lerTexto, CODE_RE, walk, relPath, statePath, runtimeHost } from './lib/roots.mjs';
+import { writeHookOutput } from './lib/hook-output.mjs';
 import { lerDocumento } from './lib/md-hint.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
@@ -708,7 +709,7 @@ function emitContext(eventName, text, notice = '') {
   // Campo interno consumido pelo adaptador Codex. O núcleo continua emitindo o mesmo
   // additionalContext para o agente; o adaptador decide se isso também deve ficar visível.
   if (notice) hookSpecificOutput._contextToolsNotice = notice.slice(0, 1800);
-  process.stdout.write(JSON.stringify({ hookSpecificOutput }));
+  writeHookOutput(workspaceRoot(), { hookSpecificOutput });
 }
 
 const SESSION_NOTICE_FILE = '.context-maps-session-notice.json';

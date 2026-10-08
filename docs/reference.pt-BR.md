@@ -770,6 +770,24 @@ projeto; `--project <caminho>` só é necessário ao administrar outro projeto.
 | `SessionStart` | diz se a última divisão de sessão ganhou, empatou ou perdeu | só quando houve divisão |
 | `Stop` | Codex revisa somente as fontes alteradas nesta sessão que estão ligadas a mapas/documentos; fontes antigas do mesmo mapa continuam no relatório global | só para mudanças relevantes da sessão; mesma revisão em cooldown por 24h |
 | `Stop` | avisa se você editou A e não tocou em B, que muda junto historicamente | só quando ocorre |
+| `Stop` (Claude) | aponta código editado depois do último teste, com testes relacionados e o comando de teste | **uma vez por sessão**; calado sem estrutura de teste |
+
+Toda mensagem de hook passa por um ponto único de deduplicação: o mesmo (evento, sessão, texto) é
+entregue uma vez a cada 90 s, então plugin mais cópia standalone — ou um hook registrado duas
+vezes — não dobra o contexto. `CONTEXT_TOOLS_HOOK_DEDUPE=0` desliga.
+
+### Caminhos e comandos protegidos
+
+Não existe hook de proteção, de propósito. Um `PreToolUse` em todo Edit e Bash custaria uma
+partida de Node (~130 ms) por chamada em todo projeto, e o Claude Code já faz isso nativamente, sem
+custo, pelas `permissions` do `.claude/settings.json`:
+
+```json
+{ "permissions": { "deny": ["Edit(legacy/**)", "Bash(git push --force:*)"], "ask": ["Bash(git reset --hard:*)"] } }
+```
+
+Quando um handoff lista algo que "não pode ser repetido nem desfeito", transformar isso numa dessas
+regras faz a restrição valer de verdade, em vez de depender de memória.
 
 ### O `PreToolUse` é o único ponto em que a ferramenta chega sozinha
 
@@ -866,9 +884,13 @@ Para fugir da convenção, `.claude/context-tools.json`:
   "coupling": { "since": "6 months ago", "minTogether": 3, "warnConfidence": 0.7 },
   "contextMaps": { "intentionallyUnmapped": ["scripts/legacy/"] },
   "claudeMdHint": false,
-  "extraRepos": ["../AppConnection", "../shared"]
+  "extraRepos": ["../AppConnection", "../shared"],
+  "verify": { "command": "npm run test:unit", "testPatterns": ["make check"] }
 }
 ```
+
+`verify.command` substitui o comando de teste detectado; `verify.testPatterns` acrescenta comandos que
+contam como teste; `verify.enabled: false` desliga o aviso do `Stop`.
 
 ### Documentação operacional
 
@@ -1076,7 +1098,8 @@ hoje. Teste que repete a lista é a quinta cópia.
 ## Limitações conhecidas
 
 - **`symbols` vê definições de topo, métodos de classe e chave de config de primeiro nível** — não
-  vê variável local, propriedade aninhada nem coluna de banco. Medido, o ponto cego são ~97.500
+  vê variável local, propriedade aninhada nem coluna de banco fora de arquivo `.sql` (tabelas e
+  colunas de `CREATE TABLE`/`ALTER TABLE … ADD` são indexadas). Medido, o ponto cego são ~97.500
   identificadores num workspace de 1.543 arquivos, e as chaves de config cobrem 1.329 deles (1,4%)
   — escolhidos por serem os que se procuram entre arquivos, mas **isso é hipótese: não temos log de
   consultas reais para provar**. Fechar o resto exigiria AST, e aí o custo não é desempenho e sim

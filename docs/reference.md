@@ -785,6 +785,24 @@ directory; `--project <path>` is only needed when administering another project.
 | `Stop` | flags uncovered code when sibling files change together or the same source recurs across sessions; isolated candidates remain a health finding | only for grouped or recurring changes |
 | `Stop` | reviews changed code without related `ai-context` under the same rule; stale existing documents remain immediate | only for relevant changes |
 | `Stop` | warns if you edited A and did not touch B, which historically changes with it | only when it happens |
+| `Stop` (Claude) | notes code edited after the last test run, with related tests and the test command | **once per session**; silent without a test setup |
+
+Every hook message goes through one deduplication point: the same (event, session, text) is
+delivered once per 90 s, so a plugin plus a standalone copy — or a hook registered twice — does not
+double the context. `CONTEXT_TOOLS_HOOK_DEDUPE=0` disables it.
+
+### Protected paths and commands
+
+There is deliberately no guard hook. A `PreToolUse` hook on every Edit and Bash call would cost a
+Node start-up (~130 ms) per call in every project, and Claude Code already enforces this natively,
+at zero cost, through `permissions` in `.claude/settings.json`:
+
+```json
+{ "permissions": { "deny": ["Edit(legacy/**)", "Bash(git push --force:*)"], "ask": ["Bash(git reset --hard:*)"] } }
+```
+
+When a handoff lists something that "must not be repeated or undone", turning it into one of these
+rules makes it enforced instead of remembered.
 
 ### `PreToolUse` is the only point where the tool arrives on its own
 
@@ -887,9 +905,13 @@ documentation folders. To depart from convention, `.claude/context-tools.json`:
   "coupling": { "since": "6 months ago", "minTogether": 3, "warnConfidence": 0.7 },
   "contextMaps": { "intentionallyUnmapped": ["scripts/legacy/"] },
   "claudeMdHint": false,
-  "extraRepos": ["../AppConnection", "../shared"]
+  "extraRepos": ["../AppConnection", "../shared"],
+  "verify": { "command": "npm run test:unit", "testPatterns": ["make check"] }
 }
 ```
+
+`verify.command` overrides the detected test command; `verify.testPatterns` adds commands that count
+as a test run; `verify.enabled: false` turns the `Stop` note off.
 
 ### Operational documentation
 
@@ -1097,7 +1119,8 @@ describes today's value. A test that repeats the list is the fifth copy.
 ## Known limitations
 
 - **`symbols` sees top-level definitions, class methods, and first-level config keys** — it does not
-  see local variables, nested properties, or database columns. Measured, the blind spot is ~97,500
+  see local variables, nested properties, or database columns that are not declared in a `.sql`
+  file (tables and columns from `CREATE TABLE`/`ALTER TABLE … ADD` are indexed). Measured, the blind spot is ~97,500
   identifiers in a 1,543-file workspace, and config keys cover 1,329 of them (1.4%) — chosen because
   they are the ones searched for across files, but **that is a hypothesis: we have no query log to
   prove it**. Closing the rest would require an AST, and then the cost is not performance but

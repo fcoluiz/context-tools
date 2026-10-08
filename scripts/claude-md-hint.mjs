@@ -2,6 +2,7 @@
 // One-time navigation hint for an existing CLAUDE.md.
 
 import { resolveRoot, loadConfig, isMain } from './lib/roots.mjs';
+import { writeHookOutput } from './lib/hook-output.mjs';
 import { makeT, detectInstructionLang } from './lib/i18n.mjs';
 import { aplicarMdHint, lerTextoHint } from './lib/md-hint.mjs';
 
@@ -48,9 +49,9 @@ function main() {
   const t = makeT(detectInstructionLang(lerTextoHint(root, 'CLAUDE.md'), cfg));
   const resultado = aplicarHintClaudeMd(root, cfg);
   if (resultado !== 'added') return;
-  process.stdout.write(JSON.stringify({
+  writeHookOutput(root, {
     hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: t('claudemd.added') },
-  }));
+  });
 }
 
 if (isMain(import.meta.url)) {

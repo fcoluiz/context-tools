@@ -28,6 +28,7 @@ import { execFileSync } from 'node:child_process';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveRoot, findRepos, safe, loadConfig, isMain, relPath, stateDir, statePath, stateRelPrefix, runtimeHost } from './lib/roots.mjs';
+import { writeHookOutput } from './lib/hook-output.mjs';
 import { buildIndex } from './symbols.mjs';
 import {
   transcriptDaSessao, metricasDaSessao, multiplicadorDeCusto,
@@ -332,9 +333,9 @@ function stopReport(root, t) {
     store[sid] = novo;
     safe(() => { mkdirSync(stateDir(root), { recursive: true }); writeFileSync(arq, JSON.stringify(store)); }, null);
   };
-  const emitir = (texto) => process.stdout.write(JSON.stringify({
+  const emitir = (texto) => writeHookOutput(root, {
     hookSpecificOutput: { hookEventName: 'Stop', additionalContext: texto },
-  }));
+  });
 
   const destino = caminhoDoHandoff(root, sid);
 
@@ -454,9 +455,9 @@ function relatorioDeDivisao(root, t) {
     t('ses.verFonte'),
   ].join('\n');
 
-  process.stdout.write(JSON.stringify({
+  writeHookOutput(root, {
     hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: texto },
-  }));
+  });
 }
 
 /**

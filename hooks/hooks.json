@@ -42,6 +42,10 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/handoff.mjs\" --stop-report"
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/verify.mjs\" --stop-report"
           }
         ]
       }

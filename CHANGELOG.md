@@ -8,6 +8,37 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Each hook message is delivered once.** When the plugin and a standalone copy (or two
+  registrations of the same hook) are active together, every `SessionStart`/`Stop` note reached
+  the agent twice — double tokens on every session and a repeated notice in the chat. Hook output now
+  goes through `lib/hook-output.mjs`, which claims each (event, session, text) atomically for 90 s;
+  the parallel copy stays silent. A legitimate repeat after `/compact` or `/clear` still arrives.
+  `CONTEXT_TOOLS_HOOK_DEDUPE=0` turns it off.
+- **Verification loop: `verify.mjs`.** `verify.mjs <file>…` lists the tests related to a file (same
+  name or importing it, always labelled as a hint, not proof of coverage) and the project's test
+  command (`package.json`, pytest, Go, Cargo, Maven, Gradle, or `"verify": {"command": "…"}`). On
+  Claude, a `Stop` hook reads the session transcript and, **once per session**, notes code edited
+  after the last test run. It never runs tests, never blocks, and stays silent in projects without a
+  detectable test setup, for documentation-only edits, and on Codex (whose rollout format is not
+  stable enough to read the edit → command order). `"verify": {"enabled": false}` disables it.
+- **SQL in the symbol index.** `.sql` files now yield tables, columns (`CREATE TABLE` and
+  `ALTER TABLE … ADD`), views, procedures, functions, triggers, indexes, sequences/generators and
+  domains — the "database column" blind spot, for schemas kept in scripts or migrations. SQL is
+  **index-only**: editing a migration does not count as code for context maps, coupling or the Codex
+  automatic review, so it adds no warnings and no model calls. Files above 8 MB (data dumps) are
+  skipped.
+- **Latency budget under test.** The `PreToolUse` hook, which runs on every search, may only import
+  `roots` and `hook-output` at the top; anything heavier must stay behind the lazy `import()`.
+
+### Fixed
+
+- **Windows paths in model-facing text lost every `\s`.** `sanitizeModelText` collapsed whitespace
+  with `/\\s+/`, which matches the literal text `\s` instead of whitespace: `C:\proj\scripts\a.mjs`
+  reached the agent as `C:\proj cripts\a.mjs` in handoffs and resume prompts, and tabs/newlines were
+  never collapsed.
+
 ## [2.2.0] — 2026-10-08
 
 One command installs or updates context-tools for every agent you use, and updating the Claude

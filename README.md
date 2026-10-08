@@ -50,6 +50,14 @@ latest release:
 npx --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes
 ```
 
+On **Windows PowerShell**, use `npx.cmd` instead of `npx`. The default execution policy blocks the
+`npx.ps1` shim that npm installs ("running scripts is disabled on this system"); `npx.cmd` runs the
+same program without changing any security setting:
+
+```powershell
+npx.cmd --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes
+```
+
 Requires Node.js 18+ and the CLI of at least one agent (`claude` or `codex`). It never changes the
 folder you run it from, and never installs an agent CLI you do not already use. Open a new session
 afterwards. On Codex, the first time, open `/hooks` and trust the context-tools hooks once.

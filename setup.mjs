@@ -16,7 +16,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  say, isDir, isFile, ask, latestTag, parseArgs, detectProjectRoot, waitBeforeExit, t,
+  say, isDir, isFile, ask, latestTag, parseArgs, detectProjectRoot, waitBeforeExit, t, run,
 } from './scripts/lib/setup-shared.mjs';
 import { TARGETS, resolveTargets } from './scripts/lib/setup-targets.mjs';
 import { runSetup, chooseGuidedRoot } from './scripts/lib/setup-engine.mjs';
@@ -33,8 +33,21 @@ function detectExistingTargetIds(root) {
   return found;
 }
 
+// Global não olha projeto nenhum: instala para cada agente cuja CLI já existe na máquina. Nunca
+// instala a CLI de um agente que a pessoa não usa só porque pediu "global".
+function availableTargetIds() {
+  return Object.values(TARGETS)
+    .filter((adapter) => run(adapter.bin, ['--version']).status === 0)
+    .map((adapter) => adapter.id);
+}
+
 async function chooseTargetIds(root, flags) {
   if (flags.target) return String(flags.target).split(',').map((value) => value.trim()).filter(Boolean);
+  if (flags.global) {
+    const available = availableTargetIds();
+    if (!available.length) throw new Error(t('setup.global.noCli'));
+    return available;
+  }
   const detected = detectExistingTargetIds(root);
   if (detected.length === 1) return detected;
   if (flags.yes || !isInteractive()) return detected.length ? detected : ['both'];
@@ -58,7 +71,7 @@ async function main() {
   if (command === 'latest') { say(latestTag(TARGETS.codex.repositoryUrl) || t('setup.run.localFallback', { versao: PACKAGE.version })); return; }
 
   const detectedRoot = detectProjectRoot(process.cwd(), explicitProject);
-  const root = await chooseGuidedRoot(detectedRoot, flags);
+  const root = flags.global ? detectedRoot : await chooseGuidedRoot(detectedRoot, flags);
   if (!isDir(root)) throw new Error(t('setup.notFound', { raiz: root }));
 
   const targetIds = await chooseTargetIds(root, flags);

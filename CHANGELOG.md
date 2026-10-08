@@ -8,6 +8,21 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **One command to install or update globally:** `context-tools-setup-all --global --yes`. It
+  covers every agent whose CLI is installed (Claude Code in the `user` scope, Codex globally),
+  never installs a CLI you do not use, and writes nothing into the folder it runs from.
+
+### Fixed
+
+- **The guided setup never updated the Claude plugin.** `claude plugin install` on an installed
+  plugin only answers "already installed"; the setup now runs `claude plugin update` in that case.
+- **The setup could not see an installed Claude plugin.** `claude plugin list --json` returns a
+  top-level array and the parser only looked for an object, so every run reinstalled from scratch.
+- **Windows with the native Claude Code installer.** The setup called `claude.cmd`, which only the
+  npm install provides; it now lets `cmd.exe` resolve `claude.exe` or `claude.cmd`.
+
 ## [2.1.0] — 2026-10-08
 
 The guided setup now speaks your language, maps stay fresh across operating systems, and git

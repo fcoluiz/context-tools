@@ -598,6 +598,18 @@ o usuário para um beco sem saída.
 
 ## Instalação
 
+### Instalar ou atualizar globalmente (recomendado)
+
+```bash
+npx --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes
+```
+
+Instala ou atualiza a última versão para todo agente cujo CLI existe na máquina (Claude Code no
+escopo `user`, Codex de forma global), sem tocar em nenhum projeto. Rodar de novo atualiza: no
+Claude usa `claude plugin update` quando o plugin já está instalado; no Codex adiciona de novo o
+marketplace na tag nova, o que o CLI do Codex exige para trocar de versão. `--target=claude|codex`
+limita a um agente. As seções abaixo descrevem as alternativas por projeto e manuais.
+
 ### Como plugin (recomendado)
 
 ```bash

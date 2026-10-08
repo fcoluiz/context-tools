@@ -3,7 +3,7 @@
 // configure/help igual para Codex e Claude — só o que o adapter fornece muda de um para o outro.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { isManagedCodexHook } from './setup-targets.mjs';
+import { installedRef, isManagedCodexHook } from './setup-targets.mjs';
 import {
   say, isDir, isFile, run, jsonOutput, latestTag, relativeExtra, parseExtraSelection, t, useSetupConfigLang,
   normalizeSetupLanguage, ask, confirm, explainFailure, workspaceCandidates,
@@ -56,18 +56,35 @@ async function ensureCli(adapter, flags) {
   return installed.status === 0;
 }
 
-async function ensureMarketplace(adapter, ref, flags) {
+// `--global` instala para o usuário (todos os projetos) em vez de só no projeto atual. O Codex já é
+// sempre global; no Claude isso escolhe o escopo `user`.
+const scopeOpts = (flags) => ({ global: Boolean(flags.global) });
+
+// Um plugin listado em OUTRO escopo (ex.: projeto, quando se pede global) não conta como instalado
+// aqui. O Codex não informa escopo — para ele, listado é instalado.
+function installedHere(adapter, flags) {
   const installed = pluginInfo(adapter).installed;
-  if (installed?.source?.ref === ref || installed?.ref === ref) return true;
+  if (!installed) return undefined;
+  if (installed.scope && installed.scope !== (flags.global ? 'user' : 'project')) return undefined;
+  return installed;
+}
+
+async function ensureMarketplace(adapter, ref, flags) {
+  const opts = scopeOpts(flags);
+  if (installedRef(installedHere(adapter, flags)) === ref) return true;
 
   const marketplace = marketplaceInfo(adapter).marketplace;
   if (marketplace) {
     const replace = await confirm(t('setup.mkt.replaceAsk', { nome: adapter.marketplaceName, ref }), true, flags.yes);
     if (!replace) return false;
-    const removed = run(adapter.bin, adapter.marketplaceRemoveArgs(adapter.marketplaceName), { stdio: 'inherit' });
-    if (removed.status !== 0) { explainFailure(t('setup.mkt.removeStep', { nome: adapter.marketplaceName }), removed); return false; }
+    // O Claude sobrescreve o marketplace ao adicioná-lo de novo, então não remove antes (é um passo
+    // a menos que pode falhar). O Codex exige a remoção para trocar de tag.
+    if (!adapter.marketplaceAddReplaces) {
+      const removed = run(adapter.bin, adapter.marketplaceRemoveArgs(adapter.marketplaceName, opts), { stdio: 'inherit' });
+      if (removed.status !== 0) { explainFailure(t('setup.mkt.removeStep', { nome: adapter.marketplaceName }), removed); return false; }
+    }
   }
-  const added = run(adapter.bin, adapter.marketplaceAddArgs(adapter.repository, ref), { stdio: 'inherit' });
+  const added = run(adapter.bin, adapter.marketplaceAddArgs(adapter.repository, ref, opts), { stdio: 'inherit' });
   if (added.status !== 0) { explainFailure(t('setup.mkt.addStep', { nome: adapter.marketplaceName }), added); return false; }
   say(t('setup.mkt.done', { nome: adapter.marketplaceName, ref }));
   warnLegacyMarketplaces(adapter);
@@ -88,8 +105,15 @@ function warnLegacyMarketplaces(adapter) {
   }
 }
 
-function installPlugin(adapter) {
-  const result = run(adapter.bin, adapter.pluginInstallArgs('context-tools', adapter.marketplaceName), { stdio: 'inherit' });
+function installPlugin(adapter, flags) {
+  const opts = scopeOpts(flags);
+  // Plugin já instalado: no Claude, `install` só responde "already installed" e não atualiza —
+  // é `update` que traz a versão nova. O Codex não tem `update`: `add` reinstala da tag atual.
+  const update = Boolean(installedHere(adapter, flags) && adapter.pluginUpdateArgs);
+  const args = update
+    ? adapter.pluginUpdateArgs('context-tools', adapter.marketplaceName, opts)
+    : adapter.pluginInstallArgs('context-tools', adapter.marketplaceName, opts);
+  const result = run(adapter.bin, args, { stdio: 'inherit' });
   if (result.status !== 0) { explainFailure(t('setup.plugin.installStep'), result); return false; }
   say(t('setup.plugin.done', { agente: adapter.label }));
   return true;
@@ -280,7 +304,7 @@ export async function runSetup(adapter, ctx, { command, root, flags }) {
   }
   if (command === 'configure') { await configure(adapter, root, flags, true); return 0; }
   if (flags['dry-run']) {
-    say(t('setup.run.detected', { agente: adapter.label, raiz: root }));
+    say(flags.global ? t('setup.run.global', { agente: adapter.label }) : t('setup.run.detected', { agente: adapter.label, raiz: root }));
     say(t('setup.run.version', {
       agente: adapter.label,
       ref: flags.ref || t('setup.run.localSim', { versao: ctx.packageVersion }),
@@ -291,13 +315,16 @@ export async function runSetup(adapter, ctx, { command, root, flags }) {
   if (!(await ensureCli(adapter, flags))) return 1;
 
   const ref = flags.ref || latestTag(adapter.repositoryUrl) || `v${ctx.packageVersion}`;
-  say(t('setup.run.detected', { agente: adapter.label, raiz: root }));
+  const global = Boolean(flags.global);
+  say(global ? t('setup.run.global', { agente: adapter.label }) : t('setup.run.detected', { agente: adapter.label, raiz: root }));
   say(t('setup.run.version', { agente: adapter.label, ref }));
-  if (!(await ensureMarketplace(adapter, ref, flags)) || !installPlugin(adapter) || !bootstrap(adapter, ctx, root, flags)) {
+  // Global não prepara nenhum projeto: nada é escrito na pasta onde o comando foi rodado.
+  if (!(await ensureMarketplace(adapter, ref, flags)) || !installPlugin(adapter, flags)
+    || (!global && !bootstrap(adapter, ctx, root, flags))) {
     say(t('setup.run.failed', { agente: adapter.label }));
     return 1;
   }
-  if (!flags['no-workspace']) await configure(adapter, root, flags);
+  if (!global && !flags['no-workspace']) await configure(adapter, root, flags);
   say(t('setup.run.done', { agente: adapter.label }));
   say(t('setup.run.newSession', { agente: adapter.label }));
   if (adapter.needsHookTrustReminder) say(t('setup.run.hookTrust'));

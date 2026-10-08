@@ -22,11 +22,19 @@ function findByNameAndMarketplace(list, plugin, marketplace) {
   if (!Array.isArray(list)) return undefined;
   return list.find((item) => {
     if (!item || typeof item !== 'object') return false;
-    if (item.pluginId === `${plugin}@${marketplace}`) return true;
+    // Codex lista `pluginId`; o Claude lista `id` (ambos "plugin@marketplace").
+    if (item.pluginId === `${plugin}@${marketplace}` || item.id === `${plugin}@${marketplace}`) return true;
     const name = item.name ?? item.plugin;
     const mkt = item.marketplace ?? item.marketplaceName ?? item.source?.marketplace;
     return name === plugin && (mkt === marketplace || mkt === undefined);
   });
+}
+
+// Tag instalada, no formato de cada CLI: o Codex informa `source.ref`; o Claude só informa a
+// `version` do plugin, que é a mesma da tag (o teste de invariantes garante isso).
+export function installedRef(item) {
+  if (!item || typeof item !== 'object') return undefined;
+  return item.source?.ref ?? item.ref ?? (item.version ? `v${item.version}` : undefined);
 }
 
 function pluginListArray(data) {
@@ -80,6 +88,8 @@ export function isManagedCodexHook(command, root = null) {
   return normalize(script) === normalize(join(root, '.codex', 'scripts', script.split('/').at(-1)));
 }
 
+const claudeScope = (opts) => (opts.global ? 'user' : 'project');
+
 export const TARGETS = {
   codex: {
     id: 'codex',
@@ -93,6 +103,9 @@ export const TARGETS = {
     repositoryUrl: REPOSITORY_URL,
     pluginListArgs: ['plugin', 'list', '--json'],
     marketplaceListArgs: ['plugin', 'marketplace', 'list', '--json'],
+    // O Codex é sempre global (por usuário). Um marketplace preso a uma tag não muda de tag com
+    // `add` nem com `upgrade` ("already added from a different source"): trocar de versão exige
+    // remover e adicionar de novo, e então `plugin add` instala a versão nova. Medido no CLI real.
     marketplaceAddArgs: (repo, ref) => ['plugin', 'marketplace', 'add', repo, '--ref', ref],
     marketplaceRemoveArgs: (name) => ['plugin', 'marketplace', 'remove', name],
     pluginInstallArgs: (plugin, marketplace) => ['plugin', 'add', `${plugin}@${marketplace}`],
@@ -126,9 +139,16 @@ export const TARGETS = {
     // O CLI do Claude não aceita `--ref` (isso é só do Codex): a tag entra como sufixo
     // `owner/repo@vX.Y.Z` no próprio source. Confirmado batendo de frente com o CLI real —
     // `--ref` deu "error: unknown option '--ref'".
-    marketplaceAddArgs: (repo, ref) => ['plugin', 'marketplace', 'add', `${repo}@${ref}`, '--scope', 'project'],
-    marketplaceRemoveArgs: (name) => ['plugin', 'marketplace', 'remove', name, '--scope', 'project'],
-    pluginInstallArgs: (plugin, marketplace) => ['plugin', 'install', `${plugin}@${marketplace}`, '--scope', 'project'],
+    //
+    // `--global` usa o escopo `user` (todos os projetos); sem ele, `project`. Medido no CLI real:
+    // `marketplace add` com uma tag nova SOBRESCREVE o marketplace existente (sem remover), e
+    // `plugin install` num plugin já instalado só diz "already installed" — atualizar exige
+    // `plugin update`.
+    marketplaceAddArgs: (repo, ref, opts = {}) => ['plugin', 'marketplace', 'add', `${repo}@${ref}`, '--scope', claudeScope(opts)],
+    marketplaceRemoveArgs: (name, opts = {}) => ['plugin', 'marketplace', 'remove', name, '--scope', claudeScope(opts)],
+    marketplaceAddReplaces: true,
+    pluginInstallArgs: (plugin, marketplace, opts = {}) => ['plugin', 'install', `${plugin}@${marketplace}`, '--scope', claudeScope(opts)],
+    pluginUpdateArgs: (plugin, marketplace, opts = {}) => ['plugin', 'update', `${plugin}@${marketplace}`, '--scope', claudeScope(opts)],
     findInstalled: (data, plugin, marketplace) => findByNameAndMarketplace(pluginListArray(data), plugin, marketplace),
     findMarketplace: (data, marketplace) => marketplaceListArray(data)?.find((item) => item?.name === marketplace),
     bootstrapArgs: (repoRoot, projectRoot) => [join(repoRoot, 'install.mjs'), projectRoot, '--target=claude', '--no-hooks'],

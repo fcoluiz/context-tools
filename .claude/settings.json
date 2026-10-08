@@ -1,0 +1,54 @@
+{
+  "$comment": "Hooks apontam para o scripts/ DA PRÓPRIA FONTE, não para .claude/scripts/. Rodar o install.mjs aqui dentro criaria uma segunda cópia dos scripts dentro do repo que os define — o índice de símbolos passaria a ver cada símbolo duas vezes, e um bug corrigido na fonte continuaria vivo na cópia.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/context-maps.mjs\" --session-start"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/handoff.mjs\" --session-start"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/claude-md-hint.mjs\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/context-maps.mjs\" --stop-report"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/coupling.mjs\" --changed --hook"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/handoff.mjs\" --stop-report"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/pre-tool.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}

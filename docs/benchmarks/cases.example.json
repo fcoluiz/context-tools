@@ -1,0 +1,33 @@
+{
+  "$comment": "Example gold set: runs against this repository itself. Copy to cases.local.json (ignored by git) and point it at your own projects. 'root' may be absolute or relative to this file; 'expected' is file:line relative to root. Line numbers drift as the code changes.",
+  "cases": [
+    {
+      "id": "self.build-index",
+      "root": "../..",
+      "query": "buildIndex",
+      "globs": ["*.mjs"],
+      "expected": ["scripts/symbols.mjs:258"]
+    },
+    {
+      "id": "self.build-context-pack",
+      "root": "../..",
+      "query": "buildContextPack",
+      "globs": ["*.mjs"],
+      "expected": ["scripts/context-pack.mjs:150"]
+    },
+    {
+      "id": "self.resolve-root",
+      "root": "../..",
+      "query": "resolveRoot",
+      "globs": ["*.mjs"],
+      "expected": ["scripts/lib/roots.mjs:135"]
+    },
+    {
+      "id": "self.load-config",
+      "root": "../..",
+      "query": "loadConfig",
+      "globs": ["*.mjs"],
+      "expected": ["scripts/lib/roots.mjs:504"]
+    }
+  ]
+}

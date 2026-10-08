@@ -59,6 +59,21 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-tool.mjs\""
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(grep *)",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-tool.mjs\""
+          },
+          {
+            "type": "command",
+            "if": "Bash(rg *)",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-tool.mjs\""
+          }
+        ]
       }
     ]
   }

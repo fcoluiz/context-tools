@@ -14,6 +14,7 @@ import { writeHookOutput } from './lib/hook-output.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
 import { transcriptDaSessao } from './lib/sessao.mjs';
+import { evaluateFollowThrough, hasPendingAnswers } from './lib/follow-through.mjs';
 import {
   detectTestCommand, listTestFiles, relatedTests, sessionActivity, unverifiedEdits,
 } from './lib/verification.mjs';
@@ -59,14 +60,21 @@ export function verificationReport(root, files, cfg = loadConfig(root)) {
 
 function stopReport(root, cfg, t) {
   if (runtimeHost() === 'codex') return;          // transcript Codex não tem formato estável
-  if (cfg?.verify?.enabled === false) return;
   const sid = sessionId();
   if (!sid) return;
+  const transcript = transcriptDaSessao(root, sid);
+  let parsed = null;
+  const activityOnce = () => (parsed ||= sessionActivity(transcript));
+  // Proveito das respostas do PreToolUse: só lê o transcript se houver resposta a julgar.
+  if (hasPendingAnswers(root, sid)) {
+    for (const outcome of evaluateFollowThrough(root, sid, activityOnce().calls)) recordMetric(root, 'pretool-followup', { outcome });
+  }
+  if (cfg?.verify?.enabled === false) return;
   const statePathFile = statePath(root, '.verify-state.json');
   const store = safe(() => JSON.parse(readFileSync(statePathFile, 'utf8')), null) || {};
   if (store[sid]) return;
 
-  const activity = sessionActivity(transcriptDaSessao(root, sid));
+  const activity = activityOnce();
   if (!activity.edits.length) return;
   const commands = new Map();
   // O comando de cada projeto também conta como "rodou teste" quando aparece literalmente.
@@ -91,7 +99,6 @@ function stopReport(root, cfg, t) {
     if (related.length) lines.push(t('ver.related', { list: related.join(', ') }));
     if (g.command) lines.push(t('ver.command', { cmd: g.command, project: g.project === '.' ? '' : g.project }));
   }
-  lines.push(t('ver.once'));
 
   const now = Date.now();
   for (const [key, at] of Object.entries(store)) if (now - at > STATE_TTL_MS) delete store[key];

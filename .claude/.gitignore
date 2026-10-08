@@ -25,6 +25,7 @@ handoff-*.md
 .session-write-journal/
 .hook-emissions/
 .verify-state.json
+.pre-tool-answers.json
 *.tmp
 *.lock
 context-tools-install.json

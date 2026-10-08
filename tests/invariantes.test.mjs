@@ -125,6 +125,13 @@ test('PreToolUse dispara em Grep no Claude e em Bash no Codex, de propósito', (
   const matcherDoPreTool = (...manifesto) => readJson(...manifesto).hooks.PreToolUse
     .find((grupo) => grupo.hooks.some((hook) => /pre-tool\.mjs/.test(hook.command)))?.matcher || '';
   assert.deepEqual(matcherDoPreTool('hooks', 'hooks.json').split('|'), ['Grep']);
+  // No Claude, `grep`/`rg` digitados no Bash também passam pelo pre-tool — mas SÓ eles: cada
+  // handler do grupo Bash precisa de `if`, senão o hook custaria uma partida de Node em todo
+  // comando Bash da sessão.
+  const bash = readJson('hooks', 'hooks.json').hooks.PreToolUse.find((grupo) => grupo.matcher === 'Bash');
+  assert.ok(bash, 'o Claude precisa interceptar grep/rg digitados no Bash');
+  assert.deepEqual(bash.hooks.map((hook) => hook.if).sort(), ['Bash(grep *)', 'Bash(rg *)']);
+  assert.ok(bash.hooks.every((hook) => /pre-tool\.mjs/.test(hook.command)));
   for (const manifesto of [['hooks', 'codex-hooks.json'], ['.codex', 'hooks.json']]) {
     const alternativas = matcherDoPreTool(...manifesto).split('|');
     assert.ok(alternativas.includes('Bash'), `${manifesto.join('/')}: pre-tool precisa disparar em Bash`);

@@ -106,33 +106,40 @@ export function relatedTests(repoPath, file, testFiles = listTestFiles(repoPath)
 
 function toolBlocks(line) {
   const o = safe(() => JSON.parse(line), null);
-  if (!o || o.type !== 'assistant' || !Array.isArray(o.message?.content)) return [];
-  return o.message.content.filter((c) => c && c.type === 'tool_use' && typeof c.name === 'string');
+  if (!o || o.type !== 'assistant' || !Array.isArray(o.message?.content)) return { at: NaN, blocks: [] };
+  return {
+    at: Date.parse(o.timestamp),
+    blocks: o.message.content.filter((c) => c && c.type === 'tool_use' && typeof c.name === 'string'),
+  };
 }
 
 /**
- * Sequência mecânica do transcript Claude: edições e comandos de shell, em ordem.
+ * Sequência mecânica do transcript Claude: edições e comandos de shell, em ordem, e todas as
+ * chamadas com instante e caminhos tocados (para medir se a resposta do índice foi usada).
  * Formato inesperado vira lista vazia — nunca lança.
  */
 export function sessionActivity(transcriptPath) {
   const raw = transcriptPath ? safe(() => readFileSync(transcriptPath, 'utf8'), '') : '';
   const edits = [];
   const commands = [];
+  const calls = [];
   let seq = 0;
   for (const line of raw.split('\n')) {
     if (!line.includes('"tool_use"')) continue;
-    for (const block of toolBlocks(line)) {
+    const { at, blocks } = toolBlocks(line);
+    for (const block of blocks) {
       seq++;
       const input = block.input || {};
+      const paths = [input.file_path, input.notebook_path, input.path].filter((p) => typeof p === 'string' && p);
+      if (Number.isFinite(at)) calls.push({ seq, at, paths });
       if (EDIT_TOOLS.has(block.name)) {
-        const path = input.file_path || input.notebook_path || input.path;
-        if (typeof path === 'string' && path) edits.push({ seq, path });
+        if (paths[0]) edits.push({ seq, path: paths[0] });
       } else if (SHELL_TOOLS.has(block.name) && typeof input.command === 'string') {
         commands.push({ seq, command: input.command.slice(0, 4000) });
       }
     }
   }
-  return { edits, commands };
+  return { edits, commands, calls };
 }
 
 export function looksLikeTestRun(command, extra = []) {

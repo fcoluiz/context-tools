@@ -761,7 +761,7 @@ projeto; `--project <caminho>` só é necessário ao administrar outro projeto.
 
 | evento | o que faz | custo |
 |---|---|---|
-| `PreToolUse` (Grep / Bash) | responde antes do Grep do Claude ou de um comando `rg`/`grep` do Codex quando o padrão é um símbolo | só quando responde |
+| `PreToolUse` (Grep / Bash) | responde antes do Grep do Claude, de um `grep`/`rg` digitado no Bash do Claude (filtro `if` do hook: sem custo nos outros comandos) ou de um `rg`/`grep` do Codex quando o padrão é um símbolo; anota os arquivos indicados para o `health.mjs` dizer se o agente os usou (Claude) | só quando responde |
 | `UserPromptSubmit` (Codex) | confere cada arquivo citado contra o fingerprint próprio no mapa; só injeta contexto se estiver defasado, sem cobertura ou sem verificação possível | sem chamada a modelo; um processo local por prompt |
 | `Stop` | Claude avisa quando a sessão fica cara e grava o handoff; Codex apenas registra métricas | **uma vez por sessão** |
 | `Stop` | entrega o prompt de retomada, assim que o bloco volátil é preenchido | uma vez por sessão |

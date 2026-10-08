@@ -29,6 +29,8 @@ function summarizeMetrics(events, days, now) {
   const observedSearches = recent.filter((event) => event.type === 'pretool' && typeof event.outcome === 'string');
   const outcomes = {};
   for (const event of observedSearches) outcomes[event.outcome] = (outcomes[event.outcome] || 0) + 1;
+  const followThrough = { used: 0, ignored: 0 };
+  for (const event of recent) if (event.type === 'pretool-followup' && (event.outcome === 'used' || event.outcome === 'ignored')) followThrough[event.outcome]++;
   const pretoolDurations = {};
   for (const event of observedSearches) {
     if (!Number.isFinite(event.durationMs) || event.durationMs < 0) continue;
@@ -112,6 +114,7 @@ function summarizeMetrics(events, days, now) {
       outcomes,
       responsesEmitted: (outcomes.hit || 0) + (outcomes.pack || 0),
       handlerDuration: pretoolDurationSummary,
+      followThrough,
     },
     unsupportedLanguageLookups: languageDemand,
     symbolLookups,
@@ -226,7 +229,7 @@ function buildReport(root, days, includeAudit) {
       ...(docs.language === 'pt' ? [
         'As métricas são locais e limitadas; prompts, conteúdo-fonte e comandos completos não são armazenados.',
         'O hook de preflight não grava duração por mensagem; use benchmark:prompt-audit para medir p50/p95 local com entradas sintéticas.',
-        'As contagens de PreToolUse mostram buscas semelhantes a símbolos registradas e respostas emitidas, não se o agente as usou.',
+        'As contagens de PreToolUse mostram buscas semelhantes a símbolos e respostas emitidas; "respostas aproveitadas" mede, só no Claude, se um arquivo indicado foi aberto ou editado nas 6 chamadas seguintes — correlação, não causa.',
         'Consultas diretas a symbols indicam se o índice localizou símbolo/arquivo ou não, não se o agente usou o resultado.',
         'A duração do handler aparece apenas para buscas de símbolo reconhecidas; use benchmark-pretool para medir o processo Bash ponta a ponta sob demanda.',
         'A estimativa de tokens da revisão automática cobre somente o texto do hook (caracteres ÷ 4); não é uso faturado e não inclui leituras de fonte, contexto anterior ou resposta do modelo.',
@@ -238,7 +241,7 @@ function buildReport(root, days, includeAudit) {
       ] : [
         'All metrics are local and bounded; prompts, source contents and full commands are not stored.',
         'The preflight hook does not record per-message duration; use benchmark:prompt-audit for a local p50/p95 measurement with synthetic inputs.',
-        'PreToolUse counts describe recorded symbol-like searches and answers emitted, not whether the agent used them.',
+        'PreToolUse counts describe symbol-like searches and answers emitted; "answers used" measures, on Claude only, whether an indicated file was opened or edited within the next 6 calls — correlation, not cause.',
         'Direct symbols counts describe whether the local index found a symbol/file, not whether the agent used the result.',
         'Handler duration is shown only for recognized symbol searches; use benchmark-pretool for an on-demand end-to-end Bash process measurement.',
         'Automatic-review token estimates cover only hook text (characters ÷ 4); they are not billed usage and exclude source reads, prior context and model output.',
@@ -300,6 +303,8 @@ function printHuman(report, portuguese) {
   if (m.pretool.observedSymbolSearches) {
     const outcomes = Object.entries(m.pretool.outcomes).map(([name, count]) => `${name} ${count}`).join(' · ');
     console.log(`  PreToolUse: ${m.pretool.responsesEmitted} ${say('resposta(s) emitida(s)', 'response(s) emitted')} / ${m.pretool.observedSymbolSearches} ${say('busca(s) de símbolo registrada(s)', 'recorded symbol search(es)')} (${outcomes}).`);
+    const ft = m.pretool.followThrough || { used: 0, ignored: 0 };
+    if (ft.used + ft.ignored) console.log(`  ${say('Respostas aproveitadas', 'Answers used')}: ${ft.used}/${ft.used + ft.ignored} ${say('(arquivo indicado aberto ou editado nas 6 chamadas seguintes; só Claude)', '(an indicated file was opened or edited within the next 6 calls; Claude only)')}`);
     for (const [host, values] of Object.entries(m.pretool.handlerDuration)) {
       console.log(`  ${say('Handler', 'Handler')} ${host}: p50 ${values.p50Ms} ms · p95 ${values.p95Ms} ms (${values.samples} ${say('amostra(s)', 'sample(s)')})`);
     }

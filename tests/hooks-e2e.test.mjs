@@ -1068,7 +1068,7 @@ test('E2E: sem git, auditoria global detecta conteúdo alterado mesmo com mtime 
     utimesSync(fonte, mtime, mtime);
     const report = contextMapsStopReport(raiz);
     assert.match(report, /src\/a\.js/, 'o hash detecta mudança apesar do mtime antigo');
-    assert.match(report, /source_digest: sha256:[a-f0-9]{64}/);
+    assert.match(report, /ack.mjs/);
 
     const digest = fingerprintSourcesInRoot(raiz, ['src/a.js']).digest;
     writeFileSync(mapa, `---\narea: "minha-area"\ncovers:\n  - "src/a.js"\nverified_at: 2021-01-01\nsource_digest: ${digest}\n---\n`);

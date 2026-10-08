@@ -333,9 +333,9 @@ function stopReport(root, t) {
     store[sid] = novo;
     safe(() => { mkdirSync(stateDir(root), { recursive: true }); writeFileSync(arq, JSON.stringify(store)); }, null);
   };
-  const emitir = (texto) => writeHookOutput(root, {
+  const emitir = (texto, opts = {}) => writeHookOutput(root, {
     hookSpecificOutput: { hookEventName: 'Stop', additionalContext: texto },
-  });
+  }, opts);
 
   const destino = caminhoDoHandoff(root, sid);
 
@@ -362,7 +362,7 @@ function stopReport(root, t) {
     const pArq = destino.replace(/\.md$/, '.prompt.md');
     const salvo = safe(() => { writeFileSync(pArq, prompt); return true; }, false);
     salvar({ ...estado, prompt: Date.now() });
-    emitir(`${t('ses.promptPronto', { arq: salvo ? relPath(root, pArq) : null })}\n\n${prompt}`);
+    emitir(`${t('ses.promptPronto', { arq: salvo ? relPath(root, pArq) : null })}\n\n${prompt}`, { cap: false });
     return;
   }
 

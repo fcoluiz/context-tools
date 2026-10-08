@@ -90,6 +90,15 @@ export function scriptDir() {
   return dirname(dirname(fileURLToPath(import.meta.url)));   // .../scripts
 }
 
+/** Como o agente invoca um script daqui: variável do plugin quando houver, senão caminho relativo. */
+export function scriptCommand(root, name) {
+  if (process.env.CLAUDE_PLUGIN_ROOT) return `node "$CLAUDE_PLUGIN_ROOT/scripts/${name}"`;
+  if (process.env.PLUGIN_ROOT) return `node "$PLUGIN_ROOT/scripts/${name}"`;
+  const full = join(scriptDir(), name);
+  const rel = relative(root, full).replace(/\\/g, '/');
+  return rel && !rel.startsWith('..') ? `node ${rel}` : `node "${full.replace(/\\/g, '/')}"`;
+}
+
 /** Host da integração atual. Ausência mantém exatamente o comportamento Claude anterior. */
 export function runtimeHost(env = process.env, script = process.argv[1]) {
   if (env.CONTEXT_TOOLS_HOST === 'codex') return 'codex';

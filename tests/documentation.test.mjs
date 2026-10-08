@@ -163,7 +163,7 @@ test('Stop usa hash offline para ignorar mtime e detectar mudança de conteúdo 
     utimesSync(source, mtime, mtime);
     const report = documentationStopReport(root, { lang: 'pt' });
     assert.match(report, /Operational documentation needs source review/);
-    assert.match(report, /source_digest: sha256:[a-f0-9]{64}/);
+    assert.match(report, /ack.mjs/);
 
     const digest = fingerprintSourcesInRoots([{ root, path: source, id: './src/sample.mjs' }]).digest;
     writeFileSync(document, `# Fluxo\n\n- Source: src/sample.mjs\n- Last reviewed: 2021-01-01\n- source_digest: ${digest}\n`);

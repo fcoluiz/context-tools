@@ -25,8 +25,10 @@ import {
   loadConfig,
   relPath,
   resolveRoot,
+  runtimeHost,
   safe,
   sanitizeModelText,
+  scriptCommand,
   statePath,
   walk,
 } from './roots.mjs';
@@ -729,6 +731,12 @@ export function documentationStopReport(root = resolveRoot(), cfg = loadConfig(r
     const overflow = scopedSourceFiles.length > Object.keys(sourceFingerprints).length
       ? `; ${scopedSourceFiles.length - Object.keys(sourceFingerprints).length} additional source(s) remain pending for a later review`
       : '';
+    // Claude: o hash é gravado pelo `ack.mjs` depois da revisão; o modelo não copia SHA-256.
+    // O Codex mantém o formato que a fila de revisão automática dele consome.
+    if (runtimeHost() !== 'codex') {
+      stale.push(sanitizeModelText(`${document.path}; changed: ${list}${overflow}${hint}; after reviewing, record it: ${scriptCommand(root, 'ack.mjs')} ${document.path}`, 600));
+      continue;
+    }
     stale.push(sanitizeModelText(`source_fingerprints: ${JSON.stringify(sourceFingerprints)}; source_digest: ${fingerprint.digest} (set only when every current reference has a matching per-source fingerprint; otherwise preserve its current value); ${document.path}; changed: ${list}${overflow}${hint}`, 1600));
   }
   for (const repo of repos) {

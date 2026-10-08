@@ -26,6 +26,7 @@ handoff-*.md
 .hook-emissions/
 .verify-state.json
 .pre-tool-answers.json
+.document-updates/
 *.tmp
 *.lock
 context-tools-install.json

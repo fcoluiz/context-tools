@@ -8,6 +8,11 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-10-08
+
+The guided setup now speaks your language, maps stay fresh across operating systems, and git
+projects reached through a path alias are recognized again.
+
 ### Added
 
 - **Cross-file invariants under test** (`tests/invariantes.test.mjs`): the version declared in the

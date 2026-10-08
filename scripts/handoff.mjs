@@ -35,7 +35,7 @@ import {
 } from './lib/sessao.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
-import { fingerprintSourcesInRoot, parseSourceFingerprints } from './lib/source-fingerprints.mjs';
+import { fingerprintSourcesInRoot, parseSourceFingerprints, sameDigest, sameSource } from './lib/source-fingerprints.mjs';
 
 const git = (repo, args) => safe(() => execFileSync('git', args, {
   cwd: repo, encoding: 'utf8', timeout: 20000, maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'],
@@ -221,9 +221,12 @@ function mapasRelevantes(repoPath, arquivos) {
     let defasado = false;
     if (sourceDigest) {
       const current = fingerprintSourcesInRoot(repoPath, cobre);
-      if (sourceDigest !== current.digest) {
+      if (!sameDigest(current, sourceDigest)) {
         if (sourceFingerprints.present && sourceFingerprints.valid) {
-          defasado = casa.some((file) => sourceFingerprints.sources[file.replace(/\\/g, '/')] !== current.sources[file.replace(/\\/g, '/')]);
+          defasado = casa.some((file) => {
+            const id = file.replace(/\\/g, '/');
+            return !sameSource(current, id, sourceFingerprints.sources[id]);
+          });
         } else defasado = true;
       }
     } else if (ver && /^[0-9a-fA-F]{7,40}$|^HEAD$/.test(ver)) {

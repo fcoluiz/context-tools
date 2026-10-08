@@ -23,7 +23,7 @@ jobs:
         node: [18, 22]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # Os testes de mapa de contexto comparam commits; sem histórico, git diff falha.
           fetch-depth: 0
@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - shell: bash
         run: |
           if grep -qE '"(dependencies|devDependencies)"' package.json; then

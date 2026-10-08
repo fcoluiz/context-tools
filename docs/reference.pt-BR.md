@@ -719,13 +719,16 @@ Se o Git não conseguir acessar o repositório, o launcher informa a etapa que f
 silenciosamente; corrija a causa e execute o mesmo arquivo novamente. Ao concluir, ele informa explicitamente o
 sucesso e mantém a janela guiada aberta até você pressionar Enter.
 
-Para uma instalação guiada por arquivo, use o launcher correspondente ao sistema e ao agente
-desejado:
+Para uma instalação guiada por arquivo, use o launcher correspondente ao sistema:
 
-- Windows: `setup-codex.bat`, `setup-claude.bat` ou `setup.bat`.
-- PowerShell: `setup-codex.ps1`, `setup-claude.ps1` ou `setup.ps1`.
-- Linux: `setup-codex.sh`, `setup-claude.sh` ou `setup.sh`.
-- macOS: clique duas vezes em `setup-codex.command`, `setup-claude.command` ou `setup.command`.
+- Windows: `setup.bat`.
+- PowerShell: `setup.ps1`.
+- Linux: `setup.sh`.
+- macOS: clique duas vezes em `setup.command`.
+
+Há uma família de launchers, não uma por agente: todos repassam os argumentos ao `setup.mjs`,
+então `setup.bat --target=codex` instala só a camada Codex. Sem `--target`, o launcher pergunta qual
+agente instalar ou detecta pelo projeto.
 
 Cada launcher faz instalação e atualização. Se estiver no checkout do plugin, usa o utilitário local;
 se for apenas o arquivo do launcher, baixa a versão atual pelo `npx`. Eles perguntam o projeto quando

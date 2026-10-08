@@ -16,7 +16,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  say, isDir, isFile, ask, latestTag, parseArgs, detectProjectRoot, waitBeforeExit,
+  say, isDir, isFile, ask, latestTag, parseArgs, detectProjectRoot, waitBeforeExit, t,
 } from './scripts/lib/setup-shared.mjs';
 import { TARGETS, resolveTargets } from './scripts/lib/setup-targets.mjs';
 import { runSetup, chooseGuidedRoot } from './scripts/lib/setup-engine.mjs';
@@ -38,41 +38,28 @@ async function chooseTargetIds(root, flags) {
   const detected = detectExistingTargetIds(root);
   if (detected.length === 1) return detected;
   if (flags.yes || !isInteractive()) return detected.length ? detected : ['both'];
-  say('\nPara quais agentes instalar o context-tools?');
-  say('  1. Claude');
-  say('  2. Codex');
-  say('  3. Ambos');
-  const answer = (await ask('Escolha [1/2/3] (Enter = ambos): ', '3')).trim();
+  say(t('setup.target.ask'));
+  say(t('setup.target.optClaude'));
+  say(t('setup.target.optCodex'));
+  say(t('setup.target.optBoth'));
+  const answer = (await ask(t('setup.target.prompt'), '3')).trim();
   if (answer === '1') return ['claude'];
   if (answer === '2') return ['codex'];
   return ['both'];
 }
 
 function help() {
-  say(`context-tools setup — instalação e manutenção unificada (Claude e/ou Codex)
-
-Uso:
-  node setup.mjs [install|update] [--project <diretório>] [--target=claude|codex|both]
-  node setup.mjs status [--project <diretório>] [--json] [--target=...]
-  node setup.mjs doctor [--project <diretório>] [--json] [--target=...]
-  node setup.mjs latest
-  node setup.mjs configure [--project <diretório>] [--target=...]
-
-Sem --target, o agente é detectado pelo projeto (.codex/AGENTS.md, .claude/CLAUDE.md); se achar
-os dois ou nenhum e o terminal for interativo, a escolha é perguntada. As demais opções são as
-mesmas de setup-codex.mjs/setup-claude.mjs: --yes, --guided, --no-workspace, --no-bootstrap,
---extra-repos=..., --remove-extra-repos=..., --lang=pt|en, --ref=vX.Y.Z, --dry-run, --keep-open.
-`);
+  say(t('setup.help.unified', { opcoes: t('setup.help.options') }));
 }
 
 async function main() {
   const { command, project: explicitProject, flags } = parseArgs();
   if (command === 'help') { help(); return; }
-  if (command === 'latest') { say(latestTag(TARGETS.codex.repositoryUrl) || `v${PACKAGE.version} (fallback local)`); return; }
+  if (command === 'latest') { say(latestTag(TARGETS.codex.repositoryUrl) || t('setup.run.localFallback', { versao: PACKAGE.version })); return; }
 
   const detectedRoot = detectProjectRoot(process.cwd(), explicitProject);
   const root = await chooseGuidedRoot(detectedRoot, flags);
-  if (!isDir(root)) throw new Error(`Projeto não encontrado: ${root}`);
+  if (!isDir(root)) throw new Error(t('setup.notFound', { raiz: root }));
 
   const targetIds = await chooseTargetIds(root, flags);
   const adapters = resolveTargets(targetIds);
@@ -87,6 +74,6 @@ async function main() {
 if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
   const { flags } = parseArgs();
   main()
-    .catch((error) => { console.error(`context-tools setup: ${error.message}`); process.exitCode = 1; })
+    .catch((error) => { console.error(t('setup.error', { mensagem: error.message })); process.exitCode = 1; })
     .finally(() => waitBeforeExit(flags));
 }

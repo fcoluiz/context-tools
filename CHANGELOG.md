@@ -8,6 +8,30 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Cross-file invariants under test** (`tests/invariantes.test.mjs`): the version declared in the
+  four places that declare it; key parity across the language catalogs (the `makeT` fallback would
+  otherwise hide a missing key by answering in English); every tool the Claude hooks run having a
+  Codex counterpart, with the plugin and standalone Codex manifests identical; and the deliberate
+  `PreToolUse` matcher split (`Grep` on Claude, `Bash` on Codex, which exposes no Grep tool).
+
+### Changed
+
+- **The guided setup speaks the configured language.** Its messages were hardcoded in Portuguese;
+  they now follow the same chain as every other tool — `CONTEXT_TOOLS_LANG`, then `lang` in
+  `context-tools.json`, then the system locale, defaulting to English. Only the wording changed; no
+  flag, command, or exit code did. The launchers' own messages are in English.
+
+### Removed
+
+- **Eight redundant launchers.** `setup-claude.{bat,ps1,sh,command}` and
+  `setup-codex.{bat,ps1,sh,command}` differed from the `setup.*` family by two tokens each. Every
+  launcher forwards its arguments, so `setup.bat --target=codex` does what `setup-codex.bat` did;
+  without `--target` it asks, or detects the agent from the project. The `setup-claude.mjs` /
+  `setup-codex.mjs` utilities and the `context-tools-setup` / `context-tools-setup-claude` npx entry
+  points are unchanged.
+
 ### Fixed
 
 - **A git repository reached through a path alias is no longer treated as "no git".** `isGitRepo`

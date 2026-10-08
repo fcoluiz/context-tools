@@ -180,6 +180,115 @@ const CAT = {
     'claudemd.added': () => "📌 context-tools: added a short note to CLAUDE.md suggesting you try this plugin before spawning an exploration subagent for symbol lookups — one-time, review/remove it if you don't want it (disable future runs with `\"claudeMdHint\": false` in .claude/context-tools.json).",
     // codex-md-hint (one-time)
     'codexmd.added': () => "📌 context-tools: added a short note to AGENTS.md suggesting you try this plugin before spawning an exploration subagent for symbol lookups — one-time, review/remove it if you don't want it (disable future runs with `\"codexMdHint\": false` in .codex/context-tools.json).",
+
+    // setup guiado (setup.mjs, setup-claude.mjs, setup-codex.mjs)
+    'setup.confirmSuffix': (p) => `[${p.padrao ? 'Y/n' : 'y/N'}]`,
+    'setup.pressEnter': () => '\nPress Enter to close this window... ',
+    'setup.fail.step': (p) => `Failed: ${p.etapa}.`,
+    'setup.fail.auth': () => 'Git could not read the plugin repository. Check the connection and the address; if you use a private fork, configure Git access on this machine (SSH or a credential) and try again.',
+    'setup.fail.detail': (p) => `Detail: ${p.detalhe}`,
+    'setup.fail.noFurther': () => 'No later step was considered complete.',
+    'setup.cli.autoDisabled': (p) => `${p.agente} CLI not found; automatic installation is disabled.`,
+    'setup.cli.installAsk': (p) => `${p.agente} CLI not found. Install ${p.pacote} globally?`,
+    'setup.cli.installStep': (p) => `install the ${p.agente} CLI`,
+    'setup.mkt.replaceAsk': (p) => `Marketplace ${p.nome} already exists. Update it to ${p.ref}?`,
+    'setup.mkt.removeStep': (p) => `remove the old marketplace ${p.nome}`,
+    'setup.mkt.addStep': (p) => `add the marketplace ${p.nome}`,
+    'setup.mkt.done': (p) => `Marketplace ${p.nome} configured at ${p.ref}.`,
+    'setup.plugin.installStep': () => 'install the context-tools plugin',
+    'setup.plugin.done': (p) => `context-tools plugin installed/updated for ${p.agente}.`,
+    'setup.bootstrap.step': () => "prepare the project's local scripts",
+    'setup.lang.invalid': () => 'Invalid language; use pt/português or en/inglês. Portuguese will be used.',
+    'setup.lang.ask': () => 'ai-context language [P]ortuguês/[E]nglish (Enter = Português): ',
+    'setup.lang.unknown': () => 'Language not recognized; Portuguese will be used.',
+    'setup.extra.ignored': (p) => `Ignored path(s): ${p.lista}`,
+    'setup.extra.foundAsk': (p) => `Found ${p.n} nearby repository(ies). Configure extraRepos now?`,
+    'setup.extra.ask': () => 'Enter numbers and/or paths separated by commas (Enter for none): ',
+    'setup.extra.askManual': () => 'Enter additional paths separated by commas (Enter for none): ',
+    'setup.config.saved': (p) => `Configuration saved to ${p.caminho}`,
+    'setup.issue.cliMissing': (p) => `${p.agente} CLI is not available on PATH.`,
+    'setup.issue.notInstalled': () => 'The context-tools plugin is not installed in the configured marketplace.',
+    'setup.issue.bootstrap': () => "The project's bootstrap/hooks are incomplete.",
+    'setup.issue.stale': (p) => `Local bootstrap is at ${p.local}; current source is ${p.fonte}.`,
+    'setup.issue.cliMissingGlobal': (p) => `${p.agente} CLI is not available on PATH; the global version was not verified.`,
+    'setup.issue.globalInactive': () => 'The global plugin is not active.',
+    'setup.issue.localSkill': () => 'A local context-tools skill may hide the global plugin skill; check the copy before removing it.',
+    'setup.issue.hooksUnreadable': () => 'Local hooks could not be analyzed.',
+    'setup.issue.duplicateHooks': () => 'Local context-tools hooks coexist with the global plugin.',
+    'setup.status.hookTrustUnknown': () => 'Hook trust: not verified; check /hooks in Codex.',
+    'setup.mkt.legacy': (p) => `Warning: the old marketplace ${p.nome} is still configured. Remove it so hooks do not run twice:`,
+    'setup.status.agent': (p) => `Agent: ${p.agente}`,
+    'setup.status.project': (p) => `Project: ${p.raiz}`,
+    'setup.status.plugin': (p) => `Plugin: ${p.valor}`,
+    'setup.status.bootstrap': (p) => `Bootstrap: ${p.valor}`,
+    'setup.status.files': (p) => `Mode: ${p.modo}; scripts=${p.scripts}, skill=${p.skill}, hooks=${p.hooks}, ai-context=${p.docs}`,
+    'setup.status.warning': (p) => `Warning: ${p.aviso}`,
+    'setup.status.allGood': () => 'Diagnosis: everything is ready.',
+    'setup.value.notInstalled': () => 'not installed',
+    'setup.value.notRecorded': () => 'not recorded',
+    'setup.value.ok': () => 'ok',
+    'setup.value.missing': () => 'missing',
+    'setup.value.local': () => 'local',
+    'setup.value.plugin': () => 'plugin',
+    'setup.value.notCreated': () => 'not created yet',
+    'setup.run.detected': (p) => `[${p.agente}] Project detected automatically: ${p.raiz}`,
+    'setup.run.version': (p) => `[${p.agente}] Selected version: ${p.ref}`,
+    'setup.run.dryRun': (p) => `[${p.agente}] Simulation: nothing was changed and no dependency or network access was triggered.`,
+    'setup.run.localSim': (p) => `v${p.versao} (local simulation)`,
+    'setup.run.localFallback': (p) => `v${p.versao} (local fallback)`,
+    'setup.run.failed': (p) => `\n[${p.agente}] Installation not completed. Fix the problem reported above and run the same file again.`,
+    'setup.run.done': (p) => `\n[${p.agente}] Installation completed successfully.`,
+    'setup.run.newSession': (p) => `Open a new ${p.agente} session to load the updated version.`,
+    'setup.run.hookTrust': () => 'If Codex asks you to trust the hooks, open /hooks and approve the context-tools hooks once on this machine.',
+    'setup.target.invalid': (p) => `invalid agent: ${p.lista} (use claude, codex or both)`,
+    'setup.target.ask': () => '\nWhich agents should context-tools be installed for?',
+    'setup.target.optClaude': () => '  1. Claude',
+    'setup.target.optCodex': () => '  2. Codex',
+    'setup.target.optBoth': () => '  3. Both',
+    'setup.target.prompt': () => 'Choose [1/2/3] (Enter = both): ',
+    'setup.guided.detected': (p) => `\nDetected project: ${p.raiz}`,
+    'setup.guided.ask': () => 'Press Enter to use this project, or type another path: ',
+    'setup.notFound': (p) => `Project not found: ${p.raiz}`,
+    'setup.error': (p) => `context-tools setup: ${p.mensagem}`,
+    'setup.help.agent': (p) => `context-tools setup — installing and maintaining the ${p.agente} plugin
+
+Usage:
+  node setup-${p.id}.mjs [install|update] [--project <directory>]
+  node setup-${p.id}.mjs status [--project <directory>] [--json]
+  node setup-${p.id}.mjs doctor [--project <directory>] [--json]
+  node setup-${p.id}.mjs latest
+  node setup-${p.id}.mjs configure [--project <directory>]
+
+Options:
+${p.opcoes}`,
+    'setup.help.options': () => `  --yes                 accept the defaults and include detected repositories
+  --guided              ask for/confirm the project folder automatically
+  --no-workspace        do not ask about extraRepos
+  --no-bootstrap        update the plugin without copying files into the project
+  --extra-repos=...     write comma-separated paths into extraRepos
+  --remove-extra-repos=... remove paths from extraRepos
+  --lang=pt|en          set the ai-context language (a new project uses Portuguese)
+  --ref=vX.Y.Z          use a specific tag
+  --dry-run             simulate without changing the project, installing dependencies or using the network
+  --keep-open           keep the guided launcher open when it finishes
+
+The language of these messages follows CONTEXT_TOOLS_LANG, then "lang" in
+<state-dir>/context-tools.json, then the system locale, defaulting to English.
+`,
+    'setup.help.unified': (p) => `context-tools setup — unified installation and maintenance (Claude and/or Codex)
+
+Usage:
+  node setup.mjs [install|update] [--project <directory>] [--target=claude|codex|both]
+  node setup.mjs status [--project <directory>] [--json] [--target=...]
+  node setup.mjs doctor [--project <directory>] [--json] [--target=...]
+  node setup.mjs latest
+  node setup.mjs configure [--project <directory>] [--target=...]
+
+Without --target, the agent is detected from the project (.codex/AGENTS.md, .claude/CLAUDE.md);
+if both or neither are found and the terminal is interactive, you are asked to choose.
+
+Options:
+${p.opcoes}`,
   },
 
   pt: {
@@ -337,6 +446,115 @@ const CAT = {
     'claudemd.added': () => '📌 context-tools: adicionei uma nota curta ao CLAUDE.md sugerindo experimentar este plugin antes de abrir um subagente de exploração pra buscas de símbolo — só uma vez, revise/remova se não quiser. Desligar próximas vezes com `"claudeMdHint": false` em .claude/context-tools.json.',
     // codex-md-hint (única vez)
     'codexmd.added': () => '📌 context-tools: adicionei uma nota curta ao AGENTS.md sugerindo experimentar este plugin antes de abrir um subagente de exploração pra buscas de símbolo — só uma vez, revise/remova se não quiser. Desligar próximas vezes com `"codexMdHint": false` em .codex/context-tools.json.',
+
+    // setup guiado (setup.mjs, setup-claude.mjs, setup-codex.mjs)
+    'setup.confirmSuffix': (p) => `[${p.padrao ? 'S/n' : 's/N'}]`,
+    'setup.pressEnter': () => '\nPressione Enter para fechar esta janela... ',
+    'setup.fail.step': (p) => `Falha: ${p.etapa}.`,
+    'setup.fail.auth': () => 'O Git não conseguiu ler o repositório do plugin. Confira a conexão e o endereço; se estiver usando um fork privado, configure o acesso do Git nesta máquina (SSH ou credencial) e tente novamente.',
+    'setup.fail.detail': (p) => `Detalhe: ${p.detalhe}`,
+    'setup.fail.noFurther': () => 'Nenhuma etapa posterior foi considerada concluída.',
+    'setup.cli.autoDisabled': (p) => `${p.agente} CLI não encontrado; instalação automática desativada.`,
+    'setup.cli.installAsk': (p) => `${p.agente} CLI não encontrado. Instalar ${p.pacote} globalmente?`,
+    'setup.cli.installStep': (p) => `instalar o ${p.agente} CLI`,
+    'setup.mkt.replaceAsk': (p) => `O marketplace ${p.nome} já existe. Atualizar para ${p.ref}?`,
+    'setup.mkt.removeStep': (p) => `remover o marketplace antigo ${p.nome}`,
+    'setup.mkt.addStep': (p) => `adicionar o marketplace ${p.nome}`,
+    'setup.mkt.done': (p) => `Marketplace ${p.nome} configurado em ${p.ref}.`,
+    'setup.plugin.installStep': () => 'instalar o plugin context-tools',
+    'setup.plugin.done': (p) => `Plugin context-tools instalado/atualizado para ${p.agente}.`,
+    'setup.bootstrap.step': () => 'preparar os scripts locais do projeto',
+    'setup.lang.invalid': () => 'Idioma inválido; use pt/português ou en/inglês. Português será usado.',
+    'setup.lang.ask': () => 'Idioma do ai-context [P]ortuguês/[E]nglish (Enter = Português): ',
+    'setup.lang.unknown': () => 'Idioma não reconhecido; Português será usado.',
+    'setup.extra.ignored': (p) => `Caminho(s) ignorado(s): ${p.lista}`,
+    'setup.extra.foundAsk': (p) => `Foram encontrados ${p.n} repositório(s) próximo(s). Configurar extraRepos agora?`,
+    'setup.extra.ask': () => 'Digite números e/ou caminhos separados por vírgula (Enter para nenhum): ',
+    'setup.extra.askManual': () => 'Informe caminhos adicionais separados por vírgula (Enter para nenhum): ',
+    'setup.config.saved': (p) => `Configuração salva em ${p.caminho}`,
+    'setup.issue.cliMissing': (p) => `${p.agente} CLI não está disponível no PATH.`,
+    'setup.issue.notInstalled': () => 'Plugin context-tools não está instalado no marketplace configurado.',
+    'setup.issue.bootstrap': () => 'Bootstrap/hook do projeto está incompleto.',
+    'setup.issue.stale': (p) => `Bootstrap local está em ${p.local}; fonte atual ${p.fonte}.`,
+    'setup.issue.cliMissingGlobal': (p) => `${p.agente} CLI não está disponível no PATH; versão global não verificada.`,
+    'setup.issue.globalInactive': () => 'Plugin global não está ativo.',
+    'setup.issue.localSkill': () => 'Skill local context-tools pode ocultar a skill do plugin global; confira a cópia antes de removê-la.',
+    'setup.issue.hooksUnreadable': () => 'Hooks locais não puderam ser analisados.',
+    'setup.issue.duplicateHooks': () => 'Hooks locais context-tools coexistem com o plugin global.',
+    'setup.status.hookTrustUnknown': () => 'Confiança dos hooks: não verificada; confira /hooks no Codex.',
+    'setup.mkt.legacy': (p) => `Aviso: o marketplace antigo ${p.nome} ainda está configurado. Para não rodar os hooks em dobro, remova-o:`,
+    'setup.status.agent': (p) => `Agente: ${p.agente}`,
+    'setup.status.project': (p) => `Projeto: ${p.raiz}`,
+    'setup.status.plugin': (p) => `Plugin: ${p.valor}`,
+    'setup.status.bootstrap': (p) => `Bootstrap: ${p.valor}`,
+    'setup.status.files': (p) => `Modo: ${p.modo}; scripts=${p.scripts}, skill=${p.skill}, hooks=${p.hooks}, ai-context=${p.docs}`,
+    'setup.status.warning': (p) => `Aviso: ${p.aviso}`,
+    'setup.status.allGood': () => 'Diagnóstico: tudo pronto.',
+    'setup.value.notInstalled': () => 'não instalado',
+    'setup.value.notRecorded': () => 'não registrado',
+    'setup.value.ok': () => 'ok',
+    'setup.value.missing': () => 'faltando',
+    'setup.value.local': () => 'local',
+    'setup.value.plugin': () => 'plugin',
+    'setup.value.notCreated': () => 'ainda não criado',
+    'setup.run.detected': (p) => `[${p.agente}] Projeto detectado automaticamente: ${p.raiz}`,
+    'setup.run.version': (p) => `[${p.agente}] Versão selecionada: ${p.ref}`,
+    'setup.run.dryRun': (p) => `[${p.agente}] Simulação: nenhuma alteração foi feita e nenhuma dependência/rede foi acionada.`,
+    'setup.run.localSim': (p) => `v${p.versao} (simulação local)`,
+    'setup.run.localFallback': (p) => `v${p.versao} (fallback local)`,
+    'setup.run.failed': (p) => `\n[${p.agente}] Instalação não concluída. Corrija o problema indicado e execute o mesmo arquivo novamente.`,
+    'setup.run.done': (p) => `\n[${p.agente}] Instalação concluída com sucesso.`,
+    'setup.run.newSession': (p) => `Abra uma nova sessão do ${p.agente} para carregar a versão atualizada.`,
+    'setup.run.hookTrust': () => 'Se o Codex solicitar confiança dos hooks, abra /hooks e aprove os hooks do context-tools uma vez nesta máquina.',
+    'setup.target.invalid': (p) => `agente inválido: ${p.lista} (use claude, codex ou both)`,
+    'setup.target.ask': () => '\nPara quais agentes instalar o context-tools?',
+    'setup.target.optClaude': () => '  1. Claude',
+    'setup.target.optCodex': () => '  2. Codex',
+    'setup.target.optBoth': () => '  3. Ambos',
+    'setup.target.prompt': () => 'Escolha [1/2/3] (Enter = ambos): ',
+    'setup.guided.detected': (p) => `\nProjeto detectado: ${p.raiz}`,
+    'setup.guided.ask': () => 'Pressione Enter para usar este projeto ou informe outro caminho: ',
+    'setup.notFound': (p) => `Projeto não encontrado: ${p.raiz}`,
+    'setup.error': (p) => `context-tools setup: ${p.mensagem}`,
+    'setup.help.agent': (p) => `context-tools setup — instalação e manutenção do plugin ${p.agente}
+
+Uso:
+  node setup-${p.id}.mjs [install|update] [--project <diretório>]
+  node setup-${p.id}.mjs status [--project <diretório>] [--json]
+  node setup-${p.id}.mjs doctor [--project <diretório>] [--json]
+  node setup-${p.id}.mjs latest
+  node setup-${p.id}.mjs configure [--project <diretório>]
+
+Opções:
+${p.opcoes}`,
+    'setup.help.options': () => `  --yes                 aceita os padrões e inclui repositórios detectados
+  --guided              solicita/confirma a pasta do projeto automaticamente
+  --no-workspace        não pergunta sobre extraRepos
+  --no-bootstrap        atualiza o plugin sem copiar arquivos para o projeto
+  --extra-repos=...     grava caminhos separados por vírgula em extraRepos
+  --remove-extra-repos=... remove caminhos de extraRepos
+  --lang=pt|en          define o idioma do ai-context (novo projeto usa português)
+  --ref=vX.Y.Z          usa uma tag específica
+  --dry-run             simula sem alterar projeto, instalar dependências ou acessar a rede
+  --keep-open           mantém o launcher guiado aberto ao terminar
+
+O idioma destas mensagens segue CONTEXT_TOOLS_LANG, depois "lang" em
+<state-dir>/context-tools.json, depois o locale do sistema, com inglês como padrão.
+`,
+    'setup.help.unified': (p) => `context-tools setup — instalação e manutenção unificada (Claude e/ou Codex)
+
+Uso:
+  node setup.mjs [install|update] [--project <diretório>] [--target=claude|codex|both]
+  node setup.mjs status [--project <diretório>] [--json] [--target=...]
+  node setup.mjs doctor [--project <diretório>] [--json] [--target=...]
+  node setup.mjs latest
+  node setup.mjs configure [--project <diretório>] [--target=...]
+
+Sem --target, o agente é detectado pelo projeto (.codex/AGENTS.md, .claude/CLAUDE.md); se achar
+os dois ou nenhum e o terminal for interativo, a escolha é perguntada.
+
+Opções:
+${p.opcoes}`,
   },
 };
 

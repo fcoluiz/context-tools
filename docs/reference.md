@@ -732,12 +732,16 @@ If Git cannot reach the repository, the launcher reports the failing step instea
 silently; fix the cause and run the same file again. On completion it reports success and a
 guided launcher stays open until you press Enter.
 
-For a guided local launcher, use the file matching the operating system and the agent you want:
+For a guided local launcher, use the file matching the operating system:
 
-- Windows: `setup-codex.bat`, `setup-claude.bat`, or `setup.bat`.
-- PowerShell: `setup-codex.ps1`, `setup-claude.ps1`, or `setup.ps1`.
-- Linux: `setup-codex.sh`, `setup-claude.sh`, or `setup.sh`.
-- macOS: double-click `setup-codex.command`, `setup-claude.command`, or `setup.command`.
+- Windows: `setup.bat`.
+- PowerShell: `setup.ps1`.
+- Linux: `setup.sh`.
+- macOS: double-click `setup.command`.
+
+There is one launcher family, not one per agent: every launcher forwards its arguments to
+`setup.mjs`, so `setup.bat --target=codex` installs only the Codex layer. Without `--target` the
+launcher asks which agent to install, or detects it from the project.
 
 Each launcher handles both installation and updates. When run from the plugin checkout it uses the
 local utility; when distributed as only the launcher file it downloads the current utility through

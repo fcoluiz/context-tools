@@ -23,6 +23,8 @@ handoff-*.md
 .documentation-session-notice.json
 .codex-auto-review-state.json
 .session-write-journal/
+.hook-emissions/
+.verify-state.json
 *.tmp
 *.lock
 context-tools-install.json

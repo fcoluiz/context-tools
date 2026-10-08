@@ -5,6 +5,7 @@
 // continuação limitada; o agente investiga as fontes e preenche o conteúdo semântico.
 
 import { resolveRoot, loadConfig, isMain, sanitizeModelText, statePath } from './lib/roots.mjs';
+import { writeHookOutput } from './lib/hook-output.mjs';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { recordMetric } from './lib/telemetry.mjs';
@@ -23,12 +24,14 @@ function arg(name, fallback = null) {
   return item ? item.slice(name.length + 1) : fallback;
 }
 
-function emitHook(eventName, text, notice = '', autoReview = false) {
+function emitHook(root, eventName, text, notice = '', autoReview = false) {
   if (!text) return;
   const hookSpecificOutput = { hookEventName: eventName, additionalContext: text.slice(0, 3200) };
   if (notice) hookSpecificOutput._contextToolsNotice = notice.slice(0, 1800);
   if (autoReview) hookSpecificOutput._contextToolsAutoReview = true;
-  process.stdout.write(JSON.stringify({ hookSpecificOutput }));
+  // A revisão automática do Codex é uma decisão de continuação, não um aviso: nunca deduplica.
+  if (autoReview) process.stdout.write(JSON.stringify({ hookSpecificOutput }));
+  else writeHookOutput(root, { hookSpecificOutput });
 }
 
 function sessionNotice(root, cfg, context) {
@@ -77,7 +80,7 @@ async function main() {
     // this session's edits from older pending work without asking the model to inspect either.
     try { documentationStopReport(root, cfg, { dedupe: false, sessionOnly: true }); } catch { /* preflight cache is best-effort */ }
     const context = documentationSessionContext(root, cfg);
-    emitHook('SessionStart', context, sessionNotice(root, cfg, context));
+    emitHook(root, 'SessionStart', context, sessionNotice(root, cfg, context));
     return;
   }
   if (mode === '--stop-report') {
@@ -104,7 +107,7 @@ async function main() {
       documentationStopReport(root, cfg, { sessionOnly: true }),
       ...(codex ? [mapReport] : []),
     ].filter(Boolean);
-    emitHook('Stop', reports.join('\n\n'), '', codex);
+    emitHook(root, 'Stop', reports.join('\n\n'), '', codex);
     return;
   }
   if (mode === '--prompt-audit') {
@@ -112,7 +115,7 @@ async function main() {
     try { event = JSON.parse(readFileSync(0, 'utf8') || '{}'); } catch { /* malformed event: no context */ }
     let context = '';
     try { context = contextMapsPromptAudit(root, typeof event.prompt === 'string' ? event.prompt : ''); } catch { /* local audit must never disrupt the user prompt */ }
-    emitHook('UserPromptSubmit', context);
+    emitHook(root, 'UserPromptSubmit', context);
     return;
   }
 

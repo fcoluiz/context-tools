@@ -34,11 +34,13 @@ seu código, então nunca fica defasado.
 | o que a próxima sessão precisa saber? | `handoff.mjs [--salvar]` |
 | um pacote de evidências com orçamento para um símbolo ou arquivo | `context-pack.mjs <símbolo-ou-arquivo> [--budget=N]` |
 | como está a saúde da instalação local? | `health.mjs [--days=30] [--audit] [--json]` |
+| que testes cobrem este arquivo, e como rodá-los? | `verify.mjs <arquivo> [<arquivo>…]` |
 
 O agente não precisa lembrar de nada disso. **Hooks** trazem as ferramentas sozinhos: antes de um
 `grep` por símbolo o índice responde primeiro, a sessão começa com uma lista curta dos mapas de
 contexto que ficaram defasados, e o fim da sessão aponta arquivos que historicamente mudam juntos
-mas não foram editados juntos.
+mas não foram editados juntos — e, uma vez por sessão, código editado depois do último teste. Cada
+mensagem chega uma vez só, mesmo com o plugin e uma cópia standalone instalados juntos.
 
 ## Instalar ou atualizar
 
@@ -113,6 +115,7 @@ nunca apresentado como definição.
 | `.pas .dpr .dpk .inc` (Delphi/Pascal) | ✅ | ✅ |
 | `.dfm .fmx` (forms Delphi) | — de propósito | ✅ |
 | `.md` | — | ✅ (seções) |
+| `.sql` (tabelas, colunas, views, procedures…) | ✅ só no índice | ✅ |
 
 `coupling` e `audit-docs` funcionam com qualquer linguagem. Cada parser é conferido contra código de
 produção de terceiros — cerca de **6.200 arquivos e 147.000 símbolos** em projetos Python, Go,

@@ -26,7 +26,7 @@
 import { readFileSync, writeFileSync, statSync, mkdirSync, unlinkSync, renameSync } from 'node:fs';
 import { join, extname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveRoot, findRepos, resolveSourceDirs, rootFiles, walk, relPath, safe, loadConfig, isMain, lerTexto, CODE_RE, EXTENSOES_LIDAS, EXTENSOES_CODIGO, EXTENSOES_HISTORICO, stateDir, sanitizeModelText } from './lib/roots.mjs';
+import { resolveRoot, findRepos, resolveSourceDirs, rootFiles, walk, relPath, safe, loadConfig, isMain, lerTexto, INDEX_RE, EXTENSOES_LIDAS, EXTENSOES_INDICE, EXTENSOES_HISTORICO, stateDir, sanitizeModelText } from './lib/roots.mjs';
 import { parserForExt } from './outline.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
 import { loadSnapshot, saveSnapshot } from './lib/snapshot.mjs';
@@ -191,6 +191,7 @@ function comIntervalos(syms, totalLinhas) {
 function parseFile(f) {
   const parser = parserForExt(extname(f));
   if (!parser) return [];
+  if (parser.maxBytes && safe(() => statSync(f).size, 0) > parser.maxBytes) return [];
   const content = lerTexto(f);
   if (content === null) return [];
   const linhas = content.split('\n');
@@ -224,7 +225,7 @@ function bareName(kind) {
   // sem caixa, a frase inteira é o que faz `symbols.mjs instalador` achar o teste do instalador.
   if (kind.startsWith('test ')) return kind.slice(5);
   return kind
-    .replace(/^(async |static |get |set |class |const |function |type |enum |fn |struct |trait |union |mod |macro |procedure |constructor |destructor |property |record |interface |object |unit |program |library |def |func |var |package |key )+/gi, '')
+    .replace(/^(async |static |get |set |class |const |function |type |enum |fn |struct |trait |union |mod |macro |procedure |constructor |destructor |property |record |interface |object |unit |program |library |def |func |var |package |key |table |view |column |trigger |index |sequence |domain )+/gi, '')
     .replace(/\(\)$/, '')
     .replace(QUALIFICADOR_RE, '');
 }
@@ -276,10 +277,10 @@ function buildIndex(root, cfg, opts = {}) {
     // travessia de caminho real: um repo hostil com `sourceDirs: ["../vizinho"]` fazia o
     // índice ler arquivos de outro projeto no disco.
     const dirs = resolveSourceDirs(repo.path, cfg);
-    for (const d of dirs) walk(d, CODE_RE, files, 0, truncados);
+    for (const d of dirs) walk(d, INDEX_RE, files, 0, truncados);
     // Arquivos soltos na raiz: redundante quando `dirs` é a própria raiz, mas necessário
     // quando a config fixou `sourceDirs` — a dedupe abaixo cuida da sobreposição.
-    if (!cfg.sourceDirs) for (const f of rootFiles(repo.path, CODE_RE)) files.push(f);
+    if (!cfg.sourceDirs) for (const f of rootFiles(repo.path, INDEX_RE)) files.push(f);
   }
 
   // Dedupe NÃO é zelo: o mesmo arquivo entrando duas vezes duplicava cada resultado na saída
@@ -312,7 +313,7 @@ function buildIndex(root, cfg, opts = {}) {
 
   for (const f of files) {
     const rel = relPath(root, f);
-    const base = rel.split('/').pop().replace(CODE_RE, '');
+    const base = rel.split('/').pop().replace(INDEX_RE, '');
     if (base) {
       if (!byFile.has(base)) byFile.set(base, []);
       byFile.get(base).push(rel);
@@ -635,7 +636,7 @@ function main() {
     else if (result.kind === 'miss') querySummary.misses++;
     if (['symbol', 'file', 'miss'].includes(result.kind)) querySummary.classifiedQueries++;
     const fileExt = q.match(/(?:^|[\\/])[^\\/]+\.([A-Za-z0-9]{1,10})$/)?.[1]?.toLowerCase();
-    if (result.kind === 'miss' && fileExt && EXTENSOES_HISTORICO.includes(fileExt) && !EXTENSOES_CODIGO.includes(fileExt)) {
+    if (result.kind === 'miss' && fileExt && EXTENSOES_HISTORICO.includes(fileExt) && !EXTENSOES_INDICE.includes(fileExt)) {
       demandExtensions.add(fileExt);
     }
     return block;

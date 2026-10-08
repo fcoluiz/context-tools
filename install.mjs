@@ -100,7 +100,7 @@ const STATE_FILES_FALLBACK = [
   '.pre-tool-state.json', '.context-tools-metrics.json', '.auto-review-candidates.json', '.documentation-cache.json', '.source-fingerprints.json',
   '.documentation-stop-state.json', '.handoff-aviso.json', '.mtime-probe*', 'handoff-*.md',
   '.context-maps-session-notice.json', '.documentation-session-notice.json', '.codex-auto-review-state.json',
-  '.session-write-journal/', '*.tmp', '*.lock', '.claude-md-hint-done', 'context-tools-install.json',
+  '.session-write-journal/', '.hook-emissions/', '.verify-state.json', '*.tmp', '*.lock', '.claude-md-hint-done', 'context-tools-install.json',
 ];
 let STATE_FILES;
 try {

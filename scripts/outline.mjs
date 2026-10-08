@@ -17,7 +17,7 @@
 
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { makeT, detectLang } from './lib/i18n.mjs';
-import { isMain, lerTexto, EXTENSOES_LIDAS, EXTENSOES_CODIGO, EXTENSOES_HISTORICO, resolveRoot } from './lib/roots.mjs';
+import { isMain, lerTexto, EXTENSOES_LIDAS, EXTENSOES_INDICE, EXTENSOES_HISTORICO, resolveRoot } from './lib/roots.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
 const t = makeT(detectLang());
 import { extname, basename } from 'node:path';
@@ -531,6 +531,83 @@ export function stripInlineRegexFlags(filter) {
   return filter.replace(/^\(\?-?[a-zA-Z]+\)/, '');
 }
 
+// SQL. Cobre o ponto cego "coluna de banco": tabelas, colunas, views, procedures, funções,
+// triggers, índices, sequences/generators e domains declarados em scripts `.sql`/migrations.
+// Comentário (`--`, `/* */`) e literal de string viram espaço antes da busca, preservando as
+// quebras de linha — senão um `CREATE TABLE` dentro de comentário viraria tabela fantasma.
+function semTextoSql(texto) {
+  let out = '', i = 0;
+  while (i < texto.length) {
+    const c = texto[i];
+    if (c === '-' && texto[i + 1] === '-') {
+      const f = texto.indexOf('\n', i);
+      const fim = f === -1 ? texto.length : f;
+      out += ' '.repeat(fim - i); i = fim; continue;
+    }
+    if (c === '/' && texto[i + 1] === '*') {
+      const f = texto.indexOf('*/', i + 2);
+      const fim = f === -1 ? texto.length : f + 2;
+      out += texto.slice(i, fim).replace(/[^\n]/g, ' '); i = fim; continue;
+    }
+    if (c === "'") {
+      let j = i + 1;
+      while (j < texto.length && !(texto[j] === "'" && texto[j + 1] !== "'")) j += texto[j] === "'" ? 2 : 1;
+      const fim = Math.min(j + 1, texto.length);
+      out += texto.slice(i, fim).replace(/[^\n]/g, ' '); i = fim; continue;
+    }
+    out += c; i++;
+  }
+  return out;
+}
+
+const SQL_NOME = String.raw`(?:[\x60"\[]?[A-Za-z_][\w$#]*[\x60"\]]?\.)?[\x60"\[]?([A-Za-z_][\w$#]*)[\x60"\]]?`;
+const SQL_OBJETO_RE = new RegExp(String.raw`\bCREATE\s+(?:OR\s+(?:REPLACE|ALTER)\s+)?(?:(?:GLOBAL|LOCAL)\s+)?(?:TEMP(?:ORARY)?\s+)?(?:UNIQUE\s+)?(?:CLUSTERED\s+|NONCLUSTERED\s+)?(?:MATERIALIZED\s+)?(TABLE|VIEW|PROCEDURE|PROC|FUNCTION|TRIGGER|INDEX|SEQUENCE|GENERATOR|DOMAIN|TYPE)\s+(?:IF\s+NOT\s+EXISTS\s+)?${SQL_NOME}`, 'gi');
+const SQL_ALTER_ADD_RE = new RegExp(String.raw`\bALTER\s+TABLE\s+(?:ONLY\s+)?${SQL_NOME}\s+ADD\s+(?:COLUMN\s+)?(?:IF\s+NOT\s+EXISTS\s+)?[\x60"\[]?([A-Za-z_][\w$#]*)`, 'gi');
+const SQL_NAO_COLUNA = new Set(['constraint', 'primary', 'foreign', 'unique', 'check', 'index', 'key', 'exclude', 'like', 'period', 'fulltext', 'spatial']);
+const SQL_ROTULO = { proc: 'procedure', generator: 'sequence' };
+
+export function symbolsForSql(lines) {
+  const texto = semTextoSql(lines.join('\n'));
+  const inicioDeLinha = [0];
+  for (let i = 0; i < texto.length; i++) if (texto[i] === '\n') inicioDeLinha.push(i + 1);
+  const linhaDe = (pos) => {
+    let lo = 0, hi = inicioDeLinha.length - 1;
+    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (inicioDeLinha[mid] <= pos) lo = mid; else hi = mid - 1; }
+    return lo + 1;
+  };
+  const out = [];
+  for (const m of texto.matchAll(SQL_OBJETO_RE)) {
+    const tipo = m[1].toLowerCase();
+    const nome = m[2];
+    out.push({ line: linhaDe(m.index), name: `${SQL_ROTULO[tipo] || tipo} ${nome}`, depth: 0, pos: m.index });
+    if (tipo !== 'table') continue;
+    // Colunas: identificador no início de cada item de nível 1 da lista entre parênteses.
+    let i = m.index + m[0].length;
+    while (i < texto.length && /\s/.test(texto[i])) i++;
+    if (texto[i] !== '(') continue;               // CREATE TABLE … AS SELECT: sem lista
+    let nivel = 1, esperaColuna = true;
+    for (i++; i < texto.length && nivel > 0; i++) {
+      const c = texto[i];
+      if (c === '(') { nivel++; continue; }
+      if (c === ')') { nivel--; continue; }
+      if (c === ',' && nivel === 1) { esperaColuna = true; continue; }
+      if (!esperaColuna || nivel !== 1 || /\s/.test(c)) continue;
+      const col = texto.slice(i).match(/^[\x60"\[]?([A-Za-z_][\w$#]*)[\x60"\]]?/);
+      esperaColuna = false;
+      if (!col || SQL_NAO_COLUNA.has(col[1].toLowerCase())) continue;
+      out.push({ line: linhaDe(i), name: `column ${nome}.${col[1]}`, depth: 1, pos: i });
+      i += col[0].length - 1;
+    }
+  }
+  for (const m of texto.matchAll(SQL_ALTER_ADD_RE)) {
+    if (SQL_NAO_COLUNA.has(m[2].toLowerCase())) continue;
+    out.push({ line: linhaDe(m.index), name: `column ${m[1]}.${m[2]}`, depth: 1, pos: m.index });
+  }
+  return out.sort((a, b) => a.pos - b.pos).map(({ pos, ...s }) => s);
+}
+// Dump de dados pode ter centenas de MB e nenhuma definição útil: acima disso, não indexa.
+symbolsForSql.maxBytes = 8 * 1024 * 1024;
+
 /**
  * Escolhe o parser pela extensão. Fonte ÚNICA do despacho — `symbols.mjs` importa daqui, para
  * que adicionar uma linguagem nova não exija lembrar de mexer nos dois arquivos.
@@ -545,6 +622,7 @@ export function parserForExt(ext) {
   if (e === '.rs') return symbolsForRust;
   if (e === '.py' || e === '.pyi') return symbolsForPython;
   if (e === '.go') return symbolsForGo;
+  if (e === '.sql') return symbolsForSql;
   if (/^\.(js|jsx|ts|tsx|mjs|cjs)$/.test(e)) return symbolsForCode;
   return null;
 }
@@ -568,7 +646,7 @@ function main() {
 
   if (!parser) {
     const extension = ext.replace(/^\./, '');
-    if (EXTENSOES_HISTORICO.includes(extension) && !EXTENSOES_CODIGO.includes(extension)) {
+    if (EXTENSOES_HISTORICO.includes(extension) && !EXTENSOES_INDICE.includes(extension)) {
       recordMetric(resolveRoot(process.argv.slice(2)), 'language-demand', { extension, source: 'outline-unsupported-file' });
     }
     console.log(t('out.unsupported', { f: basename(target), ext, lines: lines.length }));

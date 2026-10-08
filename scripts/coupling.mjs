@@ -17,6 +17,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, basename, dirname } from 'node:path';
 import { resolveRoot, findRepos, sourceDirs, resolveSourceDirs, safe, loadConfig, isMain, statePath, stateDir, HISTORY_CODE_RE, sanitizeModelText } from './lib/roots.mjs';
+import { writeHookOutput } from './lib/hook-output.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
 import { sessionChangedFiles, currentSessionId } from './context-maps.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
@@ -318,9 +319,9 @@ function main() {
     const text = hookLines.join('\n');
     if (alreadyWarned(root, text, cfg.stateTtlHours)) return;
     if (hookMode) {
-      process.stdout.write(JSON.stringify({
+      writeHookOutput(root, {
         hookSpecificOutput: { hookEventName: 'Stop', additionalContext: text },
-      }));
+      });
     } else {
       console.log(text);
     }

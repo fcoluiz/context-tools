@@ -2,6 +2,7 @@
 // One-time navigation hint for an existing AGENTS.md.
 
 import { resolveRoot, loadConfig, isMain } from './lib/roots.mjs';
+import { writeHookOutput } from './lib/hook-output.mjs';
 import { makeT, detectInstructionLang } from './lib/i18n.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
 import { aplicarMdHint, lerTextoHint } from './lib/md-hint.mjs';
@@ -46,12 +47,12 @@ function main() {
   const t = makeT(detectInstructionLang(lerTextoHint(root, 'AGENTS.md'), cfg));
   const resultado = aplicarHintCodexMd(root, cfg);
   if (resultado !== 'added') return;
-  process.stdout.write(JSON.stringify({
+  writeHookOutput(root, {
     hookSpecificOutput: {
       hookEventName: 'SessionStart',
       additionalContext: t('codexmd.added'),
     },
-  }));
+  });
 }
 
 if (isMain(import.meta.url)) {

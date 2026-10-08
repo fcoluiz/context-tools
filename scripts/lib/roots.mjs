@@ -40,20 +40,28 @@ export const LANGUAGE_CAPABILITIES = Object.freeze([
   Object.freeze({ id: 'rust', name: 'Rust', extensions: ['rs'], parser: 'rust', crossFile: true }),
   Object.freeze({ id: 'python', name: 'Python', extensions: ['py', 'pyi'], parser: 'python', crossFile: true }),
   Object.freeze({ id: 'go', name: 'Go', extensions: ['go'], parser: 'go', crossFile: true }),
+  // `indexOnly`: entra no índice de símbolos, mas NÃO conta como código para mapas, coupling e
+  // revisão automática — editar uma migration não deve gerar aviso de mapa nem chamada de modelo.
+  Object.freeze({ id: 'sql', name: 'SQL', extensions: ['sql'], parser: 'sql', crossFile: true, indexOnly: true }),
   Object.freeze({ id: 'delphi-form', name: 'Delphi forms', extensions: ['dfm', 'fmx'], parser: 'dfm', crossFile: false }),
   Object.freeze({ id: 'markdown', name: 'Markdown', extensions: ['md'], parser: 'markdown', crossFile: false }),
 ]);
 
 export const EXTENSOES_CODIGO = LANGUAGE_CAPABILITIES
+  .filter((c) => c.crossFile && !c.indexOnly)
+  .flatMap((c) => c.extensions);
+export const CODE_RE = new RegExp(`\\.(${EXTENSOES_CODIGO.join('|')})$`);
+/** O que o índice cross-file lê: código mais as capacidades `indexOnly` (SQL). */
+export const EXTENSOES_INDICE = LANGUAGE_CAPABILITIES
   .filter((c) => c.crossFile)
   .flatMap((c) => c.extensions);
-export const EXTENSOES_LIDAS = EXTENSOES_CODIGO.join('/');
-export const CODE_RE = new RegExp(`\\.(${EXTENSOES_CODIGO.join('|')})$`);
+export const EXTENSOES_LIDAS = EXTENSOES_INDICE.join('/');
+export const INDEX_RE = new RegExp(`\\.(${EXTENSOES_INDICE.join('|')})$`);
 
 // Extensões que devem entrar em histórico/documentação mesmo quando ainda não têm parser local.
 // Isso preserva a utilidade language-agnostic de coupling/audit sem fingir que symbols as lê.
 export const EXTENSOES_HISTORICO = Object.freeze([
-  ...EXTENSOES_CODIGO, 'rb', 'java', 'kt', 'php', 'cs', 'sql', 'swift', 'scala',
+  ...new Set([...EXTENSOES_CODIGO, 'rb', 'java', 'kt', 'php', 'cs', 'sql', 'swift', 'scala']),
 ]);
 export const HISTORY_CODE_RE = new RegExp(`\\.(${EXTENSOES_HISTORICO.join('|')})$`);
 
@@ -69,7 +77,7 @@ export function sanitizeModelText(value, max = 120) {
     const c = ch.codePointAt(0);
     out += (c < 0x20 || (c >= 0x7f && c <= 0x9f)) ? ' ' : ch;
   }
-  out = out.replace(/\\s+/g, ' ').trim();
+  out = out.replace(/\s+/g, ' ').trim();
   return out.length > max ? `${out.slice(0, max)}...` : out;
 }
 

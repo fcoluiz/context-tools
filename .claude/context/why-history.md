@@ -2,8 +2,10 @@
 area: why-history
 covers:
   - "scripts/why.mjs"
-verified_at: 8cacc4a
-verified_date: 2026-08-11
+verified_at: ce96046
+verified_date: 2026-10-08
+source_fingerprints: {"scripts/why.mjs":"sha256:2d8bfa34468ee3da5f33b0ab695c46197cdbe8a451ef8e140281f1381e0bb060"}
+source_digest: sha256:3ea93c227f0b6320779c8254db070633fdc00c4b67bdc9a856131a0478270883
 ---
 
 # "Por que este código é assim?" — mapa de área

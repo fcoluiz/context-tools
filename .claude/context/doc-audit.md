@@ -2,8 +2,10 @@
 area: doc-audit
 covers:
   - "scripts/audit-docs.mjs"
-verified_at: 8cacc4a
-verified_date: 2026-08-11
+verified_at: ce96046
+verified_date: 2026-10-08
+source_fingerprints: {"scripts/audit-docs.mjs":"sha256:455fdcd57f25ed0794b17af7eb17045f18d4f36f597eed6830347c282b388293"}
+source_digest: sha256:ea8ae60dca1feeb0a2b5169bf50ddb6f6d842b13e165b39e59f0e0995c9c60f2
 ---
 
 # Auditoria de documentação — mapa de área

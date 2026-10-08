@@ -3,9 +3,10 @@ area: grep-preempt
 covers:
   - "scripts/pre-tool.mjs"
   - "scripts/benchmark-pretool.mjs"
-verified_at: 0efcc0a
-verified_date: 2026-10-05
-source_digest: sha256:0738c94b374c805b2e5b06f8b9f34b06a7764c35aa72ffa9d62703402c382e2a
+verified_at: ce96046
+verified_date: 2026-10-08
+source_digest: sha256:0dcc4f6f91b64106d104e1c83d09e3d87009f61d98e1dd32c6df5d6077dfbe54
+source_fingerprints: {"scripts/pre-tool.mjs":"sha256:eff3a1cd62a820f051f7c19860425da44f9aa169bd675c0ab24c621418466e2d","scripts/benchmark-pretool.mjs":"sha256:51123bc7c90c3f02139bb5f674b7f9cc7bd2721d4241170983eb0845ed3e762c"}
 ---
 
 # Resposta antes do Grep — mapa de área

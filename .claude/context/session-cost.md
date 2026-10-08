@@ -3,9 +3,10 @@ area: session-cost
 covers:
   - "scripts/handoff.mjs"
   - "scripts/lib/sessao.mjs"
-verified_at: HEAD
-verified_date: 2026-10-05
-source_digest: sha256:ca059d7be1ccf64729221d636ea0cefd8a2d08adc55274cb028c05d9cb43603a
+verified_at: ce96046
+verified_date: 2026-10-08
+source_digest: sha256:f7cdce359cf12d3da55f61635a2e2303f730f81b298e56cabdcc5566ba0dfe44
+source_fingerprints: {"scripts/handoff.mjs":"sha256:4158f232baa08315b185ed01f21401c5a705edc0aea72f35d11bbeaf6f41d871","scripts/lib/sessao.mjs":"sha256:82d876a0a673f2c43ee9540bd482431a4d0943dabe6618bd5ebb94d09817c247"}
 ---
 
 # Custo de sessão e handoff — mapa de área

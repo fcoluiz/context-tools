@@ -6,10 +6,10 @@ covers:
   - "scripts/lib/telemetry.mjs"
   - "scripts/lib/roots.mjs"
   - "scripts/lib/state-store.mjs"
-verified_at: 0efcc0a
-verified_date: 2026-10-07
-source_digest: sha256:dc18a6cf4d165f968bc1fd8da2186c0b3543c507944fa7af943f800108453de6
-source_fingerprints: {"scripts/lib/telemetry.mjs":"sha256:8b0caf83a91c53aed331e82e0764e7d2b131d2431083139bc73f6b5d5333fd44","scripts/lib/state-store.mjs":"sha256:a212a2d921648dd44e00ad3fd29d56f63dc54ccbf0ed895b795a9aa8dea4ac79"}
+verified_at: ce96046
+verified_date: 2026-10-08
+source_digest: sha256:9cf84d7646c5dd8e410288d4a6e7e46e424e07313c309fda25b7241337104cc6
+source_fingerprints: {"scripts/symbols.mjs":"sha256:95c3226d28fdbd1b59f6ceca0d9fbb16b950943f8ca320269e9f12381e217ee4","scripts/outline.mjs":"sha256:73a96f4c7c54656d6bc862303b9784470a7bbb4022f1d2e0988f2b18f487c99b","scripts/lib/telemetry.mjs":"sha256:8b0caf83a91c53aed331e82e0764e7d2b131d2431083139bc73f6b5d5333fd44","scripts/lib/roots.mjs":"sha256:ad76743bf1bc41305c02a9b8eea22d9a73bc4dbe9aa445f6905589d95b87a140","scripts/lib/state-store.mjs":"sha256:1a06a2da8e0ca415b4ae9d1524fad50a1f1a862cd141fd473121a3b8e090c67c"}
 ---
 
 # Busca de símbolo (symbols + outline) — mapa de área

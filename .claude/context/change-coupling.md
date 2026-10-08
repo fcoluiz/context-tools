@@ -3,10 +3,10 @@ area: change-coupling
 covers:
   - "scripts/coupling.mjs"
   - "scripts/map-suggestions.mjs"
-verified_at: HEAD
-verified_date: 2026-10-06
-source_fingerprints: {"scripts/coupling.mjs":"sha256:5f66bd96565ae780a56d13881de35c63e5fcde5ada6db935fc71d4769e2421e5"}
-source_digest: sha256:9043c991207781ac9c5fbdad16ec32069e2c63a0aa4c56d852fe41bff65737f0
+verified_at: ce96046
+verified_date: 2026-10-08
+source_fingerprints: {"scripts/coupling.mjs":"sha256:bea26030bf75161de2653e5b21658024afd99026042cc72b47f37aebad00364e","scripts/map-suggestions.mjs":"sha256:7e50c0860685dbb21258a4f66a22237dc2ce204d6a2af19564916a23d700f17e"}
+source_digest: sha256:49c919f86ceca3d3ae563c2cba9d7644dccf5c615ad6ae390b8abeeb9e81b2e7
 ---
 
 # Acoplamento por co-mudança — mapa de área

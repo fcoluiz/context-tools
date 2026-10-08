@@ -8,6 +8,17 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A git repository reached through a path alias is no longer treated as "no git".** `isGitRepo`
+  compared `git rev-parse --show-toplevel` (which Git returns fully resolved) with the raw directory
+  string. When the project path went through a symlink, junction or 8.3 short name — macOS
+  `/var/...` vs `/private/var/...`, Windows `C:\Users\RUNNER~1\...` — the comparison failed, the
+  project was taken as having no repository, and hooks stayed silent or fell back to mtime. Both
+  sides are now canonicalized with `fs.realpathSync.native`. This is what kept the macOS and Windows
+  CI jobs red (21 failing tests); reproduced locally by pointing `TEMP` at a junction. Regression
+  test in `tests/comportamento.test.mjs`.
+
 ## [2.0.0] — 2026-10-08
 
 First public release. The code is the same as 1.23.0; what changes is where it lives and under what

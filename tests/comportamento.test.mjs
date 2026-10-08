@@ -5,13 +5,14 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, unlinkSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, unlinkSync, readFileSync, symlinkSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { localPath } from './paths.mjs';
 
 import { bareName, buildIndex } from '../scripts/symbols.mjs';
-import { lerTexto, CODE_RE, EXTENSOES_CODIGO, EXTENSOES_LIDAS } from '../scripts/lib/roots.mjs';
+import { lerTexto, CODE_RE, EXTENSOES_CODIGO, EXTENSOES_LIDAS, isGitRepo } from '../scripts/lib/roots.mjs';
 import { symbolsForCode, parserForExt } from '../scripts/outline.mjs';
 import { isDefaultUnmapped, isIntentionallyUnmapped, parseFrontmatter } from '../scripts/context-maps.mjs';
 import { plausible, ehCandidato, collectCandidates, resolveExistence } from '../scripts/audit-docs.mjs';
@@ -315,4 +316,25 @@ test('a mensagem de "não leio essa linguagem" não pode mentir', () => {
     assert.ok(parserForExt(`.${ext}`), `parserForExt precisa ter parser para .${ext}`);
   }
   assert.ok(!CODE_RE.test('form.dfm'), '.dfm fica fora do índice cross-file de propósito');
+});
+
+// ---------------------------------------------------------------- isGitRepo / identidade de caminho
+
+test('isGitRepo: repositório acessado por apelido (symlink/junction) continua sendo repositório', (t) => {
+  // Reproduz o CI: no macOS os.tmpdir() é /var/... e o Git devolve /private/var/...; no Windows o
+  // TEMP do runner usa nome curto 8.3. Comparar string crua fazia o repo parecer "sem git".
+  const base = mkdtempSync(join(tmpdir(), 'ctx-tools-alias-'));
+  t.after(() => rmSync(base, { recursive: true, force: true }));
+  const real = join(base, 'real');
+  mkdirSync(real);
+  execFileSync('git', ['init', '-q', real], { stdio: 'ignore' });
+  const apelido = join(base, 'apelido');
+  try {
+    symlinkSync(real, apelido, process.platform === 'win32' ? 'junction' : 'dir');
+  } catch (e) {
+    t.skip(`não foi possível criar link: ${e.code}`);
+    return;
+  }
+  assert.equal(isGitRepo(real), true);
+  assert.equal(isGitRepo(apelido), true, 'mesmo repo visto pelo link precisa ser reconhecido');
 });

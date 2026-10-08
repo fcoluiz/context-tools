@@ -31,7 +31,7 @@ import {
   walk,
 } from './roots.mjs';
 import { currentSessionId, sessionChangedFiles, sessionStartedAt, sinceRef } from '../context-maps.mjs';
-import { compareReviewedSources, fingerprintKey, fingerprintSourcesInRoots, loadFingerprintState, parseSourceFingerprints, rememberFingerprint, saveFingerprintState } from './source-fingerprints.mjs';
+import { compareReviewedSources, fingerprintKey, fingerprintSourcesInRoots, loadFingerprintState, parseSourceFingerprints, rememberFingerprint, sameDigest, saveFingerprintState } from './source-fingerprints.mjs';
 import { markdownSectionsForSources } from './markdown-sections.mjs';
 import { selectAutomaticReviewCandidates } from './auto-review-candidates.mjs';
 import { reviewFinding } from './review-findings.mjs';
@@ -667,7 +667,7 @@ export function documentationStopReport(root = resolveRoot(), cfg = loadConfig(r
     );
     const hasLegacyDigest = /^sha256:[a-f\d]{64}$/i.test(document.metadata.sourceDigest || '');
     const digestNeedsSync = hasLegacyDigest
-      && document.metadata.sourceDigest !== fingerprint.digest
+      && !sameDigest(fingerprint, document.metadata.sourceDigest)
       && reviewed.valid && reviewed.metadataComplete;
     if (digestNeedsSync) {
       fingerprintStatus.set(document.path, 'fresh');
@@ -677,7 +677,7 @@ export function documentationStopReport(root = resolveRoot(), cfg = loadConfig(r
       }
       continue;
     }
-    if (dependencies.complete || (reviewed.valid && (document.metadata.sourceDigest === fingerprint.digest
+    if (dependencies.complete || (reviewed.valid && (sameDigest(fingerprint, document.metadata.sourceDigest)
       || (!sessionOnly && previous?.digest === fingerprint.digest)
       || (reviewed.complete && (!sessionOnly || document.metadata.sourceFingerprintsPresent || hasLegacyDigest))))) {
       if (previous?.digest !== fingerprint.digest) {

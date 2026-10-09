@@ -1,0 +1,30 @@
+{
+  "description": "Outcome pilot: two read-only questions in large third-party codebases (C# and Java) and one bug fix in context-tools itself. Answers are checked by regular expressions; the fix by a script that exercises the behavior.",
+  "cases": [
+    {
+      "id": "qa-newtonsoft-maxdepth",
+      "git": "https://github.com/JamesNK/Newtonsoft.Json.git",
+      "ref": "52fa3aef1f2cadcd3a3f874251eddc98d3efbbaa",
+      "prompt": "Answer from the code in this repository, without modifying any file. When JsonReader reads nested JSON, where exactly is the maximum depth enforced (class and method), what is the default maximum depth, and which exception type is thrown when it is exceeded? Reply in at most five lines.",
+      "check": { "answer": ["JsonReader", "\\bPush\\b", "\\b64\\b", "JsonReaderException"] }
+    },
+    {
+      "id": "qa-commons-lang-abbreviate",
+      "git": "https://github.com/apache/commons-lang.git",
+      "ref": "32dc4c501e3acba29d53a466eebd611bb2f093a5",
+      "prompt": "Answer from the code in this repository, without modifying any file. In StringUtils.abbreviate with the default \"...\" marker, what is the smallest maxWidth accepted without an offset, how is that minimum computed, and which exception is thrown below it? Reply in at most five lines.",
+      "check": { "answer": ["IllegalArgumentException", "\\b4\\b"] }
+    },
+    {
+      "id": "fix-qualified-lookup",
+      "repo": "../../..",
+      "ref": "4a8fcad9590b134ec1d1250c926cff7ecd037bb6",
+      "remove": [".claude", ".codex"],
+      "setup": [
+        ["node", "-e", "const fs=require('fs');const f='scripts/symbols.mjs';const a=\"const queryNua = query.replace(QUALIFICADOR_RE, '');\";let s=fs.readFileSync(f,'utf8');if(!s.includes(a))process.exit(1);fs.writeFileSync(f,s.replace(a,'const queryNua = query;'));"]
+      ],
+      "prompt": "A user reports: looking up a Delphi method by its qualified name, for example `node scripts/symbols.mjs TPedido.Confirmar`, says there is no definition, although `procedure TPedido.Confirmar` exists in their project and the bare name `Confirmar` is found. Find the cause in this repository and fix it with a minimal change. Do not change the tests.",
+      "check": { "command": ["node", "{casesDir}/check-qualified-lookup.mjs"] }
+    }
+  ]
+}

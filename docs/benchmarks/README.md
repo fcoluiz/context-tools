@@ -14,6 +14,33 @@ Measurements taken while developing context-tools. The reports are written in Po
 | [adaptive-routing-2026-08-07](adaptive-routing-2026-08-07.pt-BR.md) | Is `context-pack` worth calling every time, or only when results are ambiguous? |
 | [large-delphi-workspace-2026-08-07](large-delphi-workspace-2026-08-07.pt-BR.md) | Index and diagnostics on a 1,878-file Delphi workspace without git. |
 
+## Outcome benchmark: does the task get solved, and at what cost?
+
+The reports above compare tools with tools. `scripts/benchmark-outcome.mjs` measures what a user
+pays for: a real agent (`claude -p`) does the same task twice on a clean copy of the target
+repository — once as it is, once with this plugin loaded — and the result is checked objectively
+(regular expressions over the final answer, or a command that exercises the fixed behavior). It
+records whether the task was solved, the cost, turns, duration and context tokens.
+
+- **Isolation.** Both arms run with `--setting-sources project --strict-mcp-config`, so no plugin, hook
+  or MCP server from the user's configuration enters either one; the "with" arm adds only
+  `--plugin-dir <this repository>`. Agent configuration shipped by the target repository is removed
+  per case (`remove`). Variables of a host session are dropped.
+- **Cost control.** `--per-run-cost` goes to the CLI's `--max-budget-usd`; `--max-cost` stops starting
+  new runs once reached. `--dry-run` prints the plan and the exact command.
+- **No fake results.** It refuses to start when the CLI is not logged in, and stops at the first run
+  that made no model call — a zero-cost "answer" that is really an error message is not a measurement.
+
+```bash
+node scripts/benchmark-outcome.mjs --cases=docs/benchmarks/outcome/cases.pilot.json --dry-run
+node scripts/benchmark-outcome.mjs --cases=docs/benchmarks/outcome/cases.pilot.json --per-run-cost=3 --max-cost=15
+```
+
+[`outcome/cases.pilot.json`](outcome/cases.pilot.json) has three cases: two read-only questions in
+large third-party codebases (Newtonsoft.Json, C#; commons-lang, Java) and one bug fix in this
+repository at the 2.6.0 tag. One repetition per arm is a pilot, not a statistic: it shows whether the
+harness works and where the differences are worth a larger run.
+
 ## Reproducing the controlled benchmark
 
 ```bash

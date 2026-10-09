@@ -27,6 +27,13 @@ reconstructed from git history.
 - **Every `Stop` note has a ceiling (900 characters).** Overflow is cut at a line end with a pointer
   to `health.mjs`, where the backlog belongs; the handoff resume prompt is exempt.
 
+### Fixed
+
+- **Delphi IDE backup copies showed up as definitions.** Files under `__history/` and
+  `__recovery/` were indexed, so a symbol lookup returned the backup next to the real unit as an
+  exact definition (seen in the Delphi benchmark of 2026-08-07 and again in real use). Both folders
+  are now ignored, like `node_modules`.
+
 ## [2.4.0] — 2026-10-08
 
 Searches typed in Claude's terminal reach the index, end-of-session notes are shorter, hooks no

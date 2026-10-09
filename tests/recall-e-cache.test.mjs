@@ -74,6 +74,24 @@ test('recall: o que o índice NÃO vê está documentado e continua não visto',
   } finally { rmSync(raiz, { recursive: true, force: true }); }
 });
 
+test('recall: cópias do IDE do Delphi (__history, __recovery) não entram no índice', () => {
+  // Caso real: a cópia em `__recovery` saía como definição exata ao lado da unit oficial.
+  const raiz = projetoVazio();
+  const unit = 'unit UCadX;\ninterface\nprocedure Gravar;\nimplementation\nprocedure Gravar;\nbegin\nend;\nend.\n';
+  writeFileSync(join(raiz, 'src', 'UCadX.pas'), unit);
+  for (const copia of ['__history', '__recovery']) {
+    mkdirSync(join(raiz, 'src', copia), { recursive: true });
+    writeFileSync(join(raiz, 'src', copia, 'UCadX.pas'), unit);
+  }
+  try {
+    const idx = buildIndex(raiz, {});
+    const indexados = idx.files.map((f) => f.replace(/\\/g, '/'));
+    assert.deepEqual(indexados.filter((f) => /__history|__recovery/.test(f)), [],
+      `cópia do IDE indexada: ${indexados.join(', ')}`);
+    assert.ok(indexados.some((f) => f.endsWith('src/UCadX.pas')), 'a unit oficial continua indexada');
+  } finally { rmSync(raiz, { recursive: true, force: true }); }
+});
+
 // ------------------------------------------------------------------ escopo
 
 test('escopoLabel: vazio, um repo, e mais de três repos trunca com contador', () => {

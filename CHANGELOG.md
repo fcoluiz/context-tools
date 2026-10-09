@@ -8,6 +8,15 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **`ignoreDirs`: a project can name its own throwaway folders.** `"ignoreDirs": ["prototypes",
+  "old-copies"]` in `context-tools.json` drops those folders, at any depth and case-insensitively,
+  from the index, the answer before `grep`, the context pack, documentation checks and the read-only
+  session suggestion. Prototypes and copies of a unit used to come back as exact definitions next to
+  the real one, contradicting projects whose own workflow excludes them. Folder names only; nothing is
+  guessed. A workspace folder listed there is also no longer treated as a repository.
+
 ## [2.5.0] — 2026-10-09
 
 Investigations that only read code can now be saved by saying "save this to context", installs say

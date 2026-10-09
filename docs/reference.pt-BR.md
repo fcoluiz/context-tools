@@ -884,6 +884,7 @@ Para fugir da convenção, `.claude/context-tools.json`:
 ```json
 {
   "sourceDirs": ["packages/core/src", "packages/api/src"],
+  "ignoreDirs": ["prototypes", "old-copies"],
   "coupling": { "since": "6 months ago", "minTogether": 3, "warnConfidence": 0.7 },
   "contextMaps": { "intentionallyUnmapped": ["scripts/legacy/"] },
   "claudeMdHint": false,
@@ -891,6 +892,12 @@ Para fugir da convenção, `.claude/context-tools.json`:
   "verify": { "command": "npm run test:unit", "testPatterns": ["make check"] }
 }
 ```
+
+`ignoreDirs` lista nomes de pasta a pular em qualquer profundidade — cópias, protótipos, backups
+locais — além da lista embutida (`node_modules`, `dist`, `__history`, `__recovery`…). Elas saem do
+índice, da resposta antes do `grep`, do pacote de contexto, das verificações de documentação e da
+sugestão de sessões só de leitura. Só nomes, sem diferenciar maiúsculas; entradas com separador de
+caminho são ignoradas. Nada é adivinhado: as pastas descartáveis do projeto são declaradas aqui.
 
 `verify.command` substitui o comando de teste detectado; `verify.testPatterns` acrescenta comandos que
 contam como teste; `verify.enabled: false` desliga o aviso do `Stop`.

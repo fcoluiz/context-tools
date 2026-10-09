@@ -25,9 +25,49 @@ const IGNORED = new Set([
   '__history', '__recovery',
 ]);
 
+/**
+ * Pastas que o PROJETO pede para ignorar (`"ignoreDirs": ["prototypes", "old-copies"]`), além de
+ * `IGNORED`. São nomes de pasta em qualquer profundidade, sem caminho; comparação sem caixa, como
+ * no sistema de arquivos do Windows. Adivinhar pasta descartável pelo nome já foi o pior bug da
+ * ferramenta (ver `sourceDirs`), por isso convenção de projeto só entra declarada.
+ */
+export function ignoredDirNames(cfg = {}) {
+  const raw = Array.isArray(cfg?.ignoreDirs) ? cfg.ignoreDirs : [];
+  return new Set(raw
+    .filter((value) => typeof value === 'string')
+    .map((value) => value.trim())
+    .filter((value) => value && value !== '.' && value !== '..' && !/[\\/]/.test(value))
+    .map((value) => value.toLowerCase()));
+}
+
+/**
+ * `findRepos` registra aqui as pastas ignoradas de cada repositório que devolve, e `walk` as
+ * consulta pelo caminho que vai varrer. Assim a configuração vale para TODA varredura que parte de
+ * `findRepos(root, { cfg })` — índice, hook, pacote de contexto, documentação, mapas — sem
+ * repassar `cfg` por vinte chamadas. A chave é o caminho do repositório, então dois projetos (ou
+ * dois testes) no mesmo processo não se contaminam.
+ */
+const PROJECT_IGNORED = new Map();
+const pathKey = (path) => {
+  const key = resolve(path).replace(/[\\/]+$/, '');
+  return process.platform === 'win32' ? key.toLowerCase() : key;
+};
+
+function projectIgnoredFor(dir) {
+  let key = pathKey(dir);
+  for (;;) {
+    const found = PROJECT_IGNORED.get(key);
+    if (found) return found;
+    const parent = dirname(key);
+    if (parent === key) return null;
+    key = parent;
+  }
+}
+
 /** O caminho relativo passa por alguma pasta que a varredura ignora? */
-export function isIgnoredPath(relativePath) {
-  return String(relativePath || '').split(/[\\/]+/).some((part) => IGNORED.has(part));
+export function isIgnoredPath(relativePath, extra = null) {
+  return String(relativePath || '').split(/[\\/]+/)
+    .some((part) => IGNORED.has(part) || Boolean(extra?.has(part.toLowerCase())));
 }
 
 /**
@@ -330,7 +370,14 @@ export function extraReposDoCodeWorkspace(root) {
  * ou com svn/hg — recebia "nenhum arquivo de código encontrado" e a ferramenta ficava
  * 100% morta, mesmo para as perguntas que não dependem de git.
  */
-export function findRepos(root, { requireGit = true, cfg = {}, gitProbe = isGitRepo } = {}) {
+export function findRepos(root, options = {}) {
+  const repos = findReposSemRegistro(root, options);
+  const ignored = ignoredDirNames(options.cfg);
+  for (const path of [root, ...repos.map((repo) => repo.path)]) PROJECT_IGNORED.set(pathKey(path), ignored);
+  return repos;
+}
+
+function findReposSemRegistro(root, { requireGit = true, cfg = {}, gitProbe = isGitRepo } = {}) {
   // O probe é injetável para testes que não podem criar processos filhos; em produção, o default
   // sempre valida pelo Git real.
   const isRepo = typeof gitProbe === 'function' ? gitProbe : isGitRepo;
@@ -338,8 +385,9 @@ export function findRepos(root, { requireGit = true, cfg = {}, gitProbe = isGitR
   const rootTemGit = isRepo(root);
   if (rootTemGit) out.push({ name: '.', path: root, git: true });
   const semGit = [];
+  const ignoradas = ignoredDirNames(cfg);
   for (const e of safe(() => readdirSync(root, { withFileTypes: true }), [])) {
-    if (!e.isDirectory() || IGNORED.has(e.name)) continue;
+    if (!e.isDirectory() || IGNORED.has(e.name) || ignoradas.has(e.name.toLowerCase())) continue;
     if (isRepo(join(root, e.name))) out.push({ name: e.name, path: join(root, e.name), git: true });
     else semGit.push(e.name);
   }
@@ -522,8 +570,12 @@ const MAX_DEPTH = 24;
  * `truncated` é opcional: passe um array para saber se a profundidade máxima foi atingida.
  * Truncar em silêncio seria justamente o erro que esta ferramenta existe para evitar — o
  * índice ficaria incompleto e ainda assim responderia "não existe" com confiança.
+ *
+ * `extra` são as pastas do projeto (`ignoreDirs`); na chamada de topo vêm do registro que
+ * `findRepos` preencheu para o repositório que contém `dir`.
  */
-export function walk(dir, re, acc = [], depth = 0, truncated = null) {
+export function walk(dir, re, acc = [], depth = 0, truncated = null, extra = undefined) {
+  if (extra === undefined) extra = projectIgnoredFor(dir);
   if (depth > MAX_DEPTH) {
     if (truncated) truncated.push(dir);
     return acc;
@@ -531,8 +583,9 @@ export function walk(dir, re, acc = [], depth = 0, truncated = null) {
   for (const e of safe(() => readdirSync(dir, { withFileTypes: true }), [])) {
     if (IGNORED.has(e.name) || e.name.startsWith('.')) continue;
     const full = join(dir, e.name);
-    if (e.isDirectory()) walk(full, re, acc, depth + 1, truncated);
-    else if (re.test(e.name)) acc.push(full);
+    if (e.isDirectory()) {
+      if (!extra?.has(e.name.toLowerCase())) walk(full, re, acc, depth + 1, truncated, extra);
+    } else if (re.test(e.name)) acc.push(full);
   }
   return acc;
 }

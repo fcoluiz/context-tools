@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   symbolsForCode, symbolsForPascal, symbolsForDfm, symbolsForMarkdown, symbolsForRust,
-  symbolsForPython, symbolsForGo, parserForExt, stripInlineRegexFlags,
+  symbolsForPython, symbolsForGo, symbolsForCSharp, symbolsForJava, symbolsForPhp, parserForExt, stripInlineRegexFlags,
 } from '../scripts/outline.mjs';
 import { bareName } from '../scripts/symbols.mjs';
 
@@ -614,4 +614,167 @@ test('outline: filtro com modificador inline (?i) de Python/PCRE não quebra o R
   // Sem o prefixo, o filtro passa intacto — a função não pode alterar um padrão já válido.
   assert.equal(stripInlineRegexFlags('pedido'), 'pedido');
   assert.equal(stripInlineRegexFlags('^get[A-Z]'), '^get[A-Z]');
+});
+
+// ---------------------------------------------------------------------------------------------
+// C#, Java e PHP. Cada caso abaixo é uma armadilha que apareceu no corpus de verificação
+// (Newtonsoft.Json, serilog, Dapper, gson, commons-lang, jsoup, monolog, guzzle, Slim).
+
+test('C#: tipos, membros qualificados pela classe e fim pela chave que fecha', () => {
+  const src = linhas(`
+namespace Loja.Pedidos
+{
+    [Serializable]
+    public sealed partial class Pedido : Base, IPedido
+    {
+        public const int Limite = 10;
+        public event EventHandler? Mudou;
+        public string Nome { get; set; }
+        public decimal Total => Itens.Sum(i => i.Valor);
+        public Pedido(int id)
+        {
+            var x = Calcular(id);
+        }
+        public async Task<IList<Item>> CarregarAsync<T>(int id,
+            CancellationToken ct) where T : class
+        {
+            return await Repo.Buscar(id, ct);
+        }
+        object? IPedido.Validar(Type t) => null;
+        public static explicit operator int(Pedido p) => p.Id;
+        public override global::System.String ToString() => "";
+    }
+    public delegate void Avisar(string m);
+    public record Item(string Nome, decimal Valor);
+}
+`);
+  const syms = symbolsForCSharp(src);
+  const nomes = syms.map((s) => s.name);
+  assert.deepEqual(nomes, [
+    'class Pedido', 'const Limite', 'event Mudou', 'property Nome', 'property Total',
+    'Pedido.Pedido()', 'Pedido.CarregarAsync()', 'Pedido.Validar()', 'Pedido.ToString()',
+    'delegate Avisar', 'record Item',
+  ], 'operador fica de fora; chamada dentro de corpo (Calcular, Buscar) nunca vira símbolo');
+  const classe = syms.find((s) => s.name === 'class Pedido');
+  assert.equal(classe.end, linhaDe(syms, 'delegate Avisar') - 1, 'o fim da classe é a chave que a fecha');
+  assert.equal(bareName('Pedido.CarregarAsync()'), 'CarregarAsync');
+  assert.equal(bareName('event Mudou'), 'Mudou');
+  assert.equal(bareName('delegate Avisar'), 'Avisar');
+});
+
+test('C#: verbatim que começa com aspa escapada (@""") e caractere "{" não desalinham as chaves', () => {
+  // Caso real: `@""","` era lido como raw string e o resto do arquivo virava texto — todos os
+  // métodos seguintes sumiam do índice.
+  const src = linhas(`
+class T
+{
+    void A()
+    {
+        var s = @"[
+  ""x"": """ + nome + @""",
+]";
+        var c = '{';
+        var r = """
+           { não é chave }
+           """;
+    }
+    void B() { }
+}
+`);
+  assert.deepEqual(symbolsForCSharp(src).map((s) => s.name), ['class T', 'T.A()', 'T.B()']);
+});
+
+test('C#: assinatura quebrada em linhas não vira membro fantasma', () => {
+  const src = linhas(`
+class T
+{
+    public void Longo(string primeiro,
+        string segundo,
+        int terceiro)
+    {
+    }
+}
+`);
+  assert.deepEqual(symbolsForCSharp(src).map((s) => s.name), ['class T', 'T.Longo()']);
+});
+
+test('Java: anotação de tipo no meio da assinatura, construtor e constante static final', () => {
+  const src = linhas(`
+@Deprecated
+public final class Parser<T> extends Base {
+    public static final int MAX = 64;
+    private int contador = 0;
+    public Parser() { this(1); }
+    private @Nullable static String validar(@Nullable String cs) { return cs; }
+    public Connection.@Nullable KeyVal data(String key) { return null; }
+    public <R> List<R> mapear(Function<T, R> f) {
+        Iterator<R> it = new Iterator<>() {
+            public boolean hasNext() { return false; }
+        };
+        return null;
+    }
+}
+enum Estado {
+    ABERTO { void fechar() {} },
+    FECHADO;
+    abstract void fechar();
+}
+@interface Marca {
+    String valor() default "";
+}
+`);
+  assert.deepEqual(symbolsForJava(src).map((s) => s.name), [
+    'class Parser', 'const MAX', 'Parser.Parser()', 'Parser.validar()', 'Parser.data()', 'Parser.mapear()',
+    'enum Estado', 'Estado.fechar()', 'annotation Marca', 'Marca.valor()',
+  ], 'campo de instância, classe anônima e corpo de constante do enum ficam de fora');
+});
+
+test('Java: text block não abre chave', () => {
+  const src = linhas(`
+class T {
+    String s = """
+        { "a": 1
+        """;
+    void depois() {}
+}
+`);
+  assert.deepEqual(symbolsForJava(src).map((s) => s.name), ['class T', 'T.depois()']);
+});
+
+test('PHP: métodos, constantes, helper em function_exists, heredoc e HTML fora da tag', () => {
+  const src = linhas(`
+<html>{ isto é HTML }</html>
+<?php
+namespace App\Http;
+
+#[Attribute]
+final class Rota implements RotaInterface
+{
+    public const GET = 'GET';
+    private string $nome;
+    public function __construct(private string $p) {}
+    public static function &criar(string $n): self
+    {
+        $html = <<<HTML
+            <div>{ não é chave }</div>
+        HTML;
+        $f = function ($x) { return $x; };
+        return new class { public function anonimo() {} };
+    }
+}
+if (!function_exists('ajuda')) {
+    function ajuda($x) { return $x; }
+}
+?>
+<p>{ fim }</p>
+`);
+  assert.deepEqual(symbolsForPhp(src).map((s) => s.name), [
+    'class Rota', 'const GET', 'Rota.__construct()', 'Rota.criar()', 'function ajuda',
+  ]);
+});
+
+test('parserForExt reconhece .cs, .java e .php', () => {
+  assert.equal(parserForExt('.cs'), symbolsForCSharp);
+  assert.equal(parserForExt('.JAVA'), symbolsForJava);
+  assert.equal(parserForExt('.php'), symbolsForPhp);
 });

@@ -116,14 +116,17 @@ as a file, never presented as a definition.
 | `.py .pyi` | ✅ | ✅ |
 | `.go` | ✅ | ✅ |
 | `.rs` | ✅ | ✅ |
+| `.cs` (C#) | ✅ | ✅ |
+| `.java` | ✅ | ✅ |
+| `.php` | ✅ | ✅ |
 | `.pas .dpr .dpk .inc` (Delphi/Pascal) | ✅ | ✅ |
 | `.dfm .fmx` (Delphi forms) | — deliberately | ✅ |
 | `.md` | — | ✅ (sections) |
 | `.sql` (tables, columns, views, procedures…) | ✅ index only | ✅ |
 
 `coupling` and `audit-docs` work with any language. Every parser is checked against third-party
-production code — about **6,200 files and 147,000 symbols** across Python, Go, Delphi/Pascal, Rust
-and TypeScript projects — with **zero symbols reported at the wrong line**.
+production code — about **9,000 files and 192,000 symbols** across Python, Go, Delphi/Pascal, Rust,
+TypeScript, C#, Java and PHP projects — with **zero symbols reported at the wrong line**.
 
 ## What it costs
 

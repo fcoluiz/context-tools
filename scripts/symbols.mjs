@@ -179,6 +179,9 @@ function saveCache(root, parser, entries) {
  */
 function comIntervalos(syms, totalLinhas) {
   return syms.map((s, i) => {
+    // Parser que conhece o fechamento de verdade (C#, Java, PHP: a `}` do corpo) informa `end`;
+    // os demais continuam fechando no próximo símbolo de nível igual ou superior.
+    if (Number.isInteger(s.end) && s.end >= s.line) return [s.line, s.name, s.end];
     let fim = totalLinhas;
     for (let j = i + 1; j < syms.length; j++) {
       if (syms[j].depth <= s.depth) { fim = syms[j].line - 1; break; }
@@ -225,7 +228,7 @@ function bareName(kind) {
   // sem caixa, a frase inteira é o que faz `symbols.mjs instalador` achar o teste do instalador.
   if (kind.startsWith('test ')) return kind.slice(5);
   return kind
-    .replace(/^(async |static |get |set |class |const |function |type |enum |fn |struct |trait |union |mod |macro |procedure |constructor |destructor |property |record |interface |object |unit |program |library |def |func |var |package |key |table |view |column |trigger |index |sequence |domain )+/gi, '')
+    .replace(/^(async |static |get |set |class |const |function |type |enum |fn |struct |trait |union |mod |macro |procedure |constructor |destructor |property |record |interface |object |unit |program |library |def |func |var |package |key |table |view |column |trigger |index |sequence |domain |event |delegate |annotation )+/gi, '')
     .replace(/\(\)$/, '')
     .replace(QUALIFICADOR_RE, '');
 }

@@ -486,6 +486,248 @@ export function symbolsForGo(lines) {
   return out;
 }
 
+// C#, Java e PHP: a família de chaves. Mesmo princípio do Pascal, do Python e do Go — comentário
+// e literal de texto viram espaço ANTES de procurar declaração, preservando colunas e quebras de
+// linha. Cada dialeto tem a sua armadilha de texto que atravessa linhas:
+//   C#   — verbatim `@"…"` (aspas dobradas escapam, quebra de linha vale) e raw `"""…"""`;
+//   Java — text block `"""…"""`;
+//   PHP  — heredoc/nowdoc `<<<EOT … EOT`, string comum que atravessa linhas, comentário `#`
+//          (mas `#[` é atributo) e o HTML fora de `<?php … ?>`.
+// Literal de caractere (`'{'`) importa mais do que parece: o parser conta chaves para saber se
+// está dentro de um corpo, e um `'{'` solto desalinharia o resto do arquivo.
+function semTextoCLike(lines, dialeto) {
+  let aberto = dialeto === 'php' ? { tipo: 'html' } : null;
+  return lines.map((raw) => {
+    const s = raw.replace(/\r$/, '');
+    let out = '', i = 0;
+    const branco = (ate) => { out += ' '.repeat(Math.max(0, ate - i)); i = ate; };
+    if (aberto?.tipo === 'heredoc') {
+      // PHP 7.3+: o fechamento pode vir recuado, e o resto da linha (`;`, `)`) é código.
+      const m = s.match(new RegExp(`^(\\s*)${aberto.id}\\b`));
+      if (!m) return ' '.repeat(s.length);
+      branco(m[0].length);
+      aberto = null;
+    }
+    while (i < s.length) {
+      if (aberto) {
+        if (aberto.tipo === 'html') {
+          const f = s.indexOf('<?', i);
+          if (f === -1) { branco(s.length); continue; }
+          const tag = s.startsWith('<?php', f) ? 5 : s.startsWith('<?=', f) ? 3 : 2;
+          branco(f + tag); aberto = null; continue;
+        }
+        if (aberto.tipo === 'bloco' || aberto.tipo === 'raw') {
+          const f = s.indexOf(aberto.fim, i);
+          if (f === -1) { branco(s.length); continue; }
+          branco(f + aberto.fim.length); aberto = null; continue;
+        }
+        if (aberto.tipo === 'verbatim') {
+          let j = i;
+          while (j < s.length && !(s[j] === '"' && s[j + 1] !== '"')) j += s[j] === '"' ? 2 : 1;
+          if (j >= s.length) { branco(s.length); continue; }
+          branco(j + 1); aberto = null; continue;
+        }
+        if (aberto.tipo === 'str') {
+          let j = i;
+          while (j < s.length && s[j] !== aberto.aspa) j += s[j] === '\\' ? 2 : 1;
+          if (j >= s.length) { branco(s.length); continue; }
+          branco(j + 1); aberto = null; continue;
+        }
+      }
+      const c = s[i];
+      if (c === '/' && s[i + 1] === '/') { branco(s.length); continue; }
+      if (dialeto === 'php' && c === '#' && s[i + 1] !== '[') { branco(s.length); continue; }
+      if (c === '/' && s[i + 1] === '*') { aberto = { tipo: 'bloco', fim: '*/' }; branco(i + 2); continue; }
+      if (dialeto === 'php' && s.startsWith('?>', i)) { aberto = { tipo: 'html' }; branco(i + 2); continue; }
+      if (dialeto === 'php' && s.startsWith('<<<', i)) {
+        const m = s.slice(i).match(/^<<<\s*(["']?)([A-Za-z_]\w*)\1/);
+        if (m) { aberto = { tipo: 'heredoc', id: m[2] }; branco(s.length); continue; }
+      }
+      const prefixoCs = dialeto === 'cs' && (c === '@' || c === '$') ? s.slice(i).match(/^([$@]{1,3})"/) : null;
+      // `@` nunca prefixa raw string: `@"""…` é verbatim que começa com aspa escapada (`""`).
+      if (prefixoCs && prefixoCs[1].includes('@')) {
+        aberto = { tipo: 'verbatim' }; branco(i + prefixoCs[0].length); continue;
+      }
+      if (dialeto === 'cs' && c === '$' && s[i + 1] === '"') { out += ' '; i += 1; continue; }
+      if (c === '"' && s.startsWith('"""', i) && dialeto !== 'php') {
+        let n = 3;
+        while (s[i + n] === '"') n++;
+        const fim = dialeto === 'java' ? '"""' : '"'.repeat(n);
+        const f = s.indexOf(fim, i + n);
+        if (f === -1) { aberto = { tipo: 'raw', fim }; branco(s.length); continue; }
+        branco(f + fim.length); continue;
+      }
+      if (c === '"' || c === "'") {
+        let j = i + 1;
+        while (j < s.length && s[j] !== c) j += s[j] === '\\' ? 2 : 1;
+        if (j >= s.length && dialeto === 'php') { aberto = { tipo: 'str', aspa: c }; branco(s.length); continue; }
+        branco(Math.min(j + 1, s.length)); continue;
+      }
+      out += c; i++;
+    }
+    return out;
+  });
+}
+
+/**
+ * Motor comum dos três dialetos. A decisão que separa definição de chamada não é regex: é ONDE a
+ * linha está. Cada `{` empilha um contexto — namespace, corpo de tipo, corpo de membro, bloco solto
+ * — e só se procura declaração de membro DENTRO DE TIPO, e de tipo fora de qualquer corpo. Dentro
+ * de um método nada é procurado, então `var x = Foo(a);`, `return new Bar();` e lambdas nunca viram
+ * símbolo, sem precisar enumerar os jeitos de escrever uma chamada.
+ *
+ * O fim do símbolo também sai das chaves: é a linha da `}` que fecha o corpo (ou do `;` de um
+ * membro abstrato/expression-bodied). Mais exato que o fechamento por "próximo símbolo" que os
+ * parsers por indentação usam.
+ *
+ * Linha de continuação (a anterior terminou em `,`, `(`, `=`…) não é início de declaração: é o
+ * segundo parâmetro de uma assinatura quebrada, e `string nome,` não pode virar membro.
+ */
+function declaracoesCLike(lines, dialeto, declarar) {
+  const limpo = semTextoCLike(lines, dialeto);
+  const out = [];
+  const pilha = [];
+  let pendente = null;
+  let continua = false;
+  const temCorpo = () => pilha.some((c) => c.kind === 'body');
+  const topo = () => (pilha.length ? pilha[pilha.length - 1].kind : 'top');
+  const classe = () => { for (let k = pilha.length - 1; k >= 0; k--) if (pilha[k].kind === 'type') return pilha[k].name; return null; };
+  const tipos = () => pilha.filter((c) => c.kind === 'type').length;
+
+  limpo.forEach((line, i) => {
+    const n = i + 1;
+    const t = line.trim();
+    if (!t) return;
+    if (dialeto === 'cs' && t.startsWith('#')) return;   // #region, #if: diretiva, não código
+
+    if (!temCorpo() && !continua) {
+      const r = declarar(t, { topo: topo(), classe: classe(), tipos: tipos() });
+      if (r) {
+        let sym = null;
+        if (r.name) { sym = { line: n, name: r.name, depth: r.depth }; out.push(sym); }
+        pendente = { kind: r.abre, name: r.nome || null, sym };
+      }
+    }
+    for (const c of line) {
+      if (c === '{') {
+        const kind = pendente ? pendente.kind : (temCorpo() || topo() === 'type' ? 'body' : 'block');
+        pilha.push({ kind, name: pendente?.name || null, sym: pendente?.sym || null });
+        pendente = null;
+      } else if (c === '}') {
+        const ctx = pilha.pop();
+        if (ctx?.sym) ctx.sym.end = n;
+      } else if (c === ';' && pendente) {
+        if (pendente.sym) pendente.sym.end = n;
+        pendente = null;
+      }
+    }
+    continua = !temCorpo() && /(?:[,(=+\-*/?:&|.]|=>)$/.test(t);
+  });
+  return out;
+}
+
+const CS_MOD = String.raw`(?:(?:public|private|protected|internal|static|virtual|override|abstract|sealed|async|extern|unsafe|new|partial|readonly|volatile|required|file|ref|scoped)\s+)*`;
+const CS_TIPO = String.raw`(?:\([^()]*\)|(?:[A-Za-z_]\w*::)?[A-Za-z_][\w.]*(?:\s*<[^;(){}=]*?>)?(?:\s*\[[\s,]*\])*\??\*?)`;
+const CS_IFACE = String.raw`(?:[A-Za-z_][\w.]*(?:<[^()]*?>)?\.)?`;
+const CS_TIPO_RE = new RegExp(String.raw`^${CS_MOD}(class|struct|interface|enum|record)(?:\s+(?:class|struct))?\s+([A-Za-z_]\w*)`);
+const CS_DELEGATE_RE = new RegExp(String.raw`^${CS_MOD}delegate\s+${CS_TIPO}\s+([A-Za-z_]\w*)`);
+const CS_CONST_RE = new RegExp(String.raw`^${CS_MOD}const\s+${CS_TIPO}\s+([A-Za-z_]\w*)\s*=`);
+const CS_EVENT_RE = new RegExp(String.raw`^${CS_MOD}event\s+${CS_TIPO}\s+([A-Za-z_]\w*)`);
+const CS_CTOR_RE = new RegExp(String.raw`^${CS_MOD}([A-Za-z_]\w*)\s*\(`);
+const CS_METODO_RE = new RegExp(String.raw`^${CS_MOD}(${CS_TIPO})\s+${CS_IFACE}([A-Za-z_]\w*)\s*(?:<[^()]*?>)?\s*\(`);
+const CS_PROP_RE = new RegExp(String.raw`^${CS_MOD}(${CS_TIPO})\s+${CS_IFACE}([A-Za-z_]\w*)\s*(?:\{|=>|$)`);
+const CS_NAO_TIPO = new Set(['return', 'new', 'await', 'throw', 'yield', 'else', 'case', 'using', 'goto', 'operator', 'implicit', 'explicit', 'var', 'const', 'event', 'delegate', 'namespace', 'class', 'struct', 'interface', 'enum', 'record']);
+const semAtributosCs = (t) => t.replace(/^(?:\[[^\]]*\]\s*)+/, '');
+
+export function symbolsForCSharp(lines) {
+  return declaracoesCLike(lines, 'cs', (linha, ctx) => {
+    const t = semAtributosCs(linha);
+    if (!t) return null;
+    let m = t.match(/^namespace\s+[\w.]+\s*(;)?/);
+    if (m) return m[1] ? null : { abre: 'ns' };
+    if (ctx.topo === 'block') return null;
+    m = t.match(CS_TIPO_RE);
+    if (m) return { name: `${m[1]} ${m[2]}`, depth: ctx.tipos, abre: 'type', nome: m[2] };
+    m = t.match(CS_DELEGATE_RE);
+    if (m) return { name: `delegate ${m[1]}`, depth: ctx.tipos, abre: 'body' };
+    if (ctx.topo !== 'type') return null;
+    m = t.match(CS_CONST_RE);
+    if (m) return { name: `const ${m[1]}`, depth: ctx.tipos, abre: 'body' };
+    m = t.match(CS_EVENT_RE);
+    if (m) return { name: `event ${m[1]}`, depth: ctx.tipos, abre: 'body' };
+    m = t.match(CS_CTOR_RE);
+    if (m && m[1] === ctx.classe) return { name: `${ctx.classe}.${m[1]}()`, depth: ctx.tipos, abre: 'body' };
+    m = t.match(CS_METODO_RE);
+    if (m && !CS_NAO_TIPO.has(m[1]) && m[2] !== 'operator') {
+      return { name: `${ctx.classe}.${m[2]}()`, depth: ctx.tipos, abre: 'body' };
+    }
+    m = t.match(CS_PROP_RE);
+    if (m && !CS_NAO_TIPO.has(m[1]) && m[2] !== 'operator' && m[2] !== 'this') {
+      return { name: `property ${m[2]}`, depth: ctx.tipos, abre: 'body' };
+    }
+    return null;
+  });
+}
+
+const JAVA_MODS = ['public', 'private', 'protected', 'static', 'final', 'abstract', 'sealed', 'non-sealed', 'strictfp', 'default', 'synchronized', 'native', 'transient', 'volatile'];
+const JAVA_MOD = String.raw`((?:(?:${JAVA_MODS.join('|')})\s+)*)`;
+const JAVA_TIPO = String.raw`(?:[A-Za-z_$][\w$.]*(?:\s*<[^;(){}=]*?>)?(?:\s*\[\s*\])*)`;
+const JAVA_TIPO_RE = new RegExp(String.raw`^${JAVA_MOD}(class|interface|enum|record|@interface)\s+([A-Za-z_$][\w$]*)`);
+const JAVA_CTOR_RE = new RegExp(String.raw`^${JAVA_MOD}(?:<[^()]*?>\s*)?([A-Za-z_$][\w$]*)\s*\(`);
+const JAVA_METODO_RE = new RegExp(String.raw`^${JAVA_MOD}(?:<[^()]*?>\s*)?(${JAVA_TIPO})\s+([A-Za-z_$][\w$]*)\s*\(`);
+const JAVA_CONST_RE = new RegExp(String.raw`^${JAVA_MOD}${JAVA_TIPO}\s+([A-Za-z_$][\w$]*)\s*(?:=|;)`);
+const JAVA_NAO_TIPO = new Set(['return', 'new', 'throw', 'else', 'case', 'assert', 'yield', 'class', 'interface', 'enum', 'record', 'package', 'import']);
+// Anotação sai de QUALQUER posição, não só do começo: anotação de tipo (`public @Nullable String
+// get(`, `Map.@Nullable Entry<…> scan(`) fica entre o modificador e o tipo, e é o estilo dominante
+// em projeto com análise de nulidade — sem isto, todo método assim sumia do índice.
+const semAnotacoesJava = (t) => t.replace(/@(?!interface\b)[A-Za-z_$][\w$.]*(?:\s*\([^()]*\))?\s*/g, '');
+
+export function symbolsForJava(lines) {
+  return declaracoesCLike(lines, 'java', (linha, ctx) => {
+    const t = semAnotacoesJava(linha);
+    if (!t || ctx.topo === 'block') return null;
+    let m = t.match(JAVA_TIPO_RE);
+    if (m) {
+      const kw = m[2] === '@interface' ? 'annotation' : m[2];
+      return { name: `${kw} ${m[3]}`, depth: ctx.tipos, abre: 'type', nome: m[3] };
+    }
+    if (ctx.topo !== 'type') return null;
+    m = t.match(JAVA_CTOR_RE);
+    if (m && m[2] === ctx.classe) return { name: `${ctx.classe}.${m[2]}()`, depth: ctx.tipos, abre: 'body' };
+    m = t.match(JAVA_METODO_RE);
+    if (m && !JAVA_NAO_TIPO.has(m[2])) return { name: `${ctx.classe}.${m[3]}()`, depth: ctx.tipos, abre: 'body' };
+    // Constante: só `static final` explícito. Campo comum de instância é estado, não definição que
+    // se procura entre arquivos — o mesmo critério que deixa variável local fora do índice.
+    m = t.match(JAVA_CONST_RE);
+    if (m && /\bstatic\b/.test(m[1]) && /\bfinal\b/.test(m[1])) return { name: `const ${m[2]}`, depth: ctx.tipos, abre: 'body' };
+    return null;
+  });
+}
+
+const PHP_TIPO_RE = /^(?:(?:abstract|final|readonly)\s+)*(class|interface|trait|enum)\s+([A-Za-z_]\w*)/i;
+const PHP_METODO_RE = /^(?:(?:public|private|protected|static|abstract|final)\s+)*function\s+&?\s*([A-Za-z_]\w*)\s*\(/i;
+const PHP_CONST_RE = /^(?:(?:public|private|protected|final)\s+)*const\s+(?:[A-Za-z_\\?][\w\\|?]*\s+)?([A-Za-z_]\w*)\s*=/i;
+const semAtributosPhp = (t) => t.replace(/^(?:#\[[^\]]*\]\s*)+/, '');
+
+export function symbolsForPhp(lines) {
+  return declaracoesCLike(lines, 'php', (linha, ctx) => {
+    const t = semAtributosPhp(linha);
+    if (!t) return null;
+    let m = t.match(/^namespace\s+[\w\\]+\s*(;)?/i);
+    if (m) return m[1] ? null : { abre: 'ns' };
+    m = t.match(PHP_TIPO_RE);
+    if (m) return { name: `${m[1].toLowerCase()} ${m[2]}`, depth: ctx.tipos, abre: 'type', nome: m[2] };
+    m = t.match(PHP_METODO_RE);
+    // Função de topo também vale dentro de bloco solto: `if (!function_exists('x')) { function x() }`
+    // é o jeito idiomático de declarar helper global, e ali o contexto é `block`, não `top`.
+    if (m && ctx.topo === 'type') return { name: `${ctx.classe}.${m[1]}()`, depth: ctx.tipos, abre: 'body' };
+    if (m && /^function\b/i.test(t)) return { name: `function ${m[1]}`, depth: 0, abre: 'body' };
+    m = t.match(PHP_CONST_RE);
+    if (m && (ctx.topo === 'type' || /^const\b/i.test(t))) return { name: `const ${m[1]}`, depth: ctx.tipos, abre: 'body' };
+    return null;
+  });
+}
+
 // .dfm — recurso de formulário, não código. Estrutura é `object Nome: TTipo` aninhado por
 // indentação, fechado com `end`. Serve para navegar um formulário grande; NÃO entra no índice
 // cross-file (ver symbols.mjs), porque nome de componente (`Button1`, `Panel2`) é genérico
@@ -623,6 +865,9 @@ export function parserForExt(ext) {
   if (e === '.py' || e === '.pyi') return symbolsForPython;
   if (e === '.go') return symbolsForGo;
   if (e === '.sql') return symbolsForSql;
+  if (e === '.cs') return symbolsForCSharp;
+  if (e === '.java') return symbolsForJava;
+  if (e === '.php') return symbolsForPhp;
   if (/^\.(js|jsx|ts|tsx|mjs|cjs)$/.test(e)) return symbolsForCode;
   return null;
 }

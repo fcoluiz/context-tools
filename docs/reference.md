@@ -200,8 +200,20 @@ did not report is classified one by one.
 | Delphi/Pascal | HeidiSQL · Double Commander | 1,164 | 72,179 | **0** |
 | Rust | rayon · a private desktop app | 219 | 5,778 | **0** |
 | TypeScript | reference frontend · third-party project | 864 | 1,617 **types** | **0** |
+| C# | Newtonsoft.Json · serilog · Dapper | 1,321 | 17,050 | **0** |
+| Java | gson · commons-lang · jsoup | 1,098 | 22,584 | **0** |
+| PHP | monolog · guzzle · Slim | 488 | 5,981 | **0** |
 
-**≈ 6,200 files and 147,000 symbols**, eleven independent projects, two Pascal dialects.
+**≈ 9,000 files and 192,000 symbols**, twenty independent projects, two Pascal dialects.
+
+For C#, Java and PHP (2026-10-09, shallow clones of each project's default branch) the check was the
+same, plus a random sample of 100 symbols read by hand. Declarations the index does not report were
+grouped by pattern instead of one by one: C# operator overloads (left out on purpose — nobody
+searches for `operator +`), members of anonymous classes and of Java enum-constant bodies (local
+code, like a method's inner variables), and commented-out code. Two real bugs came out of it before
+release: a C# verbatim string starting with an escaped quote (`@"""…`) was read as a raw string and
+hid every method after it, and Java type annotations (`public @Nullable String get(`) hid the
+annotated method.
 
 The TypeScript row measures only `interface`/`type`/`enum`, which was the gap under investigation;
 the same parser ran over the 593 JS files of the reference backend to prove the other side — **0 new
@@ -508,7 +520,7 @@ enter.
 
 > **Two savings of very different sizes — do not confuse them.** Navigating better (`symbols`,
 > `outline`, `coupling`) yields **1–3%**, and that alone would not justify any tool; what justifies
-> that side is **0 wrong lines across 6,200 files**, the **183 round-trips** the Grep hook would have
+> that side is **0 wrong lines across 9,000 files**, the **183 round-trips** the Grep hook would have
 > cut, and the index being **13× faster** — the thesis there is not sending `Read` to the wrong
 > place. The real saving is the other one: **splitting the session yields 19–27%**, an order of
 > magnitude higher, and that is what the `Stop` warning plus the `handoff` exist to make practical.
@@ -572,6 +584,9 @@ distributed plugin, users need to be able to distrust it.
 | `.py .pyi` | ✅ | ✅ |
 | `.go` | ✅ | ✅ |
 | `.rs` | ✅ | ✅ |
+| `.cs` (C#) | ✅ | ✅ |
+| `.java` | ✅ | ✅ |
+| `.php` | ✅ | ✅ |
 | `.pas .dpr .dpk .inc` (Delphi/Pascal) | ✅ | ✅ |
 | `.dfm .fmx` (Delphi form) | — deliberately | ✅ |
 | `.md` | — | ✅ (sections) |
@@ -583,6 +598,10 @@ case-insensitive and every method appears twice (declared in `interface`, define
 `implementation`). **Rust** has `impl Foo` and `impl Trait for Foo`, and in both what you are looking
 for is the type — and `fn` differs from `Fn` (a trait in a `where` clause) only by case. **Go** has
 generic receivers (`func (b Bucket[BC]) String()`) and grouped blocks. **Python** has docstrings.
+**C#, Java and PHP** share one engine that tracks braces: member declarations are only looked for
+directly inside a type, so a call inside a method body can never become a definition, and a symbol
+ends at the brace that closes it. Methods are labeled with their class (`Order.Confirm()`) and found
+by the bare name.
 
 `.dfm`/`.fmx` stay out of the cross-file index deliberately: component names (`Button1`, `Panel2`)
 repeat in every form and would drown the search for real symbols.
@@ -1144,7 +1163,7 @@ describes today's value. A test that repeats the list is the fifth copy.
   prove it**. Closing the rest would require an AST, and then the cost is not performance but
   dependencies: "zero dependencies" here is a CI test that fails if anyone adds a package. In the
   cases it cannot see, it says so and sends you to Grep.
-- **Ruby, Java, C#, PHP and others have no parser.** It is not difficulty, it is method: a new parser
+- **Ruby, Kotlin, Swift and others have no parser.** It is not difficulty, it is method: a new parser
   only lands with a real corpus to verify it points at the right line. Until then, `symbols`
   diagnoses the case instead of claiming the project is empty.
 - **No test runs the plugin inside Claude Code itself** — the E2E tests run the scripts as processes,

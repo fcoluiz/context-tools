@@ -187,8 +187,20 @@ classificado um a um.
 | Delphi/Pascal | HeidiSQL · Double Commander | 1.164 | 72.179 | **0** |
 | Rust | rayon · um app desktop privado | 219 | 5.778 | **0** |
 | TypeScript | frontend de referência · projeto de terceiro | 864 | 1.617 **tipos** | **0** |
+| C# | Newtonsoft.Json · serilog · Dapper | 1.321 | 17.050 | **0** |
+| Java | gson · commons-lang · jsoup | 1.098 | 22.584 | **0** |
+| PHP | monolog · guzzle · Slim | 488 | 5.981 | **0** |
 
-**≈ 6.200 arquivos e 147 mil símbolos**, onze projetos independentes, dois dialetos de Pascal.
+**≈ 9.000 arquivos e 192 mil símbolos**, vinte projetos independentes, dois dialetos de Pascal.
+
+Em C#, Java e PHP (2026-10-09, clone raso do branch padrão de cada projeto) o critério foi o mesmo,
+mais uma amostra aleatória de 100 símbolos lida à mão. As declarações que o índice não reporta foram
+agrupadas por padrão, não uma a uma: sobrecarga de operador em C# (fora de propósito — ninguém
+procura `operator +`), membros de classe anônima e de corpo de constante de enum Java (código local,
+como variável de dentro de um método) e código comentado. Saíram dois bugs reais antes da
+publicação: uma string verbatim de C# que começa com aspa escapada (`@"""…`) era lida como raw string
+e escondia todos os métodos depois dela, e anotação de tipo em Java (`public @Nullable String get(`)
+escondia o método anotado.
 
 A linha do TypeScript mede só `interface`/`type`/`enum`, que era a lacuna investigada; o mesmo
 parser rodou nos 593 arquivos JS do backend de referência para provar o outro lado — **0 símbolos
@@ -492,7 +504,7 @@ preenchido, só quando a sessão anterior fechou de verdade. O bloco mecânico n
 
 > **Duas economias de tamanhos muito diferentes — não confunda as duas.** Navegar melhor
 > (`symbols`, `outline`, `coupling`) rende **1-3%**, e isso sozinho não justificaria ferramenta
-> nenhuma; o que justifica esse lado é **0 linha errada em 6.200 arquivos**, os **183 round-trips**
+> nenhuma; o que justifica esse lado é **0 linha errada em 9.000 arquivos**, os **183 round-trips**
 > que o hook de Grep teria cortado e o índice **13× mais rápido** — a tese ali é não mandar o
 > `Read` para o lugar errado. A economia de verdade é a outra: **dividir a sessão rende 19-27%**,
 > uma ordem de grandeza acima, e é o que o aviso de `Stop` mais o `handoff` existem para tornar
@@ -557,6 +569,9 @@ distribuído, quem usa precisa poder desconfiar.
 | `.py .pyi` | ✅ | ✅ |
 | `.go` | ✅ | ✅ |
 | `.rs` | ✅ | ✅ |
+| `.cs` (C#) | ✅ | ✅ |
+| `.java` | ✅ | ✅ |
+| `.php` | ✅ | ✅ |
 | `.pas .dpr .dpk .inc` (Delphi/Pascal) | ✅ | ✅ |
 | `.dfm .fmx` (formulário Delphi) | — de propósito | ✅ |
 | `.md` | — | ✅ (seções) |
@@ -568,6 +583,10 @@ case-insensitive e todo método aparece duas vezes (declarado no `interface`, de
 `implementation`). **Rust** tem `impl Foo` e `impl Trait for Foo`, e nas duas o que se procura é o
 tipo — e `fn` difere de `Fn` (trait em cláusula `where`) só pela caixa. **Go** tem receptor genérico
 (`func (b Bucket[BC]) String()`) e blocos agrupados. **Python** tem docstring.
+**C#, Java e PHP** dividem um motor que conta chaves: declaração de membro só é procurada direto
+dentro de um tipo, então uma chamada no corpo de um método nunca vira definição, e o símbolo termina
+na chave que o fecha. Métodos saem rotulados com a classe (`Pedido.Confirmar()`) e são achados pelo
+nome nu.
 
 `.dfm`/`.fmx` ficam fora do índice cross-file de propósito: nome de componente (`Button1`, `Panel2`)
 se repete em todo formulário e afogaria a busca por símbolo de verdade.
@@ -1123,7 +1142,7 @@ hoje. Teste que repete a lista é a quinta cópia.
   consultas reais para provar**. Fechar o resto exigiria AST, e aí o custo não é desempenho e sim
   dependência: “zero dependência” aqui é um teste de CI que falha se alguém adicionar um pacote.
   Nos casos que ele não vê, avisa e manda pro Grep.
-- **Ruby, Java, C#, PHP e outras não têm parser.** Não é dificuldade, é método: parser novo só entra
+- **Ruby, Kotlin, Swift e outras não têm parser.** Não é dificuldade, é método: parser novo só entra
   com corpus real para conferir que aponta para a linha certa. Enquanto não entra, o `symbols`
   diagnostica o caso em vez de dizer que o projeto está vazio.
 - **Nenhum teste roda o plugin dentro do Claude Code de verdade** — os E2E rodam os scripts como

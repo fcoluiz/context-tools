@@ -808,6 +808,34 @@ referência do marketplace, reinstalar a versão selecionada, preparar o projeto
 as versões atual e mais recente e configurar `extraRepos` depois de confirmação. Execute dentro do
 projeto; `--project <caminho>` só é necessário ao administrar outro projeto.
 
+## O servidor MCP (opcional)
+
+O `mcp-server.mjs` fala Model Context Protocol por stdio — JSON-RPC 2.0, uma mensagem por linha — sem
+dependência. Negocia as versões de protocolo 2025-06-18, 2025-03-26 e 2024-11-05, expõe só
+ferramentas (sem resources, sem prompts) e marca as cinco como só de leitura:
+
+| ferramenta | o mesmo que |
+|---|---|
+| `find_symbol` | `symbols.mjs <nomes…>` |
+| `references` | `refs.mjs <nome>` |
+| `impact` | `impact.mjs <alvo> --budget=N` |
+| `outline` | `outline.mjs <arquivo> [filtro]` — o caminho tem de estar dentro do projeto |
+| `overview` | `overview.mjs` |
+
+A raiz do projeto é a pasta de trabalho do servidor (o cliente o inicia no projeto), ou
+`CONTEXT_TOOLS_PROJECT_DIR`/`CLAUDE_PROJECT_DIR`. Nada além de mensagens do protocolo sai em stdout;
+ferramenta que falha devolve `isError` com o motivo e o caminho para a busca textual, nunca resposta
+vazia.
+
+**Por que é opcional.** O plugin já leva as ferramentas ao Claude Code e ao Codex pela skill e pelos
+hooks, e toda definição de ferramenta MCP é paga em cada requisição do cliente que a carrega: cerca de
+2.000 caracteres (~500 tokens) aqui, com teto sob teste. Vale para clientes que não têm skill nem
+hooks, não como padrão. `setup --mcp` copia os scripts para `~/.context-tools/runtime` (o caminho não
+muda entre versões, ao contrário do cache do plugin) e registra `node <runtime>/scripts/mcp-server.mjs`
+com `claude mcp add --scope user|local` ou `codex mcp add`. Uma nova execução do setup renova a cópia
+quando o servidor está registrado; `--remove-mcp` remove o registro; `status` mostra se está
+registrado.
+
 ## Os hooks
 
 | evento | o que faz | custo |

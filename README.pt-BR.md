@@ -102,6 +102,30 @@ codex plugin marketplace add fcoluiz/context-tools
 codex plugin add context-tools@context-tools-codex
 ```
 
+### Opcional: servidor MCP
+
+O plugin (skill + hooks) é o jeito recomendado de usar o context-tools no Claude Code e no Codex. Há
+também um servidor MCP para **outros clientes MCP** e para quem prefere chamada de ferramenta
+tipada: cinco ferramentas só de leitura (`find_symbol`, `references`, `impact`, `outline`,
+`overview`) que devolvem as mesmas respostas dos comandos, de um processo que fica vivo (sem partida
+do Node a cada chamada).
+
+Ele vem **desligado**, porque definição de ferramenta tem custo: cerca de 2.000 caracteres (~500
+tokens) somados a cada requisição do cliente que as carrega — teto garantido por teste. Ligue pelo
+mesmo instalador:
+
+```bash
+npx --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes --mcp
+```
+
+O instalador copia os scripts para `~/.context-tools/runtime` (um caminho que sobrevive às
+atualizações) e roda `claude mcp add` / `codex mcp add` por você. Rodar o instalador de novo mantém o
+servidor atualizado; `--remove-mcp` remove o registro. Qualquer outro cliente pode iniciá-lo direto:
+
+```json
+{ "mcpServers": { "context-tools": { "command": "node", "args": ["<home>/.context-tools/runtime/scripts/mcp-server.mjs"] } } }
+```
+
 ### Standalone, sem plugin
 
 ```bash

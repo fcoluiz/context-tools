@@ -47,6 +47,22 @@ reconstructed from git history.
   recent sessions (one local sample per `SessionStart`, no paths or names stored). Documents that are
   historical, manual or cite no source are counted apart instead of inflating the score.
 
+- **Optional MCP server.** `mcp-server.mjs` (or `ct.mjs mcp`) speaks MCP over stdio with five read-only
+  tools — `find_symbol`, `references`, `impact`, `outline`, `overview` — that return the same answers
+  as the commands from a long-lived process. Off by default: its tool definitions add ~2,000
+  characters to every request of a client that loads them (ceiling under test). `setup --mcp` copies
+  the scripts to `~/.context-tools/runtime` and registers it with `claude mcp add` / `codex mcp add`;
+  later updates refresh that copy, `--remove-mcp` unregisters it, and `status` reports it. Checked
+  against the real Claude Code CLI (`claude mcp get` reports it connected).
+
+### Fixed
+
+- **Arguments with quotes reached the agent CLIs with literal quotes on Windows.** The setup ran
+  `cmd /s /c` without verbatim arguments, so Node re-escaped the quotes `quoteCmd` added; any path
+  with a backslash or a space arrived as `"C:…"`. No argument needed quotes before the MCP path.
+- **`isMain` compares real paths.** An npm bin on Linux/macOS is a symlink, so a script started
+  through it did not recognize itself as the entry point.
+
 ### Changed
 
 - **The skill is 59% shorter.** It now uses the `ct.mjs` verbs and drops internals the agent does not

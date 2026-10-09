@@ -281,6 +281,15 @@ const CAT = {
     'setup.mkt.done': (p) => `Marketplace ${p.nome} configured at ${p.ref}.`,
     'setup.plugin.installStep': () => 'install the context-tools plugin',
     'setup.plugin.done': (p) => `context-tools plugin installed/updated for ${p.agente}.`,
+    'setup.mcp.ask': () => 'Also register the optional MCP server? Useful for other MCP clients; its tool definitions add about 500 tokens to each request',
+    'setup.mcp.done': (p) => `MCP server registered for ${p.agente}: node ${p.caminho}`,
+    'setup.mcp.refreshed': (p) => `MCP server for ${p.agente} updated to this version.`,
+    'setup.mcp.removed': (p) => `MCP server unregistered from ${p.agente}.`,
+    'setup.mcp.notRegistered': (p) => `No context-tools MCP server was registered in ${p.agente}.`,
+    'setup.mcp.step': () => 'registering the MCP server',
+    'setup.mcp.failedOptional': (p) => `The plugin is installed for ${p.agente}; only the optional MCP server failed.`,
+    'setup.status.mcp': (p) => `MCP server (optional): ${p.valor}`,
+    'setup.value.optionalOff': () => 'not registered (use --mcp to enable)',
     'setup.bootstrap.step': () => "prepare the project's local scripts",
     'setup.lang.invalid': () => 'Invalid language; use pt/português or en/inglês. Portuguese will be used.',
     'setup.lang.ask': () => 'ai-context language [P]ortuguês/[E]nglish (Enter = Português): ',
@@ -359,6 +368,9 @@ ${p.opcoes}`,
   --ref=vX.Y.Z          use a specific tag
   --dry-run             simulate without changing the project, installing dependencies or using the network
   --keep-open           keep the guided launcher open when it finishes
+  --mcp                 also register the optional MCP server (its tool definitions add about
+                        500 tokens to every request of a client that loads them)
+  --remove-mcp          unregister the MCP server
 
 The language of these messages follows CONTEXT_TOOLS_LANG, then "lang" in
 <state-dir>/context-tools.json, then the system locale, defaulting to English.
@@ -635,6 +647,15 @@ ${p.opcoes}`,
     'setup.mkt.done': (p) => `Marketplace ${p.nome} configurado em ${p.ref}.`,
     'setup.plugin.installStep': () => 'instalar o plugin context-tools',
     'setup.plugin.done': (p) => `Plugin context-tools instalado/atualizado para ${p.agente}.`,
+    'setup.mcp.ask': () => 'Registrar também o servidor MCP opcional? Útil para outros clientes MCP; a definição das ferramentas soma cerca de 500 tokens a cada requisição',
+    'setup.mcp.done': (p) => `Servidor MCP registrado para ${p.agente}: node ${p.caminho}`,
+    'setup.mcp.refreshed': (p) => `Servidor MCP de ${p.agente} atualizado para esta versão.`,
+    'setup.mcp.removed': (p) => `Servidor MCP removido de ${p.agente}.`,
+    'setup.mcp.notRegistered': (p) => `Nenhum servidor MCP do context-tools estava registrado em ${p.agente}.`,
+    'setup.mcp.step': () => 'registro do servidor MCP',
+    'setup.mcp.failedOptional': (p) => `O plugin está instalado para ${p.agente}; só o servidor MCP opcional falhou.`,
+    'setup.status.mcp': (p) => `Servidor MCP (opcional): ${p.valor}`,
+    'setup.value.optionalOff': () => 'não registrado (use --mcp para ativar)',
     'setup.bootstrap.step': () => 'preparar os scripts locais do projeto',
     'setup.lang.invalid': () => 'Idioma inválido; use pt/português ou en/inglês. Português será usado.',
     'setup.lang.ask': () => 'Idioma do ai-context [P]ortuguês/[E]nglish (Enter = Português): ',
@@ -713,6 +734,9 @@ ${p.opcoes}`,
   --ref=vX.Y.Z          usa uma tag específica
   --dry-run             simula sem alterar projeto, instalar dependências ou acessar a rede
   --keep-open           mantém o launcher guiado aberto ao terminar
+  --mcp                 registra também o servidor MCP opcional (a definição das ferramentas soma
+                        cerca de 500 tokens a cada requisição do cliente que as carrega)
+  --remove-mcp          remove o registro do servidor MCP
 
 O idioma destas mensagens segue CONTEXT_TOOLS_LANG, depois "lang" em
 <state-dir>/context-tools.json, depois o locale do sistema, com inglês como padrão.

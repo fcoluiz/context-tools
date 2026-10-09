@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/fcoluiz/context-tools/blob/main/docs/spec/knowledge-format.schema.json",
+  "title": "Verifiable project knowledge — metadata v1",
+  "description": "Parsed metadata of a context map (frontmatter) or an operational document. See knowledge-format.md.",
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^(sha256:[0-9a-f]{64}|missing)$"
+    },
+    "fingerprints": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/fingerprint" }
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}"
+    }
+  },
+  "oneOf": [
+    {
+      "title": "context map",
+      "type": "object",
+      "required": ["area", "covers", "verified_at"],
+      "properties": {
+        "area": { "type": "string", "minLength": 1 },
+        "covers": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "verified_at": { "type": "string", "minLength": 1 },
+        "verified_date": { "$ref": "#/$defs/date" },
+        "source_fingerprints": { "$ref": "#/$defs/fingerprints" },
+        "source_digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    {
+      "title": "operational document",
+      "type": "object",
+      "properties": {
+        "last_reviewed": { "$ref": "#/$defs/date" },
+        "source_fingerprints": { "$ref": "#/$defs/fingerprints" },
+        "source_digest": { "$ref": "#/$defs/digest" },
+        "maintenance": { "enum": ["live", "historical", "manual"] },
+        "review_sources": { "type": "array", "items": { "type": "string" }, "maxItems": 120 },
+        "review_dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "symbols"],
+            "properties": {
+              "source": { "type": "string" },
+              "symbols": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "dependency_fingerprints": { "type": "object" },
+        "confidence": { "type": "string" },
+        "source": { "type": "string" }
+      }
+    }
+  ]
+}

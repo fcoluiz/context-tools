@@ -8,6 +8,13 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.7.0] — 2026-10-09
+
+Find, remember, verify: who uses a symbol and what is at stake before changing it, a first-minute
+panorama, C#/Java/PHP, a drift check for pull requests, a knowledge-freshness score, an optional MCP
+server, an open spec for verifiable knowledge and an outcome benchmark harness — with a skill 59%
+shorter.
+
 ### Added
 
 - **C#, Java and PHP in the index and the outline.** `symbols` and `outline` now read `.cs`, `.java`

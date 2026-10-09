@@ -138,3 +138,14 @@ test('PreToolUse dispara em Grep no Claude e em Bash no Codex, de propósito', (
     assert.ok(!alternativas.includes('Grep'), `${manifesto.join('/')}: o Codex não expõe uma tool Grep`);
   }
 });
+
+test('o exemplo da GitHub Action nos READMEs aponta para a versão publicada', () => {
+  // Um exemplo de `uses: fcoluiz/context-tools@vX` com tag velha ensina a usar a versão errada; com
+  // tag futura, quebra o workflow de quem copia. Deriva do package.json, como os manifestos.
+  const versao = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
+  for (const readme of ['README.md', 'README.pt-BR.md']) {
+    const usos = [...readFileSync(join(ROOT, readme), 'utf8').matchAll(/uses: fcoluiz\/context-tools@(v[\d.]+)/g)].map((m) => m[1]);
+    assert.ok(usos.length, `${readme} sem exemplo da Action`);
+    for (const tag of usos) assert.equal(tag, `v${versao}`, `${readme} usa ${tag}`);
+  }
+});

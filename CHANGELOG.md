@@ -21,6 +21,14 @@ reconstructed from git history.
   methods. The three languages also count as code for maps, coupling and the verification note, which
   now knows `dotnet test`, `composer test` and `vendor/bin/phpunit`; `providers.mjs` suggests
   csharp-ls, jdtls and intelephense.
+- **`refs.mjs`: who uses X, and from which function.** The uses of a name outside its definition,
+  grouped by file, each labeled with the function or method that contains it. Comments and string
+  literals are dropped with each language's own stripper and counted apart; Delphi forms are scanned
+  for event wiring. By name, not by type, and the answer says so.
+- **`impact.mjs`: what is at stake before a change.** For a symbol or a file, one budgeted briefing
+  with its uses, what historically changes together with it (git, directional), the related tests and
+  test command, and the context maps and `ai-context` documents that cite it, with whether the source
+  they reviewed is still today's. On demand only: no hook calls it.
 
 ## [2.6.0] — 2026-10-09
 

@@ -5,28 +5,14 @@ description: Navegação de código e higiene de documentação sem re-explorar 
 
 # Ferramentas de contexto
 
-Os exemplos desta skill usam o caminho do plugin Codex: `${PLUGIN_ROOT}/scripts/`. Se o projeto tiver
-uma instalação standalone, substitua esse prefixo por `.codex/scripts/`; não misture os dois modos.
+Os exemplos usam `${PLUGIN_ROOT}/scripts/` (plugin Codex). No plugin Claude use
+`${CLAUDE_PLUGIN_ROOT}/scripts/`; numa instalação standalone, **exatamente** `.codex/scripts/` ou
+`.claude/scripts/` — não misture os modos nem copie scripts do plugin para o projeto. A raiz vem do
+contexto do agente, do cwd ou do repositório acima; `--root=<dir>` força. Instalar, atualizar e
+diagnosticar: `node "${PLUGIN_ROOT}/setup-codex.mjs"`.
 
-## Instalação global e standalone
-
-Quando esta skill vier do plugin, use os scripts do plugin diretamente. Não copie scripts,
-skill ou hooks para o projeto. Se precisar inicializar a configuração local, execute
-`node "${PLUGIN_ROOT}/install-codex.mjs" --mode=global`; esse modo não cria outra instalação.
-A instalação standalone é uma escolha explícita para ambientes sem plugin global.
-
-Para manutenção completa pelo terminal, `node "${PLUGIN_ROOT}/setup-codex.mjs"` instala/atualiza o
-plugin, consulta a versão, executa diagnóstico e pode configurar `extraRepos` interativamente.
-
-Os comandos abaixo **geram na hora** (nunca defasam) e **falham visível**: se não acharem,
-dizem que não acharam e mandam para busca textual (`rg`/`grep`) — nunca devolvem vazio com cara
-de resposta.
-
-No Codex com instalação local no projeto, use **exatamente** `.codex/scripts/` — não execute
-literalmente o placeholder `<scripts>`. No Claude local, o equivalente é `.claude/scripts/`.
-Quando a skill vier de um plugin, use `${CLAUDE_PLUGIN_ROOT}/scripts/` no Claude ou
-`${PLUGIN_ROOT}/scripts/` no Codex. Os scripts descobrem a raiz pelo contexto do agente, cwd ou
-repositório acima; `--root=<dir>` força.
+Os comandos **geram na hora** (nunca defasam) e **falham visível**: se não acharem, dizem e mandam
+para `rg`/`grep` — nunca devolvem vazio com cara de resposta.
 
 ## Onde X está definido? → `symbols.mjs`
 
@@ -37,6 +23,18 @@ node "${PLUGIN_ROOT}/scripts/symbols.mjs" <nome> [--all]
 Indexa todos os arquivos de código dos repositórios encontrados e devolve a **definição** —
 não as dezenas de menções que `rg`/`grep` dariam. Use **antes** da busca textual quando procura uma função,
 classe, método ou binding de topo.
+
+## Quem usa X? O que está em jogo antes de mudar? → `refs.mjs` / `impact.mjs`
+
+```
+node "${PLUGIN_ROOT}/scripts/refs.mjs" <nome> [--all]
+node "${PLUGIN_ROOT}/scripts/impact.mjs" <símbolo-ou-arquivo> [--budget=2000]
+```
+
+`refs` lista os usos fora da definição, cada um com a função que o contém (comentário e string não
+contam). `impact` junta usos, o que muda junto no git, testes relacionados e mapas/documentos que
+citam o arquivo, dizendo se estão em dia. Use `impact` antes de mudar assinatura, renomear ou apagar.
+São por nome, não por tipo: mesmo nome em dois lugares não é distinguido, e uso dinâmico não aparece.
 
 ## Montar contexto mínimo → `context-pack.mjs`
 

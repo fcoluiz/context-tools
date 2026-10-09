@@ -276,24 +276,7 @@ export function documentationReferencesForFile(root = resolveRoot(), cfg = loadC
   if (!targetRepo) return { status: 'repository-unavailable', documents: [] };
   const target = resolve(targetRepo.path, relativeFile);
   const targetKey = process.platform === 'win32' ? target.toLowerCase() : target;
-  let basenameIndex = null;
-  const findByBasename = (name) => {
-    if (!basenameIndex) {
-      basenameIndex = new Map();
-      for (const repo of repos) {
-        for (const path of walk(repo.path, HISTORY_CODE_RE)) {
-          const file = relPath(repo.path, path).replace(/\\/g, '/');
-          const sourceStat = safe(() => statSync(path), null);
-          if (!sourceStat?.isFile()) continue;
-          const key = basename(file).toLowerCase();
-          const sources = basenameIndex.get(key) || [];
-          sources.push({ repo, file, exists: true, mtime: sourceStat.mtimeMs });
-          basenameIndex.set(key, sources);
-        }
-      }
-    }
-    return basenameIndex.get(String(name || '').toLowerCase()) || [];
-  };
+  const findByBasename = buscaPorNome(repos);
   const documents = [];
   for (const document of catalog.documents) {
     if (document.type === 'index') continue;
@@ -574,6 +557,31 @@ export function documentationReviewTarget(root, documentPath, cfg = loadConfig(r
   return { document, sources: referencedCodeFiles(document, root, repos, byName) };
 }
 
+/**
+ * Fontes por nome de arquivo, montado só na primeira consulta: documento que cita apenas o nome da
+ * unit (`UCadCliente.pas`) aponta para a mesma fonte real que o audit-docs considera resolvida.
+ */
+function buscaPorNome(repos) {
+  let basenameIndex = null;
+  return (name) => {
+    if (!basenameIndex) {
+      basenameIndex = new Map();
+      for (const repo of repos) {
+        for (const path of walk(repo.path, HISTORY_CODE_RE)) {
+          const file = relPath(repo.path, path).replace(/\\/g, '/');
+          const sourceStat = safe(() => statSync(path), null);
+          if (!sourceStat?.isFile()) continue;
+          const key = basename(file).toLowerCase();
+          const sources = basenameIndex.get(key) || [];
+          sources.push({ repo, file, exists: true, mtime: sourceStat.mtimeMs });
+          basenameIndex.set(key, sources);
+        }
+      }
+    }
+    return basenameIndex.get(String(name || '').toLowerCase()) || [];
+  };
+}
+
 function referenceIsStale(document, source) {
   if (!source.exists) return true;
   const reviewed = dateOnly(document.metadata.lastReviewed);
@@ -609,31 +617,14 @@ export function documentationStopReport(root = resolveRoot(), cfg = loadConfig(r
     return changed?.has(normalizePath(source.file)) || false;
   };
   let fingerprintStateChanged = false;
-  let basenameIndex = null;
-  const findByBasename = (name) => {
-    if (!basenameIndex) {
-      basenameIndex = new Map();
-      for (const repo of repos) {
-        for (const path of walk(repo.path, HISTORY_CODE_RE)) {
-          const file = relPath(repo.path, path).replace(/\\/g, '/');
-          const sourceStat = safe(() => statSync(path), null);
-          if (!sourceStat?.isFile()) continue;
-          const key = basename(file).toLowerCase();
-          const sources = basenameIndex.get(key) || [];
-          sources.push({ repo, file, exists: true, mtime: sourceStat.mtimeMs });
-          basenameIndex.set(key, sources);
-        }
-      }
-    }
-    return basenameIndex.get(String(name || '').toLowerCase()) || [];
-  };
+  const findByBasename = buscaPorNome(repos);
   for (const document of catalog.documents) {
     if (document.type === 'index') continue;
     if (document.metadata.invalidReviewSources) { options.onIssue?.({ kind: 'invalid-review-sources', document: document.path }); continue; }
     if (document.metadata.unavailable) { options.onIssue?.({ kind: 'document-unavailable', document: document.path }); continue; }
     const maintenance = document.metadata.maintenance || (document.type === 'decision' ? 'historical' : 'live');
     if (!['live', 'historical', 'manual'].includes(maintenance)) { options.onIssue?.({ kind: 'invalid-maintenance-policy', document: document.path }); continue; }
-    if (maintenance !== 'live') continue;
+    if (maintenance !== 'live') { options.onStatus?.(document.path, 'not-live'); continue; }
     const forced = options.forceDocuments?.has(resolve(root, document.path));
     // Select before resolving basenames or hashing: a quiet Stop must not scan every source
     // referenced by the project's documentation.
@@ -642,13 +633,13 @@ export function documentationStopReport(root = resolveRoot(), cfg = loadConfig(r
       return files && [...files].some((file) => documentCoversFile(document, root, file, repo.path));
     })) continue;
     const sources = referencedCodeFiles(document, root, repos, findByBasename);
-    if (!sources.length) continue;
+    if (!sources.length) { options.onStatus?.(document.path, 'no-sources'); continue; }
     const fingerprint = fingerprintSourcesInRoots(sources.map((source) => ({
       root: source.repo.path,
       path: resolve(source.repo.path, source.file),
       id: `${source.repo.name}/${source.file}`,
     })), options.fingerprintCache);
-    if (fingerprint.markers.length) { options.onIssue?.({ kind: 'source-unavailable', document: document.path, errors: fingerprint.errors }); continue; }
+    if (fingerprint.markers.length) { options.onStatus?.(document.path, 'unavailable'); options.onIssue?.({ kind: 'source-unavailable', document: document.path, errors: fingerprint.errors }); continue; }
     const dependencies = documentDependencies(document.metadata, fingerprint, options.fingerprintCache);
     if (dependencies.declared && !dependencies.valid) options.onIssue?.({ kind: dependencies.reason, document: document.path });
     const publish = (keys, reason = 'source-changed') => options.onFinding?.(reviewFinding(root, {
@@ -780,12 +771,61 @@ export function documentationStopReport(root = resolveRoot(), cfg = loadConfig(r
     }
     for (const file of selected) missing.push(sanitizeModelText(`${repoName}/${file}`, 160));
   }
+  for (const [path, status] of fingerprintStatus) options.onStatus?.(path, status);
   if (fingerprintStateChanged) saveFingerprintState(root, fingerprintState);
   const lines = [];
   if (stale.length) lines.push(`📚 Operational documentation needs source review: ${stale.slice(0, 3).join(', ')}${stale.length > 3 ? `; ${stale.length - 3} more pending for a later review` : ''}. Update factual content and review metadata only after checking the current source.`);
   if (missing.length) lines.push(`📚 Changed code has no related ai-context document: ${missing.slice(0, 2).join(', ')}${missing.length > 2 ? `; ${missing.length - 2} more pending for a later review` : ''}. Create or update documentation when the area warrants it; otherwise leave it undocumented with a clear reason.`);
   const text = lines.join('\n');
   return text && (options.dedupe === false || shouldReport(root, text)) ? text : '';
+}
+
+/**
+ * Documentos deixados para trás por um diff (CI): um documento `live` cita uma fonte que o diff
+ * mudou, e a revisão portátil gravada nele (`source_fingerprints`/`source_digest`, escrita pelo
+ * `ack`) não corresponde ao conteúdo novo dessa fonte. Só confia no que está no próprio documento —
+ * em CI não há cache local, e um cache não prova que alguém revisou.
+ */
+export function documentationDrift(root = resolveRoot(), cfg = loadConfig(root), changedPaths = []) {
+  const config = documentationConfig(root, cfg);
+  if (!config.enabled || !config.valid) return { status: config.enabled ? 'invalid' : 'disabled', items: [] };
+  const catalog = buildDocumentationCatalog(root, cfg, { persist: false });
+  if (catalog.status !== 'ready') return { status: catalog.status, items: [] };
+  const chave = (p) => (process.platform === 'win32' ? resolve(p).toLowerCase() : resolve(p));
+  const changed = new Set(changedPaths.map(chave));
+  const repos = findRepos(root, { requireGit: false, cfg });
+  const findByBasename = buscaPorNome(repos);
+  const items = [];
+  for (const document of catalog.documents) {
+    if (document.type === 'index' || document.metadata.invalidReviewSources || document.metadata.unavailable) continue;
+    const maintenance = document.metadata.maintenance || (document.type === 'decision' ? 'historical' : 'live');
+    if (maintenance !== 'live') continue;
+    const sources = referencedCodeFiles(document, root, repos, findByBasename);
+    const touched = sources.filter((source) => changed.has(chave(resolve(source.repo.path, source.file))));
+    if (!touched.length) continue;
+    const id = (source) => `${source.repo.name}/${source.file}`;
+    const fingerprint = fingerprintSourcesInRoots(sources.map((source) => ({
+      root: source.repo.path, path: resolve(source.repo.path, source.file), id: id(source),
+    })));
+    const reviewed = compareReviewedSources(
+      fingerprint,
+      document.metadata.sourceFingerprintsPresent ? document.metadata.sourceFingerprints : undefined,
+      null,
+      null,
+    );
+    const recorded = document.metadata.sourceFingerprintsPresent && reviewed.valid;
+    if (sameDigest(fingerprint, document.metadata.sourceDigest)) continue;
+    if (recorded && touched.every((source) => !reviewed.changed.includes(id(source)))) continue;
+    items.push({
+      kind: 'document',
+      path: document.path,
+      title: document.title,
+      sources: touched.map((source) => (source.repo.name === '.' ? source.file : id(source))),
+      documentUpdated: changed.has(chave(resolve(root, document.path))),
+      reason: !reviewed.valid ? 'invalid-fingerprints' : recorded ? 'review-outdated' : 'no-recorded-review',
+    });
+  }
+  return { status: 'ready', items };
 }
 
 export function documentationSessionContext(root = resolveRoot(), cfg = loadConfig(root)) {

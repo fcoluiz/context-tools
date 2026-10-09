@@ -155,6 +155,34 @@ TypeScript, C#, Java and PHP projects — with **zero symbols reported at the wr
   [reference](docs/reference.md#the-token-saving-measured--and-it-is-small) shows how this was
   measured and where the bigger levers are.
 
+## In a team: knowledge left behind in a pull request
+
+Maps and `ai-context/` documents committed to the repository are shared knowledge — and they only
+stay worth reading if whoever changes the code also checks what is written about it. The drift check
+lists every map or live document whose cited source changed in a pull request **without a recorded
+review** (`ack` writes the reviewed source fingerprint into the file itself, which is the only proof
+that holds in CI):
+
+```yaml
+# .github/workflows/knowledge.yml
+on: pull_request
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # the base branch is needed to compute the diff
+      - uses: fcoluiz/context-tools@v2.7.0
+        with:
+          strict: 'false'         # 'true' fails the job instead of only annotating
+```
+
+Locally or in any other CI: `node scripts/ct.mjs drift --base=origin/main [--strict]`. It annotates
+the pull request, writes a job summary, and exits with 2 — never 0 — when it could not compute the
+diff. `ct health` shows the same thing as a number: the share of verifiable maps and documents whose
+sources are unchanged since their review, and how the maps' share moved across recent sessions.
+
 ## Security
 
 Hooks inject text into the model's context, and much of that text comes from the repository being

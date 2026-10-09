@@ -41,6 +41,7 @@ export const VERBS = Object.freeze({
   explain: { script: 'explain.mjs', en: 'why a file is (not) up for review', pt: 'por que um arquivo entra (ou não) em revisão' },
   review: { script: 'review.mjs', en: 'local review queue', pt: 'fila local de revisão' },
   providers: { script: 'providers.mjs', en: 'optional semantic providers', pt: 'provedores semânticos opcionais' },
+  drift: { script: 'drift-check.mjs', en: 'knowledge left behind by a diff (CI)', pt: 'conhecimento deixado para trás num diff (CI)' },
 });
 
 function lang() {

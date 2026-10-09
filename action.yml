@@ -1,0 +1,37 @@
+name: context-tools knowledge drift
+description: Flags context maps and ai-context documents whose cited source files changed in a pull request without a recorded review.
+author: Luiz Nogueira
+branding:
+  icon: book-open
+  color: green
+
+inputs:
+  base:
+    description: Ref to compare against. Defaults to the pull request base branch (origin/<base>).
+    required: false
+    default: ''
+  strict:
+    description: Fail the job when written knowledge was left behind ("true" or "false").
+    required: false
+    default: 'false'
+  root:
+    description: Project root to check, relative to the workspace.
+    required: false
+    default: '.'
+
+runs:
+  using: composite
+  steps:
+    - name: context-tools drift check
+      shell: bash
+      env:
+        CT_BASE: ${{ inputs.base }}
+        CT_STRICT: ${{ inputs.strict }}
+        CT_ROOT: ${{ inputs.root }}
+      run: |
+        # Requires the base branch in the clone: actions/checkout with fetch-depth: 0.
+        # Exit 2 means the diff could not be computed — it never passes as "no drift".
+        args=(--format=github "--root=${CT_ROOT}")
+        if [ -n "$CT_BASE" ]; then args+=("--base=${CT_BASE}"); fi
+        if [ "$CT_STRICT" = "true" ]; then args+=(--strict); fi
+        node "${GITHUB_ACTION_PATH}/scripts/drift-check.mjs" "${args[@]}"

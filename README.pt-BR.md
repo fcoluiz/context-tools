@@ -155,6 +155,34 @@ Delphi/Pascal, Rust, TypeScript, C#, Java e PHP — com **zero símbolos apontan
   valor real está em menos caminhos errados e menos re-exploração — a
   [referência](docs/reference.pt-BR.md) mostra como isso foi medido e onde estão as alavancas maiores.
 
+## Em equipe: conhecimento deixado para trás num pull request
+
+Mapas e documentos `ai-context/` commitados no repositório são conhecimento compartilhado — e só
+continuam valendo a leitura se quem muda o código também confere o que está escrito sobre ele. A
+checagem de deriva lista cada mapa ou documento live cuja fonte citada mudou num pull request **sem
+revisão registrada** (o `ack` grava no próprio arquivo o fingerprint da fonte revisada, a única
+prova que vale em CI):
+
+```yaml
+# .github/workflows/conhecimento.yml
+on: pull_request
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # o branch base é necessário para calcular o diff
+      - uses: fcoluiz/context-tools@v2.7.0
+        with:
+          strict: 'false'         # 'true' falha o job em vez de só anotar
+```
+
+Localmente ou em outro CI: `node scripts/ct.mjs drift --base=origin/main [--strict]`. Ele anota o
+pull request, escreve um resumo do job e sai com 2 — nunca 0 — quando não conseguiu calcular o diff.
+O `ct health` mostra o mesmo como número: a fração dos mapas e documentos verificáveis cujas fontes
+não mudaram desde a revisão, e como a fração dos mapas andou nas sessões recentes.
+
 ## Segurança
 
 Os hooks injetam texto no contexto do modelo, e boa parte desse texto vem do repositório analisado

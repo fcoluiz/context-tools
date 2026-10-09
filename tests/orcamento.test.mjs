@@ -37,8 +37,9 @@ function hook(script, args, env) {
 test('descrição da skill (vai em todo prompt) e corpo da skill têm teto', () => {
   const skill = read('skills', 'context-tools', 'SKILL.md');
   const description = skill.match(/^description:\s*(.*)$/m)?.[1] || '';
-  assert.ok(description.length <= 450, `descrição da skill com ${description.length} chars (teto 450)`);
-  assert.ok(skill.length <= 17000, `SKILL.md com ${skill.length} chars (teto 17.000)`);
+  // 2026-10-09: a skill passou a usar os verbos do ct.mjs e caiu de 16.873 para ~6.900 caracteres.
+  assert.ok(description.length <= 420, `descrição da skill com ${description.length} chars (teto 420)`);
+  assert.ok(skill.length <= 7600, `SKILL.md com ${skill.length} chars (teto 7.600)`);
 });
 
 test('bloco inserido em CLAUDE.md/AGENTS.md (vai em todo prompt) tem teto', () => {

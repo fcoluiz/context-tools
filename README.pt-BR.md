@@ -32,6 +32,7 @@ seu código, então nunca fica defasado.
 | esta documentação ainda é verdade? | `audit-docs.mjs [--strict]` |
 | por que este código é assim? | `why.mjs <símbolo>` |
 | o que a próxima sessão precisa saber? | `handoff.mjs [--salvar]` |
+| revisei este mapa/documento — registrar | `ack.mjs <mapa-ou-doc.md>` |
 | um pacote de evidências com orçamento para um símbolo ou arquivo | `context-pack.mjs <símbolo-ou-arquivo> [--budget=N]` |
 | como está a saúde da instalação local? | `health.mjs [--days=30] [--audit] [--json]` |
 | que testes cobrem este arquivo, e como rodá-los? | `verify.mjs <arquivo> [<arquivo>…]` |

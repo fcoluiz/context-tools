@@ -214,6 +214,16 @@ candidatos com relação direcional suficiente no histórico Git. Co-mudança é
 revisão, não confirmação semântica; nenhum mapa é criado ou alterado. Repositórios sem Git são
 reportados sem candidatos históricos.
 
+## Registrar revisão de mapa/documento → `ack.mjs`
+
+```
+node "${PLUGIN_ROOT}/scripts/ack.mjs" <mapa-ou-documento.md> [--source=<chave>]
+```
+
+Quando um aviso disser que um mapa ou documento `ai-context` ficou defasado: confira as fontes
+citadas, corrija o texto se preciso e rode `ack`. Ele calcula e grava `source_fingerprints`,
+`source_digest` e a data — nunca copie hashes à mão.
+
 ## Antes de commitar doc → `audit-docs.mjs`
 
 ```

@@ -16,7 +16,7 @@
 import { readdirSync, readFileSync, existsSync, writeFileSync, statSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, relative, basename, dirname, resolve, isAbsolute, sep } from 'node:path';
-import { resolveRoot, findRepos, safe, loadConfig, isMain, lerTexto, CODE_RE, walk, relPath, statePath, runtimeHost } from './lib/roots.mjs';
+import { resolveRoot, findRepos, safe, loadConfig, isMain, lerTexto, CODE_RE, walk, relPath, statePath, runtimeHost, scriptCommand } from './lib/roots.mjs';
 import { writeHookOutput } from './lib/hook-output.mjs';
 import { lerDocumento } from './lib/md-hint.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
@@ -139,6 +139,15 @@ function sourceDigestInstruction(digest, map, changed, sources = {}) {
   const sections = markdownSectionsForSources(lerTexto(map.path) || '', changed, 2)
     .map((heading) => sanitizar(heading, 100));
   const hint = sections.length ? ` Relevant section(s): ${sections.join('; ')}.` : '';
+  // Claude: o hash é gravado pelo `ack.mjs`, não copiado pelo modelo — o JSON de SHA-256 era o
+  // maior trecho do aviso e o ponto onde a transcrição erra. O Codex mantém o formato que a fila
+  // de revisão automática dele consome.
+  if (runtimeHost() !== 'codex') {
+    const root = workspaceRoot();
+    const rel = relative(root, map.path).replace(/\\/g, '/');
+    const mapRel = rel && !rel.startsWith('..') && !isAbsolute(rel) ? rel : `"${map.path.replace(/\\/g, '/')}"`;
+    return `Review it against the changed source(s), update the text if needed, then record the review: ${scriptCommand(root, 'ack.mjs')} ${mapRel}.${hint}`;
+  }
   const entries = Object.fromEntries(changed.slice(0, 8)
     .filter((source) => typeof sources[source] === 'string')
     .map((source) => [source, sources[source]]));

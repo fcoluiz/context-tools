@@ -10,9 +10,27 @@
 import { closeSync, mkdirSync, openSync, readdirSync, statSync, unlinkSync, utimesSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { safe, statePath } from './roots.mjs';
+import { loadConfig, safe, scriptCommand, statePath } from './roots.mjs';
 
 export const HOOK_DEDUPE_WINDOW_MS = 90 * 1000;
+/**
+ * Teto de cada aviso de `Stop`. No Claude, todo texto de Stop faz o modelo dar mais um turno e
+ * fica no contexto de todas as mensagens seguintes; o que passar disso é backlog, e o lugar dele
+ * é o `health.mjs`, não o chat. O prompt de handoff (para o usuário colar) é a exceção: `cap: false`.
+ */
+export const STOP_NOTE_MAX_CHARS = 900;
+const OVERFLOW = {
+  pt: (cmd) => `\n… (aviso cortado; o restante está em ${cmd})`,
+  en: (cmd) => `\n… (truncated; the rest is in ${cmd})`,
+};
+
+/** Corta no fim de linha mais próximo do teto, nunca no meio de um caminho. */
+export function capStopNote(text, root, { max = STOP_NOTE_MAX_CHARS, lang = 'en' } = {}) {
+  if (typeof text !== 'string' || text.length <= max) return text;
+  const cut = text.lastIndexOf('\n', max);
+  const head = text.slice(0, cut > max * 0.5 ? cut : max).trimEnd();
+  return head + (OVERFLOW[lang] || OVERFLOW.en)(scriptCommand(root, 'health.mjs'));
+}
 const PRUNE_AFTER_MS = 24 * 60 * 60 * 1000;
 const DIR = '.hook-emissions';
 
@@ -61,8 +79,14 @@ export function claimHookEmission(root, eventName, text, {
  */
 export function writeHookOutput(root, payload, opts = {}) {
   if (!payload) return false;
-  const json = typeof payload === 'string' ? payload : JSON.stringify(payload);
-  const parsed = typeof payload === 'string' ? safe(() => JSON.parse(payload), null) : payload;
+  let parsed = typeof payload === 'string' ? safe(() => JSON.parse(payload), null) : payload;
+  const ctx = parsed?.hookSpecificOutput;
+  if (ctx?.hookEventName === 'Stop' && typeof ctx.additionalContext === 'string' && opts.cap !== false) {
+    const lang = /^pt/i.test(String(process.env.CONTEXT_TOOLS_LANG || safe(() => loadConfig(root).lang, '') || '')) ? 'pt' : 'en';
+    const capped = capStopNote(ctx.additionalContext, root, { lang });
+    if (capped !== ctx.additionalContext) parsed = { ...parsed, hookSpecificOutput: { ...ctx, additionalContext: capped } };
+  }
+  const json = parsed ? JSON.stringify(parsed) : payload;
   const event = parsed?.hookSpecificOutput?.hookEventName || 'unknown';
   const text = parsed?.hookSpecificOutput?.additionalContext || parsed?.systemMessage || '';
   if (text && !claimHookEmission(root, event, text, opts)) return false;

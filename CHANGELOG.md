@@ -8,6 +8,25 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **`ack.mjs`: record a review without copying hashes.** `ack.mjs <map-or-doc.md>` computes and writes
+  `source_fingerprints`, `source_digest` and the review date after the agent checked the content,
+  reusing the byte-preserving writer of the Codex review queue (it revalidates the sources right
+  before saving and refuses if the document changed meanwhile).
+- **Context budget under test** (`tests/orcamento.test.mjs`): the skill description and the
+  CLAUDE.md/AGENTS.md block (paid on every prompt), the skill body, and the `SessionStart` notes of a
+  typical project each have a ceiling slightly above today's size, so growing them is a decision.
+
+### Changed
+
+- **Stale map/doc notes on Claude no longer carry SHA-256 JSON.** The largest part of the note was
+  64-hex hashes for the model to paste into frontmatter — pure transcription, where it errs. The note
+  now names the document, the changed sources and the `ack.mjs` command. Codex keeps the format its
+  automatic review queue consumes.
+- **Every `Stop` note has a ceiling (900 characters).** Overflow is cut at a line end with a pointer
+  to `health.mjs`, where the backlog belongs; the handoff resume prompt is exempt.
+
 ## [2.4.0] — 2026-10-08
 
 Searches typed in Claude's terminal reach the index, end-of-session notes are shorter, hooks no

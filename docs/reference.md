@@ -51,6 +51,7 @@ the same `grep`s repeated across sessions: knowledge derived, used, and thrown a
 | is this documentation still true? | `audit-docs.mjs [--strict]` |
 | **why is this code like this?** | `why.mjs <symbol>` |
 | what does the next session need to know? | `handoff.mjs [--salvar]` |
+| I reviewed this map/doc — record it | `ack.mjs <map-or-doc.md>` |
 | how do I assemble a bounded evidence pack? | `context-pack.mjs <symbol-or-file> [--budget=N]` |
 | which optional semantic providers are available? | `providers.mjs [--json] [--install-plan]` |
 | how healthy and used is the local plugin? | `health.mjs [--days=30] [--audit] [--json]` |

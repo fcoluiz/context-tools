@@ -60,7 +60,7 @@ test('mapa sem Git compara conteúdo, não mtime, e aceita digest revisado', () 
     utimesSync(source, mtime, mtime);
     const changed = contextMapsStopReport(root);
     assert.match(changed, /src\/area\.js/);
-    assert.match(changed, /source_digest: sha256:[a-f0-9]{64}/);
+    assert.match(changed, /ack.mjs/);
 
     const digest = fingerprintSourcesInRoot(root, ['src/area.js']).digest;
     writeFileSync(map, `---\narea: "area"\ncovers:\n  - "src/area.js"\nverified_at: 2021-01-01\nsource_digest: ${digest}\n---\n`);

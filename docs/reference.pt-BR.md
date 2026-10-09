@@ -52,6 +52,7 @@ O custo não é ler o arquivo. É **procurar onde a coisa está**, sessão após
 | esta documentação ainda é verdade? | `audit-docs.mjs [--strict]` |
 | **por que este código é assim?** | `why.mjs <símbolo>` |
 | o que a próxima sessão precisa saber? | `handoff.mjs [--salvar]` |
+| revisei este mapa/documento — registrar | `ack.mjs <mapa-ou-doc.md>` |
 | como montar um pacote de evidências limitado? | `context-pack.mjs <símbolo-ou-arquivo> [--budget=N]` |
 | quais provedores semânticos opcionais estão disponíveis? | `providers.mjs [--json] [--install-plan]` |
 | como está a saúde e o uso local do plugin? | `health.mjs [--days=30] [--audit] [--json]` |

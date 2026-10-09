@@ -32,6 +32,7 @@ never out of date.
 | is this documentation still true? | `audit-docs.mjs [--strict]` |
 | why is this code like this? | `why.mjs <symbol>` |
 | what does the next session need to know? | `handoff.mjs [--salvar]` |
+| I reviewed this map/doc — record it | `ack.mjs <map-or-doc.md>` |
 | give me a bounded evidence pack for a symbol or file | `context-pack.mjs <symbol-or-file> [--budget=N]` |
 | how healthy is the local setup? | `health.mjs [--days=30] [--audit] [--json]` |
 | which tests cover this file, and how do I run them? | `verify.mjs <file> [<file>…]` |

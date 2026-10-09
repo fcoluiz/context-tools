@@ -852,11 +852,13 @@ shows whether it is registered.
 | event | what it does | cost |
 |---|---|---|
 | `PreToolUse` (Grep / Bash) | answers before Claude Grep, a Claude `grep`/`rg` Bash command (hook `if` filter: no cost for other commands) or a Codex `rg`/`grep` command when the pattern is a symbol; notes the files it pointed to so `health.mjs` can report whether the agent used them (Claude) | only when it answers |
+| `PostToolUse` (Grep / Bash) | after a Grep, or a `grep`/`rg` command, that returned line numbers: names the function, method or class each matched line falls in, with its line range, from the outline of the files that matched (no index). Grep shows `356: if (_maxDepth …` without the method around it; in the outcome benchmark an agent answered from that alone and named the wrong method | only when a matched file has a parser; at most 1,200 characters |
 | `UserPromptSubmit` (Codex) | locally checks each explicitly named file against its own context-map fingerprint; emits context only for stale, uncovered, or unverifiable files | no model call; one local hook process per prompt |
 | `Stop` | Claude warns when the session gets expensive and writes the handoff; Codex only records metrics | **once per session** |
 | `Stop` | hands over the resume prompt, once the volatile block is filled in | once per session |
 | `SessionStart` | lists context maps and flags the stale ones; shows a visible notice when action is needed | ~175 tokens |
-| `SessionStart` | ensures the standard `ai-context` structure, points to its index, and announces first setup | only when documentation is enabled |
+| `SessionStart` | ensures the standard `ai-context` structure, points to its index, and announces first setup; while the index is the only document, says there is nothing to read yet instead of asking for it to be read | only when documentation is enabled |
+| `SessionStart` | one line with the project's test command, what `npm test` actually runs, and how to run a single test file when the runner tells. In the outcome benchmark, agents spent 3–8 turns of a fix finding this out | ~30 tokens; silent when no test command is detectable or `verify.enabled` is false |
 | `SessionStart` | says whether the last session split won, tied, or lost | only when there was a split |
 | `SessionStart` | tells the user (not the agent) a newer release is out, with the update command; reads a cache, and refreshes it with a detached `git ls-remote --tags` when older than 24 h | only when a newer release exists; again after 7 days if not updated |
 | `Stop` | Codex reviews only changed source files connected to maps and operational docs in this session; stale sibling sources remain in `health.mjs` | only for a new relevant finding; repeated sessions share a project-level pending claim |

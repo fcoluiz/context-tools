@@ -170,8 +170,9 @@ TypeScript, C#, Java and PHP projects — with **zero symbols reported at the wr
 - **Speed:** a 1,543-file workspace indexes in ~1.75 s from scratch and ~130 ms from cache. The cache
   is invalidated by file changes and by changes to the parser itself, and is refused when the
   filesystem clock is too coarse to trust.
-- **Tokens:** the only cost you pay without asking is the `SessionStart` note, ~175 tokens. Other
-  warnings cost nothing when there is nothing to say.
+- **Tokens:** the only cost you pay without asking is the `SessionStart` note, ~175 tokens, plus ~30
+  for the test-command line when the project has one. Other warnings cost nothing when there is
+  nothing to say.
 - **The honest part:** in real sessions, 89% of the cost is context being re-loaded, and tool output
   is a small share of it. Better navigation saves **1–3%** of tokens, not 20%. The real value is
   fewer wrong turns and less re-exploration — the

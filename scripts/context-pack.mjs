@@ -13,6 +13,7 @@ import { suggestionsForExtensions } from './providers.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
 import { analyze as analyzeCoupling, DEFAULTS as COUPLING_DEFAULTS } from './coupling.mjs';
 import { documentationEvidence } from './lib/documentation.mjs';
+import { isTestFile } from './lib/verification.mjs';
 
 const MAX_ITEMS = 80;
 const MAX_SCAN_HITS = 24;
@@ -20,6 +21,11 @@ const MAX_SCAN_HITS = 24;
 function arg(name, fallback = null) {
   const p = process.argv.find((x) => x.startsWith(`${name}=`));
   return p ? p.slice(name.length + 1) : fallback;
+}
+
+/** Teste pelo nome do arquivo ou da pasta — inclusive o projeto `.Tests` de uma solução .NET. */
+function ehArquivoDeTeste(file) {
+  return Boolean(file) && (isTestFile(file) || /(?:^|[\\/])[^\\/]+\.Tests?[\\/]/i.test(file));
 }
 
 function esc(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
@@ -169,6 +175,11 @@ export function buildContextPack(root, query, opts = {}) {
       }, { confidence: name.toLowerCase() === q.toLowerCase() ? 'exact' : 'partial', freshness: index.tier === 'B' ? 'cache-validated' : 'generated' }));
     }
   }
+  // Código de produção antes de teste, exato antes de parcial; no resto, a ordem do índice. Na ordem
+  // do índice, `MaxDepth` trazia métodos de teste e uma constante de nome parecido no meio das
+  // propriedades — e a resposta errada do benchmark de resultado nomeou justamente essa constante.
+  const peso = (item) => (ehArquivoDeTeste(item.file) ? 2 : 0) + (item.confidence === 'exact' ? 0 : 1);
+  items.sort((a, b) => peso(a) - peso(b));
 
   // A documentação operacional entra antes do outline e das correspondências textuais. Ela
   // orienta a investigação, mas continua marcada como declarada/precisa de confirmação — não é

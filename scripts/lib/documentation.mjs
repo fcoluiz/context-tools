@@ -835,6 +835,9 @@ export function documentationSessionContext(root = resolveRoot(), cfg = loadConf
   const catalog = buildDocumentationCatalog(root, cfg);
   const created = init.created.length ? ` Created: ${init.created.map((value) => sanitizeModelText(value, 160)).join(', ')}.` : '';
   const count = catalog.status === 'ready' ? catalog.documents.length : 0;
+  // Só o índice (recém-criado ou nunca preenchido): mandar "ler antes de explorar" custaria uma
+  // leitura sem nada útil por trás — medido no benchmark de resultado, num repositório novo.
+  if (count <= 1) return sanitizeModelText(`📚 Operational documentation: ${config.rootValue}/${config.layout.index} has no documents yet; nothing to read before exploring.${created}`, 1800);
   return sanitizeModelText(`📚 Operational documentation: ${config.rootValue}/${config.layout.index} (${config.language}, ${count} document(s)). Read the index before broad exploration; documentation routes investigation but does not prove semantic correctness.${created}`, 1800);
 }
 

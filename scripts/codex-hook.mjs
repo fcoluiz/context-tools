@@ -101,6 +101,20 @@ async function main() {
     return 0;
   }
 
+  // PostToolUse de todo Bash: o mesmo motivo do PreToolUse para não abrir um segundo Node.
+  // `executarGrepContext` sai na hora quando o comando não é rg/grep.
+  if (script === 'grep-context.mjs') {
+    try {
+      process.chdir(cwd);
+      const { executarGrepContext } = await import('./grep-context.mjs');
+      const saida = await executarGrepContext(evento);
+      if (saida) process.stdout.write(saida);
+    } catch {
+      // M4: contexto a mais nunca pode derrubar a ferramenta Codex.
+    }
+    return 0;
+  }
+
   if (tracksAutoReview) {
     try {
       process.chdir(cwd);

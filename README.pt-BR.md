@@ -172,8 +172,9 @@ Delphi/Pascal, Rust, TypeScript, C#, Java e PHP — com **zero símbolos apontan
 - **Velocidade:** um workspace de 1.543 arquivos indexa em ~1,75 s do zero e ~130 ms com cache. O
   cache é invalidado por mudança de arquivo e por mudança no próprio parser, e é recusado quando o
   relógio do sistema de arquivos é grosseiro demais para confiar.
-- **Tokens:** o único custo que você paga sem pedir é o aviso do `SessionStart`, ~175 tokens. Os
-  demais avisos custam zero quando não há o que dizer.
+- **Tokens:** o único custo que você paga sem pedir é o aviso do `SessionStart`, ~175 tokens, mais
+  ~30 da linha com o comando de teste quando o projeto tem um. Os demais avisos custam zero quando
+  não há o que dizer.
 - **A parte honesta:** em sessões reais, 89% do custo é contexto sendo recarregado, e a saída de
   ferramentas é uma fatia pequena disso. Navegar melhor economiza **1–3%** dos tokens, não 20%. O
   valor real está em menos caminhos errados e menos re-exploração — a

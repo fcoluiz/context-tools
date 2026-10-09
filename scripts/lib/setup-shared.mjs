@@ -54,7 +54,7 @@ export function parseArgs(argv = process.argv.slice(2)) {
       continue;
     }
     const body = token.slice(2);
-    if (body === 'help' || body === 'yes' || body === 'json' || body === 'guided' || body === 'no-workspace' || body === 'no-bootstrap' || body === 'skip-cli-install' || body === 'skip-codex-install' || body === 'dry-run' || body === 'keep-open') {
+    if (body === 'help' || body === 'yes' || body === 'json' || body === 'guided' || body === 'no-workspace' || body === 'no-bootstrap' || body === 'skip-cli-install' || body === 'skip-codex-install' || body === 'dry-run' || body === 'keep-open' || body === 'global' || body === 'mcp' || body === 'remove-mcp') {
       flags[body] = true;
       continue;
     }
@@ -103,12 +103,16 @@ export function detectProjectRoot(start = process.cwd(), explicit = null) {
 export function run(command, args, options = {}) {
   const batch = process.platform === 'win32' && WINDOWS_BATCH.has(command);
   const file = batch ? (process.env.ComSpec || 'cmd.exe') : command;
+  // `cmd /s /c "<linha>"` com os argumentos verbatim: sem isso o Node re-escapa as aspas de
+  // `quoteCmd` como `\"`, e o CLI recebia um caminho com aspas literais (`"C:\…\x.mjs"`) — invisível
+  // enquanto nenhum argumento precisava de aspas, quebrado no primeiro caminho do Windows.
   const commandArgs = batch
-    ? ['/d', '/s', '/c', [command, ...args].map(quoteCmd).join(' ')]
+    ? ['/d', '/s', '/c', `"${[command, ...args].map(quoteCmd).join(' ')}"`]
     : args;
   const result = spawnSync(file, commandArgs, {
     encoding: 'utf8',
     windowsHide: true,
+    windowsVerbatimArguments: batch,
     ...options,
   });
   return {

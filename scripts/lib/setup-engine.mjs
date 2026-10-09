@@ -4,6 +4,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { installedRef, isManagedClaudeHook, isManagedCodexHook } from './setup-targets.mjs';
+import { installRuntime, mcpAddArgs, mcpGetArgs, mcpRemoveArgs, runtimeInstalled } from './setup-mcp.mjs';
 import {
   say, isDir, isFile, run, jsonOutput, latestTag, relativeExtra, parseExtraSelection, t, useSetupConfigLang,
   normalizeSetupLanguage, ask, confirm, explainFailure, workspaceCandidates,
@@ -116,6 +117,39 @@ function installPlugin(adapter, flags) {
   const result = run(adapter.bin, args, { stdio: 'inherit' });
   if (result.status !== 0) { explainFailure(t('setup.plugin.installStep'), result); return false; }
   say(t('setup.plugin.done', { agente: adapter.label }));
+  return true;
+}
+
+/** O servidor MCP está registrado neste agente? (`<cli> mcp get context-tools`) */
+function mcpRegistered(adapter) {
+  return run(adapter.bin, mcpGetArgs()).status === 0;
+}
+
+/**
+ * Servidor MCP opcional. Só com `--mcp` (ou "sim" na pergunta do modo guiado): a definição das
+ * ferramentas entra em cada requisição do cliente, e esse custo é escolha de quem instala. Quando já
+ * está registrado, uma atualização renova a cópia estável dos scripts sem perguntar de novo.
+ */
+async function handleMcp(adapter, ctx, flags) {
+  const opts = scopeOpts(flags);
+  if (flags['remove-mcp']) {
+    const removed = run(adapter.bin, mcpRemoveArgs(adapter.id, opts), { stdio: 'inherit' });
+    say(removed.status === 0 ? t('setup.mcp.removed', { agente: adapter.label }) : t('setup.mcp.notRegistered', { agente: adapter.label }));
+    return true;
+  }
+  const registered = mcpRegistered(adapter);
+  const wanted = flags.mcp || (!registered && !flags.yes && process.stdin.isTTY
+    && await confirm(t('setup.mcp.ask'), false, false));
+  if (!wanted) {
+    if (registered) { installRuntime(ctx.repoRoot, ctx.packageVersion); say(t('setup.mcp.refreshed', { agente: adapter.label })); }
+    return true;
+  }
+  const path = installRuntime(ctx.repoRoot, ctx.packageVersion);
+  // Remover antes de adicionar: `mcp add` com um nome existente falha, e o caminho pode ter mudado.
+  if (registered) run(adapter.bin, mcpRemoveArgs(adapter.id, opts));
+  const added = run(adapter.bin, mcpAddArgs(adapter.id, path, opts), { stdio: 'inherit' });
+  if (added.status !== 0) { explainFailure(t('setup.mcp.step'), added); return false; }
+  say(t('setup.mcp.done', { agente: adapter.label, caminho: path }));
   return true;
 }
 
@@ -256,6 +290,7 @@ export function projectStatus(adapter, ctx, root) {
     projectRoot: root,
     plugin: plugin.installed ? { version: plugin.installed.version, ref: plugin.installed.source?.ref || plugin.installed.ref || null, enabled: plugin.installed.enabled } : null,
     project: { mode, hookTrust: adapter.id === 'codex' ? 'unknown' : 'not-applicable', version: marker?.version || null, installedAt: marker?.installedAt || null, files, docs: files.docs },
+    mcp: { registered: mcpRegistered(adapter), runtime: runtimeInstalled() },
     issues,
   };
 }
@@ -282,6 +317,7 @@ export function printStatus(status, json = false) {
       : (status.project.files.hooks ? t('setup.value.local') : t('setup.value.missing')),
     docs: status.project.docs ? t('setup.value.ok') : t('setup.value.notCreated'),
   }));
+  if (status.mcp) say(t('setup.status.mcp', { valor: status.mcp.registered ? t('setup.value.ok') : t('setup.value.optionalOff') }));
   if (status.issues.length) status.issues.forEach((issue) => say(t('setup.status.warning', { aviso: issue })));
   else say(t('setup.status.allGood'));
   if (status.project.hookTrust === 'unknown') say(t('setup.status.hookTrustUnknown'));
@@ -311,6 +347,7 @@ export async function runSetup(adapter, ctx, { command, root, flags }) {
     return 0;
   }
   if (command === 'configure') { await configure(adapter, root, flags, true); return 0; }
+  if (flags['remove-mcp'] && !flags.mcp) { await handleMcp(adapter, ctx, flags); return 0; }
   if (flags['dry-run']) {
     say(flags.global ? t('setup.run.global', { agente: adapter.label }) : t('setup.run.detected', { agente: adapter.label, raiz: root }));
     say(t('setup.run.version', {
@@ -333,6 +370,7 @@ export async function runSetup(adapter, ctx, { command, root, flags }) {
     return 1;
   }
   if (!global && !flags['no-workspace']) await configure(adapter, root, flags);
+  if (!(await handleMcp(adapter, ctx, flags))) say(t('setup.mcp.failedOptional', { agente: adapter.label }));
   say(t('setup.run.done', { agente: adapter.label }));
   say(t('setup.run.newSession', { agente: adapter.label }));
   if (adapter.needsHookTrustReminder) say(t('setup.run.hookTrust'));

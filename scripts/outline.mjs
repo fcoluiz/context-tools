@@ -894,61 +894,71 @@ export function parserForExt(ext) {
   return null;
 }
 
-function main() {
-  const [target, filter] = process.argv.slice(2);
-  if (!target) {
-    console.log(t('out.usage'));
-    process.exit(0);
-  }
-  if (!existsSync(target) || !statSync(target).isFile()) {
-    console.log(t('out.notFound', { f: target }));
-    process.exit(0);
-  }
-
+/**
+ * O outline de um arquivo, como linhas de texto — o mesmo que a CLI imprime. Separado de `main` para
+ * o servidor MCP devolver exatamente a mesma resposta sem um processo novo. `demand` é a extensão
+ * sem parser que a consulta revelou (vira métrica local só na CLI).
+ */
+export function outlineReport(target, filter, tr = t) {
+  if (!target) return { lines: [tr('out.usage')] };
+  if (!existsSync(target) || !statSync(target).isFile()) return { lines: [tr('out.notFound', { f: target })] };
   const content = lerTexto(target);
-  if (content === null) { console.log(t('out.naoLeu', { f: target })); process.exit(0); }
+  if (content === null) return { lines: [tr('out.naoLeu', { f: target })] };
   const lines = content.split('\n');
   const ext = extname(target).toLowerCase();
   const parser = parserForExt(ext);
 
   if (!parser) {
     const extension = ext.replace(/^\./, '');
-    if (EXTENSOES_HISTORICO.includes(extension) && !EXTENSOES_INDICE.includes(extension)) {
-      recordMetric(resolveRoot(process.argv.slice(2)), 'language-demand', { extension, source: 'outline-unsupported-file' });
-    }
-    console.log(t('out.unsupported', { f: basename(target), ext, lines: lines.length }));
-    console.log(t('out.unsupported.list', { lidas: EXTENSOES_LIDAS }));
-    console.log(t('out.unsupported.hint'));
-    process.exit(0);
+    const demand = EXTENSOES_HISTORICO.includes(extension) && !EXTENSOES_INDICE.includes(extension) ? extension : null;
+    return {
+      demand,
+      lines: [
+        tr('out.unsupported', { f: basename(target), ext, lines: lines.length }),
+        tr('out.unsupported.list', { lidas: EXTENSOES_LIDAS }),
+        tr('out.unsupported.hint'),
+      ],
+    };
   }
 
   const all = parser(lines);
-
   if (all.length === 0) {
-    console.log(t('out.noSymbols', { f: basename(target), ext, lines: lines.length }));
-    console.log(t('out.noSymbols.hint'));
-    process.exit(0);
+    return { lines: [tr('out.noSymbols', { f: basename(target), ext, lines: lines.length }), tr('out.noSymbols.hint')] };
   }
 
   let shown = all;
   let note = '';
   if (filter) {
     let re;
-    try { re = new RegExp(stripInlineRegexFlags(filter), 'i'); } catch { console.log(t('out.badFilter', { f: filter })); process.exit(0); }
-    shown = all.filter((s) => re.test(s.name));
-    note = t('out.filterNote', { filter, shown: shown.length, total: all.length });
+    try { re = new RegExp(stripInlineRegexFlags(filter), 'i'); } catch { return { lines: [tr('out.badFilter', { f: filter })] }; }
+    shown = all.filter((sym) => re.test(sym.name));
+    note = tr('out.filterNote', { filter, shown: shown.length, total: all.length });
     if (shown.length === 0) {
-      console.log(t('out.header', { f: basename(target), lines: lines.length, n: all.length, note: '' }));
-      console.log(t('out.filterEmpty', { filter }));
-      process.exit(0);
+      return {
+        lines: [
+          tr('out.header', { f: basename(target), lines: lines.length, n: all.length, note: '' }),
+          tr('out.filterEmpty', { filter }),
+        ],
+      };
     }
   }
 
-  console.log(t('out.header', { f: target, lines: lines.length, n: all.length, note }));
-  console.log(t('out.header.hint'));
-  for (const s of shown) {
-    console.log(`${String(s.line).padStart(6)}  ${'  '.repeat(s.depth)}${s.name}`);
+  return {
+    lines: [
+      tr('out.header', { f: target, lines: lines.length, n: all.length, note }),
+      tr('out.header.hint'),
+      ...shown.map((sym) => `${String(sym.line).padStart(6)}  ${'  '.repeat(sym.depth)}${sym.name}`),
+    ],
+  };
+}
+
+function main() {
+  const [target, filter] = process.argv.slice(2);
+  const report = outlineReport(target, filter);
+  if (report.demand) {
+    recordMetric(resolveRoot(process.argv.slice(2)), 'language-demand', { extension: report.demand, source: 'outline-unsupported-file' });
   }
+  console.log(report.lines.join('\n'));
 }
 
 // Só executa quando chamado direto. Sem esta guarda, importar as funções acima

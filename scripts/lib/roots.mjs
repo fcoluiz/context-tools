@@ -191,9 +191,12 @@ export function stateRelPrefix(root) {
  * instalada em `.claude/scripts/`), e comparar só o nome do arquivo confundiria as duas.
  */
 export function isMain(importMetaUrl) {
+  // Caminho REAL dos dois lados: um bin do npm em Linux/macOS é um symlink em `node_modules/.bin`,
+  // e `argv[1]` chega com o caminho do link enquanto `import.meta.url` já vem resolvido.
+  const real = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
   try {
     if (!process.argv[1]) return false;
-    return resolve(fileURLToPath(importMetaUrl)) === resolve(process.argv[1]);
+    return real(fileURLToPath(importMetaUrl)) === real(process.argv[1]);
   } catch { return false; }
 }
 

@@ -26,7 +26,8 @@
   "bin": {
     "context-tools-setup": "./setup-codex.mjs",
     "context-tools-setup-claude": "./setup-claude.mjs",
-    "context-tools-setup-all": "./setup.mjs"
+    "context-tools-setup-all": "./setup.mjs",
+    "context-tools-mcp": "./scripts/mcp-server.mjs"
   },
   "scripts": {
     "test": "node tests/run.mjs",

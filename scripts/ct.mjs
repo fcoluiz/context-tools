@@ -42,6 +42,7 @@ export const VERBS = Object.freeze({
   review: { script: 'review.mjs', en: 'local review queue', pt: 'fila local de revisão' },
   providers: { script: 'providers.mjs', en: 'optional semantic providers', pt: 'provedores semânticos opcionais' },
   drift: { script: 'drift-check.mjs', en: 'knowledge left behind by a diff (CI)', pt: 'conhecimento deixado para trás num diff (CI)' },
+  mcp: { script: 'mcp-server.mjs', en: 'MCP server over stdio (optional)', pt: 'servidor MCP por stdio (opcional)' },
 });
 
 function lang() {

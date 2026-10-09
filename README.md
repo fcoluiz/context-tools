@@ -223,6 +223,8 @@ Found a vulnerability? Please report it privately — see [SECURITY.md](SECURITY
 - **[Full reference](docs/reference.md)** — every tool, hook and setting, the measurements behind
   each claim, known limitations and what is out of scope by design.
 - [Benchmarks](docs/benchmarks/) — controlled benchmarks and how to reproduce them.
+- [Verifiable knowledge format v1](docs/spec/knowledge-format.md) — the open, tool-independent spec of
+  how a map or document records which source versions it was reviewed against (with a JSON Schema).
 - [CHANGELOG](CHANGELOG.md) — what changed in each release.
 
 ## Contributing

@@ -225,6 +225,9 @@ Encontrou uma vulnerabilidade? Reporte de forma privada — veja [SECURITY.md](S
 - **[Referência completa](docs/reference.pt-BR.md)** — cada ferramenta, hook e configuração, as
   medições por trás de cada afirmação, limitações conhecidas e o que fica fora de escopo por desenho.
 - [Benchmarks](docs/benchmarks/) — benchmarks controlados e como reproduzi-los.
+- [Formato de conhecimento verificável v1](docs/spec/knowledge-format.md) — a especificação aberta, em
+  inglês e independente de ferramenta, de como um mapa ou documento registra contra quais versões das
+  fontes foi revisado (com JSON Schema).
 - [CHANGELOG](CHANGELOG.md) — o que mudou em cada versão.
 
 ## Contribuindo

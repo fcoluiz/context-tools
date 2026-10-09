@@ -54,6 +54,11 @@ reconstructed from git history.
   the scripts to `~/.context-tools/runtime` and registers it with `claude mcp add` / `codex mcp add`;
   later updates refresh that copy, `--remove-mcp` unregisters it, and `status` reports it. Checked
   against the real Claude Code CLI (`claude mcp get` reports it connected).
+- **An open spec for verifiable knowledge.** `docs/spec/knowledge-format.md` (with a JSON Schema)
+  specifies, independently of this tool, how a context map or operational document records the
+  per-source SHA-256 fingerprints it was reviewed against, how CRLF is normalized, how the aggregate
+  digest is built and who may write them. Tests derive from the code: every field the readers parse
+  must be in the schema, and a fingerprint computed by the written rule must equal the implementation's.
 
 ### Fixed
 

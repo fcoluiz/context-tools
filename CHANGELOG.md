@@ -24,6 +24,11 @@ reconstructed from git history.
   for Claude and Codex, offline, from the transcript the host already writes; it reads only the bytes
   added since the previous `Stop`, shows at most once per session and never writes maps or documents.
   Turn it off with `"documentation": { "captureHint": false }`.
+- **"Save this to context" ("registre no contexto").** The user no longer needs to name a folder or a
+  document type. The skill now tells the agent to pick the type from what the conversation
+  investigated (flow → feature, screen, database, integration, decision), update an existing
+  document before creating one, add it to the index and show what was recorded. The `Stop`
+  suggestion asks for exactly that phrase.
 
 ### Changed
 

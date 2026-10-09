@@ -1,6 +1,6 @@
 ---
 name: context-tools
-description: Navegação de código e higiene de documentação sem re-explorar na mão. Use ao procurar onde um símbolo está definido, ao navegar arquivo grande (>1.500 linhas), ao querer saber que arquivos mudam junto com outro, explicar uma decisão de revisão de mapa ou identificar candidatos a cobertura documental pelo histórico. Também antes de commitar documentação ou quando o objetivo é reduzir leitura repetida entre sessões.
+description: Navegação de código e higiene de documentação sem re-explorar na mão. Use ao procurar onde um símbolo está definido, ao navegar arquivo grande (>1.500 linhas), ao querer saber que arquivos mudam junto com outro, explicar uma decisão de revisão de mapa ou identificar candidatos a cobertura documental pelo histórico. Também antes de commitar documentação, quando o objetivo é reduzir leitura repetida entre sessões, ou quando o usuário pedir para registrar, guardar ou documentar algo "no contexto".
 ---
 
 # Ferramentas de contexto
@@ -108,9 +108,25 @@ comando não certifica atualidade semântica. É local, não edita mapas e não 
 `unknown` significa que não há evidência suficiente para atribuir o arquivo.
 
 Sessão que só leu código (nenhuma edição de código), com 3 arquivos ou mais em 2+ pastas sem mapa
-nem documento, recebe no `Stop` uma linha para o USUÁRIO sugerindo registrar o fluxo em
-`ai-context/features/`. Uma vez por sessão, offline, a partir da transcrição local do host. Não
-registre por conta própria por causa dela: o usuário decide. `"captureHint": false` desliga.
+nem documento, recebe no `Stop` uma linha para o USUÁRIO sugerindo dizer "registre no contexto".
+Uma vez por sessão, offline, a partir da transcrição local do host. Não registre por conta própria
+por causa dela: o usuário decide. `"captureHint": false` desliga.
+
+### "Registre no contexto" → documento em `ai-context/`
+
+Quando o usuário pedir para registrar, guardar, salvar ou documentar algo "no contexto" (ou no
+`ai-context`; em inglês, "save this to context"), o pedido é sobre o que ESTA conversa investigou. Ele não precisa dizer pasta nem tipo:
+
+1. **Escolha o tipo pelo conteúdo:** fluxo que atravessa telas ou units → `feature`; uma tela ou
+   form → `tela`/`screen`; tabelas e colunas → `banco`/`database`; sistema externo → `integracao`;
+   escolha técnica e o porquê → `decisao`. Na dúvida, `feature`.
+2. **Procure antes de criar:** leia o índice e use `explain.mjs --file <arquivo lido>` nos
+   arquivos centrais. Se um documento já cobre a área, atualize-o em vez de criar outro.
+3. **Crie só se não existir:** `context-docs.mjs create --type=<tipo> --name=<nome-curto>`, depois
+   preencha somente com o que foi confirmado no código nesta conversa. Cite arquivo e símbolo, nunca
+   `arquivo:linha`. O que não foi verificado continua `A mapear`.
+4. **Acrescente uma linha ao índice** (`00-indice.md`/`00-index.md`) apontando para o documento novo.
+5. **Mostre ao usuário** o caminho e um resumo do que foi registrado.
 
 Para desativar no projeto, use `"documentation": { "enabled": false }` na configuração do
 plugin. `autoInit: false` preserva a consulta e os comandos, mas impede a criação automática da

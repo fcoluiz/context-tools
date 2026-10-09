@@ -40,8 +40,10 @@ never out of date.
 The agent does not need to remember any of this. **Hooks** bring the tools in on their own: before a
 `grep` for a symbol the index answers first, a session starts with a short list of the context maps
 that went stale, and the end of a session flags files that historically change together but were
-not edited together — and, once per session, code edited after the last test run. Each message is
-delivered once, even when the plugin and a standalone copy are both installed.
+not edited together — and, once per session, code edited after the last test run. A session that only
+read code to answer a question gets one line suggesting you say "save this to context"; the agent
+then records it in `ai-context/`. Each message is delivered once, even when the plugin and a
+standalone copy are both installed.
 
 ## Install or update
 

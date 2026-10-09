@@ -6,7 +6,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appendFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
@@ -77,7 +77,7 @@ test('sugere UMA vez quando a sessão leu código sem cobertura em pastas difere
     const path = transcript(root, FILES.map((file) => claudeRead(join(root, file))));
     const first = await readCaptureSuggestion(root, {}, { sessionId: 's1', transcriptPath: path });
     assert.match(first, /leu 4 arquivos/);
-    assert.match(first, /ai-context\/features\//);
+    assert.match(first, /diga "registre no contexto"/);
     assert.match(first, /captureHint/);
     assert.equal(await readCaptureSuggestion(root, {}, { sessionId: 's1', transcriptPath: path }), '', 'segunda vez na mesma sessão cala');
   } finally { rmSync(root, { recursive: true, force: true }); }
@@ -170,4 +170,11 @@ test('E2E Codex: Stop sem revisão pendente entrega a sugestão em systemMessage
     assert.equal(run.status, 0, run.stderr);
     assert.match(JSON.parse(run.stdout).systemMessage, /leu 4 arquivos/);
   } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('a frase sugerida ao usuário é a mesma que a skill reconhece', () => {
+  // A mensagem só funciona como atalho se a skill souber o que fazer com ela.
+  const skill = readFileSync(fileURLToPath(new URL('../skills/context-tools/SKILL.md', import.meta.url)), 'utf8');
+  assert.match(skill, /registre no contexto/);
+  assert.match(skill, /save this to context/);
 });

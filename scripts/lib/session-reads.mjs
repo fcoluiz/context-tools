@@ -207,15 +207,16 @@ async function coverageChecker(root, cfg) {
 function message(docs, files) {
   const names = files.slice(0, 4).map((file) => sanitizeModelText(basename(file), 80));
   const list = names.join(', ') + (files.length > names.length ? ` +${files.length - names.length}` : '');
-  const target = `${docs.rootValue}/${docs.dirs.feature}/`;
+  // A frase pedida ao usuário é a mesma que a skill reconhece: tipo, pasta e índice ficam com o
+  // agente, que tem a conversa à frente. Mudar uma sem a outra quebra o atalho em silêncio.
   if (docs.language === 'pt') {
-    return `📝 Esta sessão leu ${files.length} arquivos de código que nenhum mapa ou documento de ${docs.rootValue}/ cobre (${list}). `
-      + `Se a investigação respondeu uma dúvida que vai voltar, peça ao agente para registrá-la em ${target} — só com o que foi confirmado no código. `
-      + 'Aviso único nesta sessão; para desligar: "documentation": { "captureHint": false }.';
+    return `📝 Esta sessão leu ${files.length} arquivos de código sem documentação no contexto (${list}). `
+      + 'Se a resposta vai ser útil de novo, diga "registre no contexto". '
+      + '(Aviso único nesta sessão; para desligar: "documentation": { "captureHint": false }.)';
   }
-  return `📝 This session read ${files.length} code files that no context map or ${docs.rootValue}/ document covers (${list}). `
-    + `If the investigation answered a question that will come back, ask the agent to record it in ${target} — only what the code confirmed. `
-    + 'Shown once per session; to turn it off: "documentation": { "captureHint": false }.';
+  return `📝 This session read ${files.length} code files with no context documentation (${list}). `
+    + 'If the answer will be useful again, say "save this to context". '
+    + '(Shown once per session; to turn it off: "documentation": { "captureHint": false }.)';
 }
 
 /**

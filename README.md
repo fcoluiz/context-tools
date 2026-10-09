@@ -27,6 +27,8 @@ never out of date.
 | question | command |
 |---|---|
 | where is X defined? | `symbols.mjs <name> [<name>…]` |
+| who uses X, and from which function? | `refs.mjs <name>` |
+| what is at stake before I change X? | `impact.mjs <symbol-or-file>` |
 | how do I navigate this huge file? | `outline.mjs <file> [filter]` |
 | what changes together with this file? | `coupling.mjs <file>` |
 | is this documentation still true? | `audit-docs.mjs [--strict]` |

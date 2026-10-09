@@ -27,6 +27,8 @@ seu código, então nunca fica defasado.
 | pergunta | comando |
 |---|---|
 | onde X está definido? | `symbols.mjs <nome> [<nome>…]` |
+| quem usa X, e de qual função? | `refs.mjs <nome>` |
+| o que está em jogo antes de mudar X? | `impact.mjs <símbolo-ou-arquivo>` |
 | como navegar este arquivo enorme? | `outline.mjs <arquivo> [filtro]` |
 | o que muda junto com este arquivo? | `coupling.mjs <arquivo>` |
 | esta documentação ainda é verdade? | `audit-docs.mjs [--strict]` |

@@ -47,6 +47,8 @@ O custo não é ler o arquivo. É **procurar onde a coisa está**, sessão após
 | pergunta | comando |
 |---|---|
 | onde X está definido? | `symbols.mjs <nome> [<nome>…]` |
+| quem usa X, e de qual função? | `refs.mjs <nome> [--all] [--json]` |
+| o que está em jogo antes de mudar X? | `impact.mjs <símbolo-ou-arquivo> [--budget=N] [--json]` |
 | como navego este arquivo gigante? | `outline.mjs <arquivo> [filtro]` |
 | o que muda junto com este arquivo? | `coupling.mjs <arquivo>` |
 | esta documentação ainda é verdade? | `audit-docs.mjs [--strict]` |
@@ -106,6 +108,21 @@ real achou `controllers/orders.js ↔ services/paymentService.js` (100%, 7 commi
 
 **`audit-docs`** acha ponteiro de linha podre, símbolo/arquivo que não existe mais, hash de commit
 inválido e alegação de status sem data.
+
+**`refs`** responde a pergunta que vem logo depois de "onde está": **quem usa**. Lê os mesmos
+arquivos do índice, tira comentário e literal de texto com o removedor de cada linguagem (menção em
+mensagem de erro não é uso; essas são contadas à parte, porque uma rota guardada em string ainda pode
+ser), deixa a definição de fora e diz **em qual função cada uso está** — a resposta já sai como "quem
+chama". Formulários Delphi também entram, porque `OnClick = BtnSalvarClick` é o único lugar onde um
+evento é ligado. É por nome, não por tipo, e diz isso em toda resposta: dois símbolos de mesmo nome
+não são distinguidos, e chamada dinâmica não aparece.
+
+**`impact`** é o briefing antes de uma mudança. Para um símbolo ou arquivo, junta sob orçamento de
+saída os usos do `refs`, o que historicamente muda junto com o arquivo da definição (`coupling`, no
+sentido "mexer NESTE leva o outro"), os testes relacionados e o comando de teste (`verify`), e os
+mapas de contexto e documentos `ai-context` que citam o arquivo — dizendo se a fonte que eles
+revisaram ainda é a de hoje (por fingerprint) ou se não dá para saber. Cada seção diz de onde veio e
+o que não sabe; seção cortada pelo orçamento é anunciada.
 
 **`why`** é a única que não pergunta sobre o estado do código, e sim sobre as **decisões** que o
 produziram — a pergunta em que ler mais código não ajuda, porque a resposta não está lá. Usa

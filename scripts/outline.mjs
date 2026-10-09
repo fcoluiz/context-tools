@@ -549,7 +549,7 @@ function semTextoCLike(lines, dialeto) {
         aberto = { tipo: 'verbatim' }; branco(i + prefixoCs[0].length); continue;
       }
       if (dialeto === 'cs' && c === '$' && s[i + 1] === '"') { out += ' '; i += 1; continue; }
-      if (c === '"' && s.startsWith('"""', i) && dialeto !== 'php') {
+      if (c === '"' && s.startsWith('"""', i) && (dialeto === 'cs' || dialeto === 'java')) {
         let n = 3;
         while (s[i + n] === '"') n++;
         const fim = dialeto === 'java' ? '"""' : '"'.repeat(n);
@@ -849,6 +849,28 @@ export function symbolsForSql(lines) {
 }
 // Dump de dados pode ter centenas de MB e nenhuma definição útil: acima disso, não indexa.
 symbolsForSql.maxBytes = 8 * 1024 * 1024;
+
+/**
+ * Só o CÓDIGO de um arquivo: comentário e literal de texto viram espaço, colunas e linhas
+ * preservadas. Serve a quem procura USO de um nome (`refs`), onde uma menção num comentário ou numa
+ * mensagem de erro não é referência. Reaproveita os mesmos removedores dos parsers — um por
+ * linguagem, com as armadilhas já medidas. JS/TS usa o motor C-like sem tocar template literal
+ * (`${chamada()}` dentro dele é código). Devolve `null` quando não sabe limpar a linguagem.
+ */
+export function codeOnlyLines(lines, ext) {
+  const e = String(ext || '').toLowerCase();
+  const semStringPascal = (l) => l.replace(/'(?:[^'\n]|'')*'/g, (m) => ' '.repeat(m.length));
+  if (/^\.(pas|dpr|dpk|inc)$/.test(e)) return semComentariosPascal(lines).map(semStringPascal);
+  if (e === '.dfm' || e === '.fmx') return lines.map((l) => semStringPascal(l.replace(/\r$/, '')));
+  if (e === '.py' || e === '.pyi') return semTextoPython(lines);
+  if (e === '.go') return semTextoGo(lines);
+  if (e === '.cs') return semTextoCLike(lines, 'cs');
+  if (e === '.java') return semTextoCLike(lines, 'java');
+  if (e === '.php') return semTextoCLike(lines, 'php');
+  if (/^\.(js|jsx|ts|tsx|mjs|cjs)$/.test(e)) return semTextoCLike(lines, 'js');
+  if (e === '.sql') return semTextoSql(lines.join('\n')).split('\n');
+  return null;
+}
 
 /**
  * Escolhe o parser pela extensão. Fonte ÚNICA do despacho — `symbols.mjs` importa daqui, para

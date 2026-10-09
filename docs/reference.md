@@ -44,6 +44,8 @@ the same `grep`s repeated across sessions: knowledge derived, used, and thrown a
 | question | command |
 |---|---|
 | where is X defined? | `symbols.mjs <name> [<name>…]` |
+| who uses X, and from which function? | `refs.mjs <name> [--all] [--json]` |
+| what is at stake before I change X? | `impact.mjs <symbol-or-file> [--budget=N] [--json]` |
 | how do I navigate this huge file? | `outline.mjs <file> [filter]` |
 | what changes together with this file? | `coupling.mjs <file>` |
 | why would a file trigger context-map review? | `explain.mjs --file <path> [--json]` |
@@ -111,6 +113,21 @@ It is pure git: it works in any language.
 
 **`audit-docs`** finds rotten line pointers, symbols or files that no longer exist, invalid commit
 hashes, and undated status claims.
+
+**`refs`** answers the question that comes right after "where is it": **who uses it**. It reads the
+same files as the index, drops comments and string literals with each language's own stripper (a
+mention in an error message is not a use; those are counted apart, because a route held in a string
+can still be one), leaves the definition out, and says **which function each use is in** — so the
+answer already reads as "who calls it". Delphi forms are scanned too, because `OnClick =
+BtnSaveClick` is the only place an event handler is wired. It is by name, not by type, and says so on
+every answer: two symbols with the same name are not told apart, and a dynamic call is invisible.
+
+**`impact`** is the briefing before a change. For a symbol or a file it puts together, under an
+output budget, the uses from `refs`, what historically changes together with the definition file
+(`coupling`, in the "changing THIS takes the other along" direction), the related tests and the
+test command (`verify`), and the context maps and `ai-context` documents that cite the file —
+saying whether the source they reviewed is still today's (by fingerprint) or unknown. Each section
+says where it came from and what it cannot know; a section cut by the budget is announced.
 
 **`why`** is the only one that does not ask about the state of the code, but about the **decisions**
 that produced it — the question where reading more code does not help, because the answer is not

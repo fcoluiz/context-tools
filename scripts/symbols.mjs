@@ -653,7 +653,7 @@ function main() {
 // `CACHE_TIER_MIN_FILES` é exportado só para o teste: ele precisa gerar arquivos suficientes
 // para cair no tier B, e copiar o número à mão criava segunda fonte de verdade — mudar o
 // limiar aqui deixaria o teste medindo outra coisa, calado.
-export { bareName, buildIndex, reportOne, mtimeGranularityIsFine, CACHE_TIER_MIN_FILES, escopoLabel, irmaosPorPrefixo, QUALIFICADOR_RE };
+export { bareName, buildIndex, reportOne, mtimeGranularityIsFine, CACHE_TIER_MIN_FILES, escopoLabel, irmaosPorPrefixo, QUALIFICADOR_RE, comIntervalos };
 
 if (isMain(import.meta.url)) {
   const started = Date.now();

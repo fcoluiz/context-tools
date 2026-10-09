@@ -65,7 +65,8 @@ npx.cmd --yes --package github:fcoluiz/context-tools context-tools-setup-all --g
 
 Requer Node.js 18+ e o CLI de pelo menos um agente (`claude` ou `codex`). Ele nunca altera a pasta
 onde é executado e nunca instala o CLI de um agente que você ainda não usa. Depois, abra uma sessão
-nova. No Codex, na primeira vez, abra `/hooks` e aprove os hooks do context-tools uma vez.
+nova. No Codex, na primeira vez, abra `/hooks` e aprove os hooks do context-tools uma vez. Daí em
+diante, o início da sessão avisa quando sair uma versão nova, com este mesmo comando.
 
 O plugin traz as ferramentas **e** os hooks. Use `--target=claude` ou `--target=codex` para limitar a
 um agente, e tire o `--global` para preparar só o projeto atual.
@@ -142,7 +143,10 @@ Os hooks injetam texto no contexto do modelo, e boa parte desse texto vem do rep
 — num repositório clonado ou de terceiros, isso é entrada não confiável. Todo comando externo roda
 sem shell, o índice nunca segue links para fora do projeto, o texto vindo do repositório é
 sanitizado e limitado em tamanho, e o bloco injetado declara que nomes vindos do repositório são
-dados, não instruções. As ferramentas não fazem chamadas de rede nem enviam telemetria.
+dados, não instruções. As ferramentas não enviam telemetria. A única chamada de rede é a verificação
+de versão nova: no máximo uma vez por dia, em segundo plano, um `git ls-remote --tags` neste
+repositório — nada do seu projeto é enviado. Desligue com `"updateCheck": false` ou
+`CONTEXT_TOOLS_UPDATE_CHECK=0`.
 
 Encontrou uma vulnerabilidade? Reporte de forma privada — veja [SECURITY.md](SECURITY.md).
 

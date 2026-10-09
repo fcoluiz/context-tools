@@ -24,10 +24,13 @@ credited in the [CHANGELOG](CHANGELOG.md) unless you ask to stay anonymous.
 ## Threat model in short
 
 context-tools runs locally, inside a coding agent's session, with your user's permissions. The
-tools and hooks make no network calls and send no telemetry: usage metrics are kept only in a local
-state file under `.claude/` or `.codex/` in the project. The only network access comes from the
-guided setup, which calls `git ls-remote`, `npm` and the agent's own CLI to install or update the
-plugin — and only when you run it.
+tools and hooks send no telemetry: usage metrics are kept only in a local state file under
+`.claude/` or `.codex/` in the project. Network access is limited to two cases: the guided setup,
+which calls `git ls-remote`, `npm` and the agent's own CLI to install or update the plugin — only
+when you run it — and the new-release check, a detached `git ls-remote --tags` against this
+repository at most once a day, cached in `~/.context-tools/update-check.json`. It sends nothing
+about the project and is disabled by `"updateCheck": false`, `CONTEXT_TOOLS_UPDATE_CHECK=0` or a
+`CI` environment.
 
 The main attack surface is **text that comes from the repository being analyzed** (file names,
 folder names, frontmatter, git output), which hooks inject into the model's context. In a cloned or

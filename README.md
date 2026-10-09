@@ -65,7 +65,8 @@ npx.cmd --yes --package github:fcoluiz/context-tools context-tools-setup-all --g
 
 Requires Node.js 18+ and the CLI of at least one agent (`claude` or `codex`). It never changes the
 folder you run it from, and never installs an agent CLI you do not already use. Open a new session
-afterwards. On Codex, the first time, open `/hooks` and trust the context-tools hooks once.
+afterwards. On Codex, the first time, open `/hooks` and trust the context-tools hooks once. From then
+on, a session start tells you when a newer release is out, with this same command.
 
 The plugin brings the tools **and** the hooks. Use `--target=claude` or `--target=codex` to limit it
 to one agent, and drop `--global` to set up only the current project instead.
@@ -143,7 +144,9 @@ Hooks inject text into the model's context, and much of that text comes from the
 analyzed — in a cloned or third-party repository, that is untrusted input. Every external command
 runs without a shell, the index never follows links out of the project, repository-supplied text is
 sanitized and size-limited, and the injected block states that names from the repository are data,
-not instructions. The tools make no network calls and send no telemetry.
+not instructions. The tools send no telemetry. The only network call is the new-release check: at
+most once a day, in the background, a `git ls-remote --tags` against this repository — nothing about
+your project is sent. Turn it off with `"updateCheck": false` or `CONTEXT_TOOLS_UPDATE_CHECK=0`.
 
 Found a vulnerability? Please report it privately — see [SECURITY.md](SECURITY.md).
 

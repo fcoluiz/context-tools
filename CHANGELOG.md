@@ -29,6 +29,14 @@ reconstructed from git history.
   investigated (flow → feature, screen, database, integration, decision), update an existing
   document before creating one, add it to the index and show what was recorded. The `Stop`
   suggestion asks for exactly that phrase.
+- **New-release notice.** A session start now tells the user — not the agent — when a newer release
+  is out, with the exact update command (global for the plugin, per project for standalone
+  installs). Installations fell behind silently: a Claude marketplace added with a pinned `ref`
+  never sees a new tag, so the host's own update could not help. The hook never waits for the
+  network: it reads `~/.context-tools/update-check.json`, and when that is older than 24 h a
+  detached `git ls-remote --tags` refreshes it for the next session. Shown once per new version and
+  again after 7 days if still not updated. Installs older than this release cannot show it; update
+  them once by hand.
 
 ### Changed
 
@@ -38,6 +46,10 @@ reconstructed from git history.
   automatic review queue consumes.
 - **Every `Stop` note has a ceiling (900 characters).** Overflow is cut at a line end with a pointer
   to `health.mjs`, where the backlog belongs; the handoff resume prompt is exempt.
+- **One network call.** The README and SECURITY.md no longer say the hooks make no network calls:
+  the release check above is the exception. It sends nothing about the project, runs at most once a
+  day per machine, is skipped in CI, and is turned off with `"updateCheck": false` or
+  `CONTEXT_TOOLS_UPDATE_CHECK=0`.
 
 ### Fixed
 

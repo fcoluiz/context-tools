@@ -23,5 +23,10 @@ if (!arquivos.length) {
   process.exit(1);
 }
 
-const r = spawnSync(process.execPath, ['--test', ...arquivos], { stdio: 'inherit' });
+// Os testes nunca consultam a rede nem gravam na pasta do usuário: a verificação de versão nova
+// fica desligada para todo hook que um teste dispara. `update-check.test.mjs` religa por chamada.
+const r = spawnSync(process.execPath, ['--test', ...arquivos], {
+  stdio: 'inherit',
+  env: { ...process.env, CONTEXT_TOOLS_UPDATE_CHECK: '0' },
+});
 process.exit(r.status ?? 1);

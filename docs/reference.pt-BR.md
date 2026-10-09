@@ -769,6 +769,7 @@ projeto; `--project <caminho>` só é necessário ao administrar outro projeto.
 | `SessionStart` | lista mapas de contexto e marca os defasados; mostra aviso visível quando há ação necessária | ~175 tokens |
 | `SessionStart` | garante a estrutura padrão do `ai-context`, aponta o índice e avisa a primeira configuração | só quando a documentação está habilitada |
 | `SessionStart` | diz se a última divisão de sessão ganhou, empatou ou perdeu | só quando houve divisão |
+| `SessionStart` | avisa o usuário (não o agente) que há versão nova, com o comando de atualização; lê um cache e o renova com um `git ls-remote --tags` destacado quando tem mais de 24 h | só quando há versão nova; de novo após 7 dias sem atualizar |
 | `Stop` | Codex revisa somente as fontes alteradas nesta sessão que estão ligadas a mapas/documentos; fontes antigas do mesmo mapa continuam no relatório global | só para mudanças relevantes da sessão; mesma revisão em cooldown por 24h |
 | `Stop` | avisa se você editou A e não tocou em B, que muda junto historicamente | só quando ocorre |
 | `Stop` (Claude) | aponta código editado depois do último teste, com testes relacionados e o comando de teste | **uma vez por sessão**; calado sem estrutura de teste |
@@ -925,6 +926,7 @@ O diretório raiz pode ser configurado, mas a estrutura interna não:
 ```json
 {
   "lang": "pt",
+  "updateCheck": true,
   "documentation": {
     "enabled": true,
     "autoInit": true,
@@ -936,6 +938,9 @@ O diretório raiz pode ser configurado, mas a estrutura interna não:
 
 `captureHint: false` desliga a sugestão para sessões que só leram código. Vem ligada porque só mostra
 uma linha ao usuário (`systemMessage` no Claude e no Codex); o agente nunca é instruído a agir sobre ela.
+
+`updateCheck: false` (ou `CONTEXT_TOOLS_UPDATE_CHECK=0` para todos os projetos) desliga a verificação
+de versão nova, a única chamada de rede dos hooks. Ela também fica desligada sempre que `CI` existe.
 
 Comandos disponíveis:
 

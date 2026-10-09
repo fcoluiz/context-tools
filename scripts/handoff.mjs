@@ -36,6 +36,7 @@ import {
 } from './lib/sessao.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
+import { updateNotice } from './update-check.mjs';
 import { fingerprintSourcesInRoot, parseSourceFingerprints, sameDigest, sameSource } from './lib/source-fingerprints.mjs';
 
 const git = (repo, args) => safe(() => execFileSync('git', args, {
@@ -455,8 +456,21 @@ function relatorioDeDivisao(root, t) {
     t('ses.verFonte'),
   ].join('\n');
 
+  return texto;
+}
+
+/**
+ * Saída única do `SessionStart` deste script: o veredito da divisão vai para o AGENTE
+ * (`additionalContext`) e o aviso de versão nova vai para o USUÁRIO (`systemMessage`) — quem
+ * atualiza o plugin é a pessoa, não o modelo. Uma escrita só, porque duas no stdout não são JSON.
+ */
+function sessionStart(root, cfg, t) {
+  const texto = relatorioDeDivisao(root, t);
+  const aviso = safe(() => updateNotice(cfg, { lang: detectLang(cfg) }), '');
+  if (!texto && !aviso) return;
   writeHookOutput(root, {
-    hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: texto },
+    ...(texto ? { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: texto } } : {}),
+    ...(aviso ? { systemMessage: aviso } : {}),
   });
 }
 
@@ -614,7 +628,7 @@ function main() {
   const cfg = loadConfig(root);
   const t = makeT(detectLang(cfg));
   if (args.includes('--stop-report')) { stopReport(root, t); return; }
-  if (args.includes('--session-start')) { relatorioDeDivisao(root, t); return; }
+  if (args.includes('--session-start')) { sessionStart(root, cfg, t); return; }
   const sid = sessionId();
 
   if (args.includes('--prompt')) { console.log(montarPrompt(root, sid, t)); return; }

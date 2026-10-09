@@ -178,3 +178,19 @@ test('a frase sugerida ao usuário é a mesma que a skill reconhece', () => {
   assert.match(skill, /registre no contexto/);
   assert.match(skill, /save this to context/);
 });
+
+test('ignoreDirs: leitura em pasta ignorada pelo projeto não conta para a sugestão', async () => {
+  const root = projeto();
+  try {
+    const copias = ['prototypes/a/X.pas', 'prototypes/b/Y.pas', 'old-copies/Z.pas'];
+    for (const file of copias) {
+      mkdirSync(join(root, file, '..'), { recursive: true });
+      writeFileSync(join(root, file), 'unit X;\n');
+    }
+    const lines = [...FILES.slice(0, 2), ...copias].map((file) => claudeRead(join(root, file)));
+    const path = transcript(root, lines);
+    assert.match(await readCaptureSuggestion(root, {}, { sessionId: 'sem-config', transcriptPath: path }), /leu 5 arquivos/);
+    assert.equal(await readCaptureSuggestion(root, { ignoreDirs: ['prototypes', 'old-copies'] }, { sessionId: 'com-config', transcriptPath: path }), '',
+      'sobram 2 arquivos oficiais: abaixo do limiar');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

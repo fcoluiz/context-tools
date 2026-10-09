@@ -905,6 +905,7 @@ documentation folders. To depart from convention, `.claude/context-tools.json`:
 ```json
 {
   "sourceDirs": ["packages/core/src", "packages/api/src"],
+  "ignoreDirs": ["prototypes", "old-copies"],
   "coupling": { "since": "6 months ago", "minTogether": 3, "warnConfidence": 0.7 },
   "contextMaps": { "intentionallyUnmapped": ["scripts/legacy/"] },
   "claudeMdHint": false,
@@ -912,6 +913,12 @@ documentation folders. To depart from convention, `.claude/context-tools.json`:
   "verify": { "command": "npm run test:unit", "testPatterns": ["make check"] }
 }
 ```
+
+`ignoreDirs` lists folder names to skip at any depth — copies, prototypes, local backups — on top of
+the built-in list (`node_modules`, `dist`, `__history`, `__recovery`…). They leave the index, the
+answer before `grep`, the context pack, documentation checks and the read-only session suggestion.
+Names only, case-insensitive; entries with a path separator are ignored. Nothing is guessed: a
+project's throwaway folders are declared here.
 
 `verify.command` overrides the detected test command; `verify.testPatterns` adds commands that count
 as a test run; `verify.enabled: false` turns the `Stop` note off.

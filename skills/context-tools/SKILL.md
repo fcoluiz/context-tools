@@ -263,6 +263,7 @@ Só é necessária para fugir da convenção. Use `.claude/context-tools.json` n
 ```json
 {
   "sourceDirs": ["packages/core/src", "packages/api/src"],
+  "ignoreDirs": ["prototypes", "old-copies"],
   "statusLanguages": ["pt", "en"],
   "coupling": { "since": "6 months ago", "minTogether": 3, "warnConfidence": 0.7 },
   "claudeMdHint": false,
@@ -272,6 +273,9 @@ Só é necessária para fugir da convenção. Use `.claude/context-tools.json` n
 
 Sem o arquivo, as pastas de código são detectadas (`src`, `lib`, `app`, `packages`, `tests`…)
 e os três idiomas de status ficam ativos.
+
+`ignoreDirs` tira do índice, do hook e da documentação as pastas descartáveis do projeto (cópias,
+protótipos), pelo nome e em qualquer profundidade.
 
 `extraRepos` inclui repo(s) irmão(s) da raiz no índice — mesmo sem `.git` próprio — para quando
 a raiz precisa continuar sendo um projeto específico (workspace pai tem muitos outros projetos

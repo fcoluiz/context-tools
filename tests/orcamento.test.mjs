@@ -13,7 +13,9 @@ import { localPath } from './paths.mjs';
 
 const ROOT = localPath('../', import.meta.url);
 const SCRIPTS = join(ROOT, 'scripts');
-const read = (...parts) => readFileSync(join(ROOT, ...parts), 'utf8');
+// Mede o conteúdo, não o disco: num checkout Windows com `core.autocrlf` cada linha ganha um `\r`
+// e o mesmo SKILL.md passava ~320 caracteres a mais que no CI, falhando só na máquina de quem edita.
+const read = (...parts) => readFileSync(join(ROOT, ...parts), 'utf8').replace(/\r\n/g, '\n');
 
 function tempProject() {
   const dir = mkdtempSync(join(tmpdir(), 'ct-orc-'));

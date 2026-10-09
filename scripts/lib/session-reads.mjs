@@ -15,7 +15,7 @@
 
 import { closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
-import { HISTORY_CODE_RE, isIgnoredPath, safe, sanitizeModelText, stateDir, statePath } from './roots.mjs';
+import { HISTORY_CODE_RE, ignoredDirNames, isIgnoredPath, safe, sanitizeModelText, stateDir, statePath } from './roots.mjs';
 
 /** Arquivos de código distintos, sem cobertura, para valer uma sugestão. */
 export const MIN_UNCOVERED_FILES = 3;
@@ -155,7 +155,8 @@ function saveState(root, path, state) {
  * Atualiza o acumulado da sessão com o que a transcrição ganhou desde o último `Stop`.
  * `reads` guarda caminhos relativos à raiz, só de arquivos que existem dentro dela.
  */
-export function scanSession(root, entry, transcriptPath) {
+export function scanSession(root, entry, transcriptPath, cfg = {}) {
+  const ignored = ignoredDirNames(cfg);
   const rootKey = key(resolve(root));
   const stateKey = key(stateDir(root));
   const reads = new Set(entry.reads || []);
@@ -165,7 +166,7 @@ export function scanSession(root, entry, transcriptPath) {
     const absoluteKey = key(absolute);
     if (!absoluteKey.startsWith(`${rootKey}/`) || absoluteKey.startsWith(`${stateKey}/`)) return;
     const rel = relative(root, absolute).replace(/\\/g, '/');
-    if (!HISTORY_CODE_RE.test(rel) || isIgnoredPath(rel)) return;
+    if (!HISTORY_CODE_RE.test(rel) || isIgnoredPath(rel, ignored)) return;
     if (!safe(() => statSync(absolute).isFile(), false)) return;
     if (reads.size < MAX_READS) reads.add(rel);
   };
@@ -237,7 +238,7 @@ export async function readCaptureSuggestion(root, cfg = {}, { sessionId, transcr
   const previous = state[id] && state[id].transcript === transcriptPath ? state[id] : {};
   if (previous.notified) return '';
 
-  const entry = scanSession(root, previous, transcriptPath);
+  const entry = scanSession(root, previous, transcriptPath, cfg);
   state[id] = entry;
   let text = '';
   // `checked` evita recarregar mapas e documentos a cada resposta quando nada novo foi lido.

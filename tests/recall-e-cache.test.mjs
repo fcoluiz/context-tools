@@ -17,6 +17,7 @@ import { tmpdir } from 'node:os';
 import { buildIndex, CACHE_TIER_MIN_FILES, escopoLabel, reportOne, irmaosPorPrefixo } from '../scripts/symbols.mjs';
 import { findRepos, resolveExtraRepos, extraReposDoCodeWorkspace } from '../scripts/lib/roots.mjs';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 // Importado, nunca copiado: com o número à mão, baixar o limiar no código deixaria estes
 // testes gerando arquivos demais e medindo outra coisa — sem falhar, que é o pior jeito.
@@ -89,6 +90,53 @@ test('recall: cópias do IDE do Delphi (__history, __recovery) não entram no í
     assert.deepEqual(indexados.filter((f) => /__history|__recovery/.test(f)), [],
       `cópia do IDE indexada: ${indexados.join(', ')}`);
     assert.ok(indexados.some((f) => f.endsWith('src/UCadX.pas')), 'a unit oficial continua indexada');
+  } finally { rmSync(raiz, { recursive: true, force: true }); }
+});
+
+function projetoComCopias() {
+  const raiz = projetoVazio();
+  const unit = 'unit UCadX;\ninterface\nprocedure Gravar;\nimplementation\nprocedure Gravar;\nbegin\nend;\nend.\n';
+  writeFileSync(join(raiz, 'src', 'UCadX.pas'), unit);
+  for (const copia of ['prototypes', join('modulo', 'Old-Copies')]) {
+    mkdirSync(join(raiz, 'src', copia), { recursive: true });
+    writeFileSync(join(raiz, 'src', copia, 'UCadX.pas'), unit);
+  }
+  return raiz;
+}
+const copiasIndexadas = (idx) => idx.files.map((f) => f.replace(/\\/g, '/')).filter((f) => /prototypes|Old-Copies/.test(f));
+
+test('ignoreDirs: pastas declaradas pelo projeto saem do índice, em qualquer profundidade e sem caixa', () => {
+  const raiz = projetoComCopias();
+  try {
+    assert.equal(copiasIndexadas(buildIndex(raiz, {})).length, 2, 'sem configuração, as cópias são indexadas');
+    const idx = buildIndex(raiz, { ignoreDirs: ['prototypes', 'old-copies', '../fora', 'a/b', 42, ''] });
+    assert.deepEqual(copiasIndexadas(idx), [], 'entradas inválidas são descartadas sem derrubar as válidas');
+    const arquivos = [...new Set((idx.defs.get('Gravar') || []).map((d) => d.file.replace(/\\/g, '/')))];
+    assert.deepEqual(arquivos, ['src/UCadX.pas'], 'só a unit oficial define Gravar');
+  } finally { rmSync(raiz, { recursive: true, force: true }); }
+});
+
+test('ignoreDirs: a configuração de um projeto não vaza para outro no mesmo processo', () => {
+  const comConfig = projetoComCopias();
+  const semConfig = projetoComCopias();
+  try {
+    assert.deepEqual(copiasIndexadas(buildIndex(comConfig, { ignoreDirs: ['prototypes', 'old-copies'] })), []);
+    assert.equal(copiasIndexadas(buildIndex(semConfig, {})).length, 2);
+    assert.equal(copiasIndexadas(buildIndex(comConfig, {})).length, 2, 'tirar a configuração devolve as pastas');
+  } finally {
+    rmSync(comConfig, { recursive: true, force: true });
+    rmSync(semConfig, { recursive: true, force: true });
+  }
+});
+
+test('ignoreDirs: pasta ignorada não vira repositório num workspace misto', () => {
+  const raiz = mkdtempSync(join(tmpdir(), 'ctx-ignore-repos-'));
+  try {
+    for (const nome of ['AppServer', 'shared', 'old-copies']) mkdirSync(join(raiz, nome));
+    const opts = { requireGit: false, gitProbe: (p) => p === join(raiz, 'AppServer') };
+    assert.ok(findRepos(raiz, opts).some((r) => r.name === 'old-copies'));
+    const nomes = findRepos(raiz, { ...opts, cfg: { ignoreDirs: ['old-copies'] } }).map((r) => r.name).sort();
+    assert.deepEqual(nomes, ['AppServer', 'shared']);
   } finally { rmSync(raiz, { recursive: true, force: true }); }
 });
 
@@ -485,4 +533,24 @@ test('cache: não vaza entre projetos diferentes', () => {
     rmSync(a, { recursive: true, force: true });
     rmSync(b, { recursive: true, force: true });
   }
+});
+
+test('ignoreDirs E2E: lido de .claude/context-tools.json pelo symbols.mjs e pelo hook antes do Grep', () => {
+  const raiz = projetoComCopias();
+  try {
+    mkdirSync(join(raiz, '.claude'), { recursive: true });
+    writeFileSync(join(raiz, '.claude', 'context-tools.json'), JSON.stringify({ ignoreDirs: ['prototypes', 'old-copies'] }));
+    const env = { ...process.env, CLAUDE_PROJECT_DIR: raiz, CONTEXT_TOOLS_HOST: 'claude' };
+    const cli = spawnSync(process.execPath, [fileURLToPath(new URL('../scripts/symbols.mjs', import.meta.url)), 'Gravar', `--root=${raiz}`], { encoding: 'utf8', env });
+    assert.equal(cli.status, 0, cli.stderr);
+    assert.match(cli.stdout, /UCadX\.pas/);
+    assert.doesNotMatch(cli.stdout, /prototypes|Old-Copies/i, cli.stdout);
+    const hook = spawnSync(process.execPath, [fileURLToPath(new URL('../scripts/pre-tool.mjs', import.meta.url))], {
+      cwd: raiz, encoding: 'utf8', env,
+      input: JSON.stringify({ session_id: 'ignore-dirs-e2e', tool_name: 'Grep', tool_input: { pattern: 'Gravar' } }),
+    });
+    assert.equal(hook.status, 0, hook.stderr);
+    assert.match(hook.stdout, /UCadX\.pas/,`o hook precisa ter respondido: ${hook.stdout}`);
+    assert.doesNotMatch(hook.stdout, /prototypes|Old-Copies/i, hook.stdout);
+  } finally { rmSync(raiz, { recursive: true, force: true }); }
 });

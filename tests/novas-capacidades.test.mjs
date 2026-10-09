@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -50,7 +50,7 @@ test('provedores semânticos são detectados sem instalação automática', () =
 test('skill do Codex aponta para caminhos executáveis, não para placeholder', () => {
   const skill = readFileSync(new URL('../skills/context-tools/SKILL.md', import.meta.url), 'utf8');
   assert.doesNotMatch(skill, /node <scripts>\//);
-  assert.match(skill, /node "\$\{PLUGIN_ROOT\}\/scripts\/symbols\.mjs"/);
+  assert.match(skill, /node "\$\{PLUGIN_ROOT\}\/scripts\/ct\.mjs"/);
   assert.match(skill, /node "\$\{PLUGIN_ROOT\}\/scripts\/metrics\.mjs"/);
   assert.match(skill, /\.codex\/scripts\//);
 });
@@ -96,5 +96,21 @@ test('métricas locais são limitadas ao estado do projeto', () => {
     if (old === undefined) delete process.env.CONTEXT_TOOLS_STATE_DIR;
     else process.env.CONTEXT_TOOLS_STATE_DIR = old;
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('todo verbo do ct.mjs citado na skill existe e aponta para um script que existe', async () => {
+  // A skill é a única documentação que o agente lê; um verbo citado ali e ausente do ct.mjs viraria
+  // "verbo desconhecido" no meio de uma tarefa.
+  const { VERBS } = await import('../scripts/ct.mjs');
+  const skill = readFileSync(new URL('../skills/context-tools/SKILL.md', import.meta.url), 'utf8');
+  const citados = [...skill.matchAll(/ct\.mjs (?:"\s*)?([a-z]+)/g)].map((m) => m[1]).filter((v) => v !== 'help');
+  assert.ok(citados.length >= 8, 'a skill deveria citar os verbos principais');
+  for (const verbo of new Set(citados)) {
+    assert.ok(VERBS[verbo], `verbo "${verbo}" citado na skill e ausente do ct.mjs`);
+    assert.ok(existsSync(new URL(`../scripts/${VERBS[verbo].script}`, import.meta.url)), `script de "${verbo}" não existe`);
+  }
+  for (const [verbo, v] of Object.entries(VERBS)) {
+    assert.ok(existsSync(new URL(`../scripts/${v.script}`, import.meta.url)), `ct.mjs ${verbo} aponta para ${v.script}, que não existe`);
   }
 });

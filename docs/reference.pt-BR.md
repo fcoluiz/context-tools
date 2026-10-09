@@ -48,6 +48,7 @@ O custo não é ler o arquivo. É **procurar onde a coisa está**, sessão após
 |---|---|
 | onde X está definido? | `symbols.mjs <nome> [<nome>…]` |
 | quem usa X, e de qual função? | `refs.mjs <nome> [--all] [--json]` |
+| como é este projeto? | `overview.mjs [--json] [--budget=N]` |
 | o que está em jogo antes de mudar X? | `impact.mjs <símbolo-ou-arquivo> [--budget=N] [--json]` |
 | como navego este arquivo gigante? | `outline.mjs <arquivo> [filtro]` |
 | o que muda junto com este arquivo? | `coupling.mjs <arquivo>` |
@@ -108,6 +109,19 @@ real achou `controllers/orders.js ↔ services/paymentService.js` (100%, 7 commi
 
 **`audit-docs`** acha ponteiro de linha podre, símbolo/arquivo que não existe mais, hash de commit
 inválido e alegação de status sem data.
+
+**`ct`** é uma porta de entrada para tudo acima: `ct.mjs <verbo>` roda o mesmo script com os mesmos
+argumentos, no mesmo processo Node (sem segunda partida). `ct.mjs help` lista os verbos. Existe por
+causa do agente: a skill repetia `node "<caminho>/scripts/x.mjs"` inteiro para cada ferramenta,
+texto pago toda vez que a skill carrega; com verbos ela caiu de 16.873 para cerca de 6.900
+caracteres.
+
+**`overview`** é o panorama do primeiro minuto, montado só do código e do git: onde o código se
+concentra, os arquivos mais alterados nos últimos seis meses (marcados quando um mapa ou documento
+`ai-context` já os cobre), arquivos grandes demais para ler inteiros, as co-mudanças mais fortes, o
+comando de teste e quanto conhecimento escrito existe. Não escreve nada e não interpreta domínio. O
+aviso de `SessionStart` que um `ai-context/` vazio já mostra aponta para ele — o caso em que o
+projeto ainda não tem conhecimento escrito e um panorama mecânico mais ajuda.
 
 **`refs`** responde a pergunta que vem logo depois de "onde está": **quem usa**. Lê os mesmos
 arquivos do índice, tira comentário e literal de texto com o removedor de cada linguagem (menção em

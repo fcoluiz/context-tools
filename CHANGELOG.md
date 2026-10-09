@@ -29,6 +29,21 @@ reconstructed from git history.
   with its uses, what historically changes together with it (git, directional), the related tests and
   test command, and the context maps and `ai-context` documents that cite it, with whether the source
   they reviewed is still today's. On demand only: no hook calls it.
+- **`ct.mjs`: one entry point, short verbs.** `ct.mjs find|refs|impact|outline|overview|pack|coupling|
+  why|verify|docs|ack|check|health|handoff|…` runs the same script with the same arguments, in the
+  same Node process. Every script keeps working on its own.
+- **`overview.mjs`: the first-minute panorama.** Where the code is, the most changed files of the last
+  six months (marked when a map or document covers them), files too large to read whole, the
+  strongest co-changes, the test command and how much is written down — from the code and git only.
+  The `SessionStart` note for an empty `ai-context/` points to it.
+
+### Changed
+
+- **The skill is 59% shorter.** It now uses the `ct.mjs` verbs and drops internals the agent does not
+  act on: 16,873 → ~6,900 characters, paid each time the skill loads; the description, paid on every
+  prompt, went from 427 to 387. The test ceilings went down with it (7,600 and 420).
+- **Positioning.** README and manifests now lead with what the tool is for: project knowledge that
+  does not rot — find, remember, verify.
 
 ## [2.6.0] — 2026-10-09
 

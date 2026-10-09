@@ -4,7 +4,7 @@
 // Hooks só criam o esqueleto configurado e detectam pendências. No Codex, Stop pode iniciar uma
 // continuação limitada; o agente investiga as fontes e preenche o conteúdo semântico.
 
-import { resolveRoot, loadConfig, isMain, sanitizeModelText, statePath } from './lib/roots.mjs';
+import { resolveRoot, loadConfig, isMain, sanitizeModelText, statePath, scriptCommand } from './lib/roots.mjs';
 import { writeHookOutput } from './lib/hook-output.mjs';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -53,12 +53,15 @@ function sessionNotice(root, cfg, context) {
     mkdirSync(dirname(noticePath), { recursive: true });
     writeFileSync(noticePath, JSON.stringify({ signature, at: Date.now() }));
   } catch {}
+  // Projeto sem conhecimento escrito ainda é o caso em que o panorama mecânico mais ajuda: uma
+  // linha, só enquanto o ai-context estiver vazio (e no máximo uma vez a cada 24 h, como o resto).
+  const panorama = `${scriptCommand(root, 'ct.mjs')} overview`;
   if (status.language === 'en') {
-    if (signature === 'created') return '📚 context-tools created the initial ai-context structure. The agent must fill or create documents only after investigating the relevant area; do not invent rules.';
-    return '📚 ai-context is active, but it has no semantic documents beyond the index yet. When working on a relevant area, the agent should propose a document and fill it only with project evidence.';
+    if (signature === 'created') return `📚 context-tools created the initial ai-context structure. The agent must fill or create documents only after investigating the relevant area; do not invent rules. First panorama of the project: ${panorama}`;
+    return `📚 ai-context is active, but it has no semantic documents beyond the index yet. When working on a relevant area, the agent should propose a document and fill it only with project evidence. Panorama: ${panorama}`;
   }
-  if (signature === 'created') return '📚 O context-tools criou a estrutura inicial do ai-context. O agente deve preencher ou criar documentos somente após investigar a área relevante; não invente regras.';
-  return '📚 O ai-context está ativo, mas ainda não possui documentos semânticos além do índice. Ao trabalhar em uma área relevante, o agente deve propor a criação de um documento e preenchê-lo somente com evidências do projeto.';
+  if (signature === 'created') return `📚 O context-tools criou a estrutura inicial do ai-context. O agente deve preencher ou criar documentos somente após investigar a área relevante; não invente regras. Primeiro panorama do projeto: ${panorama}`;
+  return `📚 O ai-context está ativo, mas ainda não possui documentos semânticos além do índice. Ao trabalhar em uma área relevante, o agente deve propor a criação de um documento e preenchê-lo somente com evidências do projeto. Panorama: ${panorama}`;
 }
 
 function printResult(result, json) {

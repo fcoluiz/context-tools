@@ -27,6 +27,7 @@ handoff-*.md
 .verify-state.json
 .pre-tool-answers.json
 .document-updates/
+.session-reads.json
 *.tmp
 *.lock
 context-tools-install.json

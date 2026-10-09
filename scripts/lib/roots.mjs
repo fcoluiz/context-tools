@@ -25,6 +25,11 @@ const IGNORED = new Set([
   '__history', '__recovery',
 ]);
 
+/** O caminho relativo passa por alguma pasta que a varredura ignora? */
+export function isIgnoredPath(relativePath) {
+  return String(relativePath || '').split(/[\\/]+/).some((part) => IGNORED.has(part));
+}
+
 /**
  * Extensões que o índice cross-file lê. FONTE ÚNICA — mora aqui, e não em `symbols.mjs`,
  * porque `outline.mjs` também precisa dela para a mensagem de "formato não coberto" e não pode

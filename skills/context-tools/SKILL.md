@@ -107,6 +107,11 @@ fingerprint e a decisão prevista do `Stop`. A data de revisão dos documentos �
 comando não certifica atualidade semântica. É local, não edita mapas e não persiste fingerprints;
 `unknown` significa que não há evidência suficiente para atribuir o arquivo.
 
+Sessão que só leu código (nenhuma edição de código), com 3 arquivos ou mais em 2+ pastas sem mapa
+nem documento, recebe no `Stop` uma linha para o USUÁRIO sugerindo registrar o fluxo em
+`ai-context/features/`. Uma vez por sessão, offline, a partir da transcrição local do host. Não
+registre por conta própria por causa dela: o usuário decide. `"captureHint": false` desliga.
+
 Para desativar no projeto, use `"documentation": { "enabled": false }` na configuração do
 plugin. `autoInit: false` preserva a consulta e os comandos, mas impede a criação automática da
 estrutura na abertura da sessão. O diretório raiz pode ser ajustado; as subpastas padrão não.

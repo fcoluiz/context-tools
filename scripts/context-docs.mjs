@@ -24,14 +24,21 @@ function arg(name, fallback = null) {
   return item ? item.slice(name.length + 1) : fallback;
 }
 
-function emitHook(root, eventName, text, notice = '', autoReview = false) {
-  if (!text) return;
-  const hookSpecificOutput = { hookEventName: eventName, additionalContext: text.slice(0, 3200) };
-  if (notice) hookSpecificOutput._contextToolsNotice = notice.slice(0, 1800);
-  if (autoReview) hookSpecificOutput._contextToolsAutoReview = true;
+// `systemMessage` vai para o USUÁRIO, não para o contexto do agente: a sugestão de registro é
+// decisão de quem pergunta, e o agente não deve agir sobre ela por conta própria.
+function emitHook(root, eventName, text, notice = '', autoReview = false, systemMessage = '') {
+  if (!text && !systemMessage) return;
+  const output = {};
+  if (text) {
+    const hookSpecificOutput = { hookEventName: eventName, additionalContext: text.slice(0, 3200) };
+    if (notice) hookSpecificOutput._contextToolsNotice = notice.slice(0, 1800);
+    if (autoReview) hookSpecificOutput._contextToolsAutoReview = true;
+    output.hookSpecificOutput = hookSpecificOutput;
+  }
+  if (systemMessage) output.systemMessage = systemMessage.slice(0, 1200);
   // A revisão automática do Codex é uma decisão de continuação, não um aviso: nunca deduplica.
-  if (autoReview) process.stdout.write(JSON.stringify({ hookSpecificOutput }));
-  else writeHookOutput(root, { hookSpecificOutput });
+  if (autoReview) process.stdout.write(JSON.stringify(output));
+  else writeHookOutput(root, output);
 }
 
 function sessionNotice(root, cfg, context) {
@@ -97,6 +104,17 @@ async function main() {
       if (output) process.stdout.write(output);
       return;
     }
+    let event = {};
+    try { event = JSON.parse(readFileSync(0, 'utf8') || '{}'); } catch { /* CLI sem entrada */ }
+    let captureHint = '';
+    try {
+      const { readCaptureSuggestion } = await import('./lib/session-reads.mjs');
+      const { transcriptDaSessao } = await import('./lib/sessao.mjs');
+      const sessionId = event.session_id || process.env.CLAUDE_CODE_SESSION_ID || process.env.CLAUDE_SESSION_ID;
+      const transcriptPath = typeof event.transcript_path === 'string' && event.transcript_path
+        ? event.transcript_path : transcriptDaSessao(root, sessionId);
+      captureHint = await readCaptureSuggestion(root, cfg, { sessionId, transcriptPath });
+    } catch { /* sugestão é opcional: nunca derruba o relatório de documentação */ }
     const mapStarted = Date.now();
     let mapReport = '';
     if (codex) {
@@ -107,7 +125,7 @@ async function main() {
       documentationStopReport(root, cfg, { sessionOnly: true }),
       ...(codex ? [mapReport] : []),
     ].filter(Boolean);
-    emitHook(root, 'Stop', reports.join('\n\n'), '', codex);
+    emitHook(root, 'Stop', reports.join('\n\n'), '', codex, captureHint);
     return;
   }
   if (mode === '--prompt-audit') {

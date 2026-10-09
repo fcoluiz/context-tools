@@ -17,6 +17,13 @@ reconstructed from git history.
 - **Context budget under test** (`tests/orcamento.test.mjs`): the skill description and the
   CLAUDE.md/AGENTS.md block (paid on every prompt), the skill body, and the `SessionStart` notes of a
   typical project each have a ceiling slightly above today's size, so growing them is a decision.
+- **Suggestion to record read-only investigations.** A session that answered a question by reading
+  code — no code edits, at least 3 files in 2+ folders with no context map or `ai-context` document —
+  now gets one line at `Stop` suggesting the user ask for the flow to be recorded. Before, the Stop
+  review only looked at edits, so the next session redid the whole investigation. It works the same
+  for Claude and Codex, offline, from the transcript the host already writes; it reads only the bytes
+  added since the previous `Stop`, shows at most once per session and never writes maps or documents.
+  Turn it off with `"documentation": { "captureHint": false }`.
 
 ### Changed
 

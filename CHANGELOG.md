@@ -8,6 +8,11 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.5.0] — 2026-10-09
+
+Investigations that only read code can now be saved by saying "save this to context", installs say
+when a newer release is out, reviews are recorded with `ack.mjs`, and every `Stop` note has a ceiling.
+
 ### Added
 
 - **`ack.mjs`: record a review without copying hashes.** `ack.mjs <map-or-doc.md>` computes and writes

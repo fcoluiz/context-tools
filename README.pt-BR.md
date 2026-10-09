@@ -116,14 +116,17 @@ nunca apresentado como definição.
 | `.py .pyi` | ✅ | ✅ |
 | `.go` | ✅ | ✅ |
 | `.rs` | ✅ | ✅ |
+| `.cs` (C#) | ✅ | ✅ |
+| `.java` | ✅ | ✅ |
+| `.php` | ✅ | ✅ |
 | `.pas .dpr .dpk .inc` (Delphi/Pascal) | ✅ | ✅ |
 | `.dfm .fmx` (forms Delphi) | — de propósito | ✅ |
 | `.md` | — | ✅ (seções) |
 | `.sql` (tabelas, colunas, views, procedures…) | ✅ só no índice | ✅ |
 
 `coupling` e `audit-docs` funcionam com qualquer linguagem. Cada parser é conferido contra código de
-produção de terceiros — cerca de **6.200 arquivos e 147.000 símbolos** em projetos Python, Go,
-Delphi/Pascal, Rust e TypeScript — com **zero símbolos apontando a linha errada**.
+produção de terceiros — cerca de **9.000 arquivos e 192.000 símbolos** em projetos Python, Go,
+Delphi/Pascal, Rust, TypeScript, C#, Java e PHP — com **zero símbolos apontando a linha errada**.
 
 ## Quanto custa
 

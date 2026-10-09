@@ -10,7 +10,7 @@
 //   - nenhuma edição de código depois do último comando de teste → nunca fala;
 //   - no máximo UM aviso por sessão (estado em `.verify-state.json`).
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { HISTORY_CODE_RE, safe, walk } from './roots.mjs';
 
@@ -64,6 +64,11 @@ export function detectTestCommand(repoPath, cfg = {}) {
   if (has('Cargo.toml')) return 'cargo test';
   if (has('pom.xml')) return 'mvn test';
   if (has('build.gradle') || has('build.gradle.kts')) return has('gradlew') ? './gradlew test' : 'gradle test';
+  // .NET: a solução ou o projeto na raiz é o que `dotnet test` descobre sozinho.
+  if (safe(() => readdirSync(repoPath), []).some((name) => /.(?:sln|slnx|csproj)$/i.test(name))) return 'dotnet test';
+  const composer = safe(() => JSON.parse(readFileSync(join(repoPath, 'composer.json'), 'utf8')), null);
+  if (typeof composer?.scripts?.test === 'string' || Array.isArray(composer?.scripts?.test)) return 'composer test';
+  if (has('phpunit.xml') || has('phpunit.xml.dist')) return 'vendor/bin/phpunit';
   return null;
 }
 

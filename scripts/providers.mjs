@@ -23,6 +23,18 @@ const PROVIDERS = Object.freeze({
     id: 'rust-analyzer', language: 'Rust', command: 'rust-analyzer',
     install: 'rustup component add rust-analyzer', protocol: 'lsp',
   },
+  csharp: {
+    id: 'csharp-ls', language: 'C#', command: 'csharp-ls',
+    install: 'dotnet tool install --global csharp-ls', protocol: 'lsp',
+  },
+  java: {
+    id: 'jdtls', language: 'Java', command: 'jdtls',
+    install: 'https://github.com/eclipse-jdtls/eclipse.jdt.ls#installation', protocol: 'lsp',
+  },
+  php: {
+    id: 'intelephense', language: 'PHP', command: 'intelephense',
+    install: 'npm install --global intelephense', protocol: 'lsp',
+  },
 });
 
 function executableExists(command) {

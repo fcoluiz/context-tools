@@ -89,6 +89,9 @@ export const LANGUAGE_CAPABILITIES = Object.freeze([
   Object.freeze({ id: 'rust', name: 'Rust', extensions: ['rs'], parser: 'rust', crossFile: true }),
   Object.freeze({ id: 'python', name: 'Python', extensions: ['py', 'pyi'], parser: 'python', crossFile: true }),
   Object.freeze({ id: 'go', name: 'Go', extensions: ['go'], parser: 'go', crossFile: true }),
+  Object.freeze({ id: 'csharp', name: 'C#', extensions: ['cs'], parser: 'csharp', crossFile: true }),
+  Object.freeze({ id: 'java', name: 'Java', extensions: ['java'], parser: 'java', crossFile: true }),
+  Object.freeze({ id: 'php', name: 'PHP', extensions: ['php'], parser: 'php', crossFile: true }),
   // `indexOnly`: entra no índice de símbolos, mas NÃO conta como código para mapas, coupling e
   // revisão automática — editar uma migration não deve gerar aviso de mapa nem chamada de modelo.
   Object.freeze({ id: 'sql', name: 'SQL', extensions: ['sql'], parser: 'sql', crossFile: true, indexOnly: true }),

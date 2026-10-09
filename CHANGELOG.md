@@ -8,6 +8,20 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **C#, Java and PHP in the index and the outline.** `symbols` and `outline` now read `.cs`, `.java`
+  and `.php`: types, methods (labeled with their class, found by the bare name), constructors,
+  properties, events, delegates and constants. The three share one engine that tracks braces, so
+  declarations are only looked for directly inside a type — a call in a method body never becomes a
+  definition — and a symbol ends at the brace that closes it. Checked against nine third-party
+  projects (Newtonsoft.Json, serilog, Dapper, gson, commons-lang, jsoup, monolog, guzzle, Slim):
+  2,907 files, 45,615 symbols, zero at the wrong line; the verification caught a C# verbatim string
+  starting with `@"""` that hid every later method and Java type annotations that hid annotated
+  methods. The three languages also count as code for maps, coupling and the verification note, which
+  now knows `dotnet test`, `composer test` and `vendor/bin/phpunit`; `providers.mjs` suggests
+  csharp-ls, jdtls and intelephense.
+
 ## [2.6.0] — 2026-10-09
 
 A project can name its own throwaway folders with `ignoreDirs`, so copies and prototypes stop

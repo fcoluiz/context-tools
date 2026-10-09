@@ -1,7 +1,7 @@
 {
   "name": "context-tools",
   "version": "2.6.0",
-  "description": "Code navigation and documentation hygiene for coding agents.",
+  "description": "Project knowledge that does not rot, for coding agents.",
   "author": {
     "name": "Luiz Nogueira"
   },
@@ -15,12 +15,13 @@
   ],
   "interface": {
     "displayName": "Context Tools",
-    "shortDescription": "Context-aware code navigation and documentation hygiene.",
+    "shortDescription": "Find, remember and verify project knowledge.",
     "longDescription": "Shared project context tools for Claude Code and Codex, with host-specific hooks and isolated runtime state.",
     "developerName": "Luiz Nogueira",
     "category": "Developer Tools",
     "capabilities": [
       "Code navigation",
+      "Impact analysis",
       "Context maps",
       "Documentation hygiene"
     ],

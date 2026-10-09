@@ -5,13 +5,20 @@
 ![Node.js ≥ 18](https://img.shields.io/badge/node-%E2%89%A518-339933)
 ![Zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
 
-**Navegação de código e higiene de documentação para agentes de IA — Claude Code e Codex.**
+**Conhecimento do projeto que não apodrece — para agentes de IA (Claude Code e Codex).**
 
-Agentes gastam boa parte de cada sessão *procurando onde as coisas estão*: `grep` encadeado, arquivo
-lido janela por janela, a mesma exploração repetida sessão após sessão. O context-tools dá ao agente
-um índice de símbolos entre arquivos, outline de arquivos grandes, acoplamento de mudanças extraído
-do git e uma auditoria que avisa quando a documentação envelheceu — tudo gerado na hora a partir do
-seu código, então nunca fica defasado.
+Toda sessão de agente redescobre o mesmo projeto: `grep` encadeado, arquivo lido janela por janela,
+a mesma investigação repetida, e o que se aprendeu jogado fora quando a sessão acaba. Anotação
+escrita ajuda até o código mudar por baixo dela e ela começar a mentir em silêncio. O context-tools
+faz três coisas sobre isso:
+
+1. **Encontrar** — índice de símbolos entre arquivos, quem usa o quê, outline de arquivo enorme,
+   acoplamento de mudanças extraído do git e um briefing de impacto antes da mudança, tudo gerado na
+   hora a partir do seu código.
+2. **Lembrar** — o que uma sessão investigou vira um documento curto em `ai-context/` ou um mapa de
+   contexto, ligado por fingerprint aos arquivos-fonte que descreve.
+3. **Verificar** — quando o código sob um mapa ou documento muda, a próxima sessão (ou o CI) fica
+   sabendo qual, e por quê. "Atualizado" nunca afirma mais do que sabe.
 
 - **Zero dependência.** Só builtins `node:`. Nada a instalar além do Node 18+.
 - **Zero configuração.** Descobre sozinho repositórios, linguagens e documentação.
@@ -19,25 +26,31 @@ seu código, então nunca fica defasado.
   como pior que nenhuma resposta.
 - **Medido, não estimado.** Cada número da documentação diz de onde veio, inclusive os que deixam a
   ferramenta pior na foto.
+- **Econômico em tokens.** Os hooks calam quando não há o que dizer, e todo custo fixo tem teto
+  garantido por teste.
 
 *[Read in English →](README.md)*
 
 ## O que ele responde
 
-| pergunta | comando |
+Uma porta de entrada, verbos curtos: `node scripts/ct.mjs <verbo>` (a skill do plugin já conhece o
+caminho). Os scripts individuais continuam funcionando como antes.
+
+| pergunta | verbo |
 |---|---|
-| onde X está definido? | `symbols.mjs <nome> [<nome>…]` |
-| quem usa X, e de qual função? | `refs.mjs <nome>` |
-| o que está em jogo antes de mudar X? | `impact.mjs <símbolo-ou-arquivo>` |
-| como navegar este arquivo enorme? | `outline.mjs <arquivo> [filtro]` |
-| o que muda junto com este arquivo? | `coupling.mjs <arquivo>` |
-| esta documentação ainda é verdade? | `audit-docs.mjs [--strict]` |
-| por que este código é assim? | `why.mjs <símbolo>` |
-| o que a próxima sessão precisa saber? | `handoff.mjs [--salvar]` |
-| revisei este mapa/documento — registrar | `ack.mjs <mapa-ou-doc.md>` |
-| um pacote de evidências com orçamento para um símbolo ou arquivo | `context-pack.mjs <símbolo-ou-arquivo> [--budget=N]` |
-| como está a saúde da instalação local? | `health.mjs [--days=30] [--audit] [--json]` |
-| que testes cobrem este arquivo, e como rodá-los? | `verify.mjs <arquivo> [<arquivo>…]` |
+| onde X está definido? | `ct find <nome> [<nome>…]` |
+| quem usa X, e de qual função? | `ct refs <nome>` |
+| o que está em jogo antes de mudar X? | `ct impact <símbolo-ou-arquivo>` |
+| como é este projeto? | `ct overview` |
+| como navegar este arquivo enorme? | `ct outline <arquivo> [filtro]` |
+| o que muda junto com este arquivo? | `ct coupling <arquivo>` |
+| por que este código é assim? | `ct why <símbolo>` |
+| que testes cobrem este arquivo, e como rodá-los? | `ct verify <arquivo> [<arquivo>…]` |
+| um pacote de evidências com orçamento para um símbolo ou arquivo | `ct pack <símbolo-ou-arquivo> [--budget=N]` |
+| esta documentação ainda é verdade? | `ct check [--strict]` |
+| revisei este mapa/documento — registrar | `ct ack <mapa-ou-doc.md>` |
+| o que a próxima sessão precisa saber? | `ct handoff [--salvar]` |
+| como está a saúde da instalação local? | `ct health [--days=30] [--audit] [--json]` |
 
 O agente não precisa lembrar de nada disso. **Hooks** trazem as ferramentas sozinhos: antes de um
 `grep` por símbolo o índice responde primeiro, a sessão começa com uma lista curta dos mapas de

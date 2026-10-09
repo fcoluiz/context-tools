@@ -5,13 +5,19 @@
 ![Node.js ≥ 18](https://img.shields.io/badge/node-%E2%89%A518-339933)
 ![Zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
 
-**Code navigation and documentation hygiene for AI coding agents — Claude Code and Codex.**
+**Project knowledge that does not rot — for AI coding agents (Claude Code and Codex).**
 
-Agents spend a large share of every session *finding where things are*: chained `grep`s, files read
-window by window, the same exploration repeated session after session. context-tools gives the agent
-a cross-file symbol index, outlines for large files, change coupling mined from git, and an audit
-that tells when documentation has gone stale — all generated on the spot from your code, so it is
-never out of date.
+Every agent session rediscovers the same project: chained `grep`s, files read window by window, the
+same investigation repeated, and whatever was learned thrown away when the session ends. Written
+notes help until the code changes under them and they start lying quietly. context-tools does three
+things about that:
+
+1. **Find** — a cross-file symbol index, who-uses-what, outlines for huge files, change coupling mined
+   from git and a pre-change impact briefing, all generated on the spot from your code.
+2. **Remember** — what a session investigated becomes a short document in `ai-context/` or a context
+   map, bound to the source files it describes by fingerprint.
+3. **Verify** — when the code under a map or document changes, the next session (or CI) is told
+   which one, and why. "Up to date" never claims more than it knows.
 
 - **Zero dependencies.** Only `node:` builtins. Nothing to install besides Node 18+.
 - **Zero configuration.** It discovers repositories, languages and documentation by itself.
@@ -19,25 +25,31 @@ never out of date.
   worse than no answer.
 - **Measured, not estimated.** Every number in the docs says where it came from, including the ones
   that make the tool look worse.
+- **Cheap on tokens.** Hooks stay silent when there is nothing to say, and every fixed cost has a
+  ceiling enforced by a test.
 
 *[Leia em português →](README.pt-BR.md)*
 
 ## What it answers
 
-| question | command |
+One entry point, short verbs: `node scripts/ct.mjs <verb>` (the plugin skill already knows the path).
+The individual scripts keep working exactly as before.
+
+| question | verb |
 |---|---|
-| where is X defined? | `symbols.mjs <name> [<name>…]` |
-| who uses X, and from which function? | `refs.mjs <name>` |
-| what is at stake before I change X? | `impact.mjs <symbol-or-file>` |
-| how do I navigate this huge file? | `outline.mjs <file> [filter]` |
-| what changes together with this file? | `coupling.mjs <file>` |
-| is this documentation still true? | `audit-docs.mjs [--strict]` |
-| why is this code like this? | `why.mjs <symbol>` |
-| what does the next session need to know? | `handoff.mjs [--salvar]` |
-| I reviewed this map/doc — record it | `ack.mjs <map-or-doc.md>` |
-| give me a bounded evidence pack for a symbol or file | `context-pack.mjs <symbol-or-file> [--budget=N]` |
-| how healthy is the local setup? | `health.mjs [--days=30] [--audit] [--json]` |
-| which tests cover this file, and how do I run them? | `verify.mjs <file> [<file>…]` |
+| where is X defined? | `ct find <name> [<name>…]` |
+| who uses X, and from which function? | `ct refs <name>` |
+| what is at stake before I change X? | `ct impact <symbol-or-file>` |
+| what does this project look like? | `ct overview` |
+| how do I navigate this huge file? | `ct outline <file> [filter]` |
+| what changes together with this file? | `ct coupling <file>` |
+| why is this code like this? | `ct why <symbol>` |
+| which tests cover this file, and how do I run them? | `ct verify <file> [<file>…]` |
+| give me a bounded evidence pack for a symbol or file | `ct pack <symbol-or-file> [--budget=N]` |
+| is this documentation still true? | `ct check [--strict]` |
+| I reviewed this map/doc — record it | `ct ack <map-or-doc.md>` |
+| what does the next session need to know? | `ct handoff [--salvar]` |
+| how healthy is the local setup? | `ct health [--days=30] [--audit] [--json]` |
 
 The agent does not need to remember any of this. **Hooks** bring the tools in on their own: before a
 `grep` for a symbol the index answers first, a session starts with a short list of the context maps

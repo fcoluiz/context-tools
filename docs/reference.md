@@ -45,6 +45,7 @@ the same `grep`s repeated across sessions: knowledge derived, used, and thrown a
 |---|---|
 | where is X defined? | `symbols.mjs <name> [<name>…]` |
 | who uses X, and from which function? | `refs.mjs <name> [--all] [--json]` |
+| what does this project look like? | `overview.mjs [--json] [--budget=N]` |
 | what is at stake before I change X? | `impact.mjs <symbol-or-file> [--budget=N] [--json]` |
 | how do I navigate this huge file? | `outline.mjs <file> [filter]` |
 | what changes together with this file? | `coupling.mjs <file>` |
@@ -113,6 +114,18 @@ It is pure git: it works in any language.
 
 **`audit-docs`** finds rotten line pointers, symbols or files that no longer exist, invalid commit
 hashes, and undated status claims.
+
+**`ct`** is one entry point for all of the above: `ct.mjs <verb>` runs the same script with the same
+arguments, in the same Node process (no second start-up). `ct.mjs help` lists the verbs. It exists for
+the agent's sake: the skill used to repeat a full `node "<path>/scripts/x.mjs"` for every tool, text
+paid each time the skill loads; with verbs the skill went from 16,873 to about 6,900 characters.
+
+**`overview`** is the first-minute panorama, built only from the code and git: where the code is
+concentrated, the files changed most in the last six months (marked when a map or `ai-context`
+document already covers them), files too large to read whole, the strongest co-changes, the test
+command and how much written knowledge exists. It writes nothing and interprets no domain. The
+`SessionStart` note that an empty `ai-context/` already shows points to it — the case where the
+project has no written knowledge yet and a mechanical panorama helps most.
 
 **`refs`** answers the question that comes right after "where is it": **who uses it**. It reads the
 same files as the index, drops comments and string literals with each language's own stripper (a

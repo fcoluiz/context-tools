@@ -2,7 +2,7 @@
   "name": "context-tools",
   "version": "2.6.0",
   "private": true,
-  "description": "Code navigation and documentation hygiene for AI coding agents. No dependencies, self-configuring, generated on the spot.",
+  "description": "Project knowledge that does not rot, for AI coding agents: symbol index, who-uses-what, pre-change impact, git change coupling, and documentation bound to the code by fingerprint. Zero dependencies.",
   "license": "MIT",
   "author": "Luiz Nogueira",
   "homepage": "https://github.com/fcoluiz/context-tools#readme",

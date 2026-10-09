@@ -1,318 +1,105 @@
 ---
 name: context-tools
-description: Navegação de código e higiene de documentação sem re-explorar na mão. Use ao procurar onde um símbolo está definido, navegar arquivo grande (>1.500 linhas), ver que arquivos mudam junto, explicar uma revisão de mapa ou achar candidatos a cobertura documental. Também antes de commitar documentação, para reduzir leitura repetida entre sessões, ou quando o usuário pedir para registrar, guardar ou documentar algo "no contexto".
+description: Navegação de código e conhecimento do projeto sem re-explorar na mão. Use para achar onde um símbolo está definido, quem o usa, o que está em jogo antes de mudá-lo, o panorama do projeto, navegar arquivo grande (>1.500 linhas) ou ver o que muda junto. Também antes de commitar documentação, ao revisar mapa/documento defasado, ou quando o usuário pedir para registrar algo "no contexto".
 ---
 
 # Ferramentas de contexto
 
-Os exemplos usam `${PLUGIN_ROOT}/scripts/` (plugin Codex). No plugin Claude use
-`${CLAUDE_PLUGIN_ROOT}/scripts/`; numa instalação standalone, **exatamente** `.codex/scripts/` ou
-`.claude/scripts/` — não misture os modos nem copie scripts do plugin para o projeto. A raiz vem do
-contexto do agente, do cwd ou do repositório acima; `--root=<dir>` força. Instalar, atualizar e
-diagnosticar: `node "${PLUGIN_ROOT}/setup-codex.mjs"`.
+Tudo passa por um comando: `node "${PLUGIN_ROOT}/scripts/ct.mjs" <verbo> …` (plugin Codex). No plugin
+Claude o prefixo é `${CLAUDE_PLUGIN_ROOT}/scripts/`; numa instalação standalone, **exatamente**
+`.codex/scripts/` ou `.claude/scripts/` — não misture os modos nem copie scripts do plugin para o
+projeto. `ct.mjs help` lista os verbos; os scripts de antes (`symbols.mjs`, `outline.mjs`…) continuam
+valendo. A raiz vem do agente, do cwd ou do repositório acima; `--root=<dir>` força.
 
-Os comandos **geram na hora** (nunca defasam) e **falham visível**: se não acharem, dizem e mandam
-para `rg`/`grep` — nunca devolvem vazio com cara de resposta.
+Tudo é **gerado na hora** (nunca defasa) e **falha visível**: sem resposta, diz e manda para
+`rg`/`grep` — siga o conselho em vez de insistir. Variável local, propriedade aninhada e coluna fora
+de `.sql` não estão no índice.
 
-## Onde X está definido? → `symbols.mjs`
+## Antes de explorar
 
-```
-node "${PLUGIN_ROOT}/scripts/symbols.mjs" <nome> [--all]
-```
+| pergunta | comando |
+|---|---|
+| onde X está definido? | `ct.mjs find <nome> [<nome>…] [--all]` |
+| quem usa X, e de qual função? | `ct.mjs refs <nome> [--all]` |
+| o que está em jogo antes de mudar X? | `ct.mjs impact <símbolo-ou-arquivo>` |
+| como navego este arquivo grande? | `ct.mjs outline <arquivo> [filtro]` |
+| o que muda junto com este arquivo? | `ct.mjs coupling <arquivo>` (ou `--changed`) |
+| panorama do projeto | `ct.mjs overview` |
+| pacote de evidências com orçamento | `ct.mjs pack <símbolo-ou-arquivo> --budget=2000` |
+| por que este código é assim? | `ct.mjs why <símbolo>` |
+| que testes cobrem, e como rodar? | `ct.mjs verify <arquivo>…` |
 
-Indexa todos os arquivos de código dos repositórios encontrados e devolve a **definição** —
-não as dezenas de menções que `rg`/`grep` dariam. Use **antes** da busca textual quando procura uma função,
-classe, método ou binding de topo.
+- `find` antes da busca textual por função, classe, método, tipo ou tabela/coluna `.sql`: devolve a
+  definição com o intervalo de linhas, não dezenas de menções. O hook de busca já faz isso antes de
+  um grep com cara de símbolo — não repita a consulta.
+- `outline` quando já sabe o arquivo e ele é grande demais: com filtro custa ~1 KB e dá a linha
+  exata. **Não** faça dezenas de leituras com offset caçando algo num arquivo de milhares de linhas.
+- `refs` e `impact` são por nome, não por tipo: nomes iguais não são distinguidos e uso dinâmico não
+  aparece. Use `impact` antes de mudar assinatura, renomear ou apagar.
+- `coupling` é direcional: `leva junto` = quando você mexe NESTE, o outro muda também (o que importa
+  antes de editar); `puxado por` é o inverso. Correlação escrita em mapa parte dessa medição.
+- `verify` depois de editar e antes de declarar concluído; ele não executa nada.
 
-## Quem usa X? O que está em jogo antes de mudar? → `refs.mjs` / `impact.mjs`
+## Conhecimento escrito: mapas e `ai-context/`
 
-```
-node "${PLUGIN_ROOT}/scripts/refs.mjs" <nome> [--all]
-node "${PLUGIN_ROOT}/scripts/impact.mjs" <símbolo-ou-arquivo> [--budget=2000]
-```
-
-`refs` lista os usos fora da definição, cada um com a função que o contém (comentário e string não
-contam). `impact` junta usos, o que muda junto no git, testes relacionados e mapas/documentos que
-citam o arquivo, dizendo se estão em dia. Use `impact` antes de mudar assinatura, renomear ou apagar.
-São por nome, não por tipo: mesmo nome em dois lugares não é distinguido, e uso dinâmico não aparece.
-
-## Montar contexto mínimo → `context-pack.mjs`
-
-```
-node "${PLUGIN_ROOT}/scripts/context-pack.mjs" <símbolo-ou-arquivo> --budget=2000
-node "${PLUGIN_ROOT}/scripts/context-pack.mjs" <símbolo-ou-arquivo> --history --json
-```
-
-Compõe definições, outline, mapas, correspondências textuais e, sob demanda, histórico em um pacote
-com orçamento de saída. Cada item identifica sua origem (`definition`, `test`, `context-map`,
-`history` ou `textual-match`) e suas limitações; uma correspondência textual nunca é apresentada
-como definição.
-
-## Documentação operacional → `context-docs.mjs`
-
-Todo projeto recebe, por padrão, uma estrutura neutra `ai-context/` na abertura da sessão. O
-plugin cria somente o índice e as pastas padrão; o agente deve investigar e preencher o conteúdo,
-sem inventar regras de negócio. A estrutura interna é fixa e acompanha o idioma configurado:
-
-- Português: `00-indice.md`, `features/`, `telas/`, `decisoes/`, `integracoes/`, `banco/`.
-- Inglês: `00-index.md`, `features/`, `screens/`, `decisions/`, `integrations/`, `database/`.
-
-Use os comandos abaixo quando precisar preparar ou verificar um documento:
-
-```
-node "${PLUGIN_ROOT}/scripts/context-docs.mjs" init
-node "${PLUGIN_ROOT}/scripts/context-docs.mjs" create --type=feature --name=credito-cliente
-node "${PLUGIN_ROOT}/scripts/context-docs.mjs" status
-node "${PLUGIN_ROOT}/scripts/context-docs.mjs" audit
-```
-
-`context-pack` consulta esses documentos como evidência adicional, sempre identificada como
-`documentation`. No Codex, `UserPromptSubmit` confere offline os caminhos ou nomes exatos de arquivo citados
-explicitamente no prompt; só injeta uma nota se o mapa estiver defasado, sem cobertura ou sem
-verificação possível. Não chama modelo/rede nem grava o texto do prompt; prompts sem caminhos
-explícitos e mapas atualizados não recebem contexto adicional. O processo local ainda tem custo de
-inicialização e leitura/hash dos arquivos nomeados.
-
-No `Stop` do Codex, mapas e documentos operacionais são selecionados pela interseção com caminhos
-registrados nos eventos de edição da própria sessão (`apply_patch`, `Edit` e `Write`). O diário local
-guarda caminhos e hashes, o turno e o último autor confirmado; reabrir o chat inicia outra época.
-Eventos sobrepostos ficam sem atribuição automática. Antes de revisar, o Stop confere a versão
-atual e o turno; uma sessão antiga não recupera autoria só porque o conteúdo voltou a ser igual.
-Bash comum não atribui escrita. Para scripts que preservam encoding, declare os alvos com
-`tracked-edit.mjs manifest --file=CAMINHO` e execute
-`node "${PLUGIN_ROOT}/scripts/tracked-edit.mjs" --context-tools-edit=TOKEN -- EXECUTAVEL ARGUMENTOS`.
-Declare todos os arquivos que o comando pode editar, inclusive em `extraRepos` configurados.
-Consulte `health.mjs` para alterações sem atribuição. Claude
-continua usando o baseline existente. Pendências globais antigas não iniciam uma revisão automática
-numa sessão sem relação. Fontes sem cobertura só iniciam revisão automática se
-dois arquivos irmãos mudarem juntos ou se a mesma fonte voltar a mudar em outra sessão nos 90 dias
-seguintes; os casos isolados continuam visíveis na saúde local. Se houver pendência relevante, o Codex
-inicia uma continuação limitada para o agente conferir as fontes e atualizar o material relacionado.
-O script nunca escreve regras semânticas: o agente investiga o código, preserva o conteúdo existente e
-só atualiza metadados de revisão depois de confirmar as fontes. O Codex permite uma continuação por
-turno; o que não puder ser resolvido fica visível no encerramento. `A mapear` e `To map` nunca são
-informação confirmada.
-
-Para explicar a classificação de um arquivo específico pelo diário da sessão Codex (ou baseline Claude) e pelos mapas:
-
-```
-node "${PLUGIN_ROOT}/scripts/explain.mjs" --file <caminho> [--json]
-```
-
-Use um caminho relativo explícito ou absoluto. O diagnóstico mostra a atribuição à sessão,
-os mapas que cobrem o arquivo, os documentos operacionais que o referenciam, o estado e a base do
-fingerprint e a decisão prevista do `Stop`. A data de revisão dos documentos é informativa; o
-comando não certifica atualidade semântica. É local, não edita mapas e não persiste fingerprints;
-`unknown` significa que não há evidência suficiente para atribuir o arquivo.
+Mapas de contexto (`.claude/context/`, `.codex/context/`) e a documentação operacional `ai-context/`
+(`00-indice.md`, `features/`, `telas/`, `decisoes/`, `integracoes/`, `banco/`; em inglês `00-index.md`,
+`screens/`, `decisions/`, `integrations/`, `database/`) roteiam a investigação; não substituem o
+código. "Atualizado" significa que a fonte não mudou desde a revisão — nunca que o texto está certo.
+`A mapear`/`To map` nunca é informação confirmada. O plugin só cria estrutura e templates
+(`ct.mjs docs init|status|audit`, `ct.mjs docs create --type=<tipo> --name=<nome>`); o conteúdo vem do
+agente, depois de investigar, sem inventar regra de negócio.
 
 ### Pedido "registre no contexto" ("save this to context")
 
 Vale para o que ESTA conversa investigou; não exige pasta nem tipo. Tipo pelo conteúdo: fluxo
 entre telas/units → `feature`; tela → `tela`; tabelas → `banco`; sistema externo →
 `integracao`; escolha técnica → `decisao`. Documento que já cobre a área é atualizado; senão,
-`context-docs.mjs create --type=<tipo> --name=<nome>`. Só o que o código confirmou, sem
+`ct.mjs docs create --type=<tipo> --name=<nome>`. Só o que o código confirmou, sem
 `arquivo:linha`; o resto fica `A mapear`. Some uma linha ao índice e mostre o que registrou. O
 `Stop` sugere a frase ao usuário quando a sessão só leu código sem cobertura; não registre por
 conta própria (`"captureHint": false` desliga).
 
-Para desativar no projeto, use `"documentation": { "enabled": false }` na configuração do
-plugin. `autoInit: false` preserva a consulta e os comandos, mas impede a criação automática da
-estrutura na abertura da sessão. O diretório raiz pode ser ajustado; as subpastas padrão não.
+### Mapa ou documento defasado
 
-## Provedores semânticos opcionais → `providers.mjs`
+Confira as fontes citadas, corrija o texto se preciso e registre com
+`ct.mjs ack <mapa-ou-documento.md> [--source=<chave>]` — ele grava `source_fingerprints`,
+`source_digest` e a data. Nunca copie hashes à mão nem registre sem inspecionar a fonte.
+`ct.mjs explain --file <caminho>` diz por que um arquivo entra (ou não) em revisão.
 
-```
-node "${PLUGIN_ROOT}/scripts/providers.mjs" --json
-node "${PLUGIN_ROOT}/scripts/providers.mjs" --install-plan
-```
+Fila local (Codex): `ct.mjs review status --json` e `show --id=ID --json`; depois de conferir,
+`ack --id=ID --revision=REVISION --reviewed` só para as versões conferidas (`--source=CHAVE` parcial),
+`defer --id=ID --reason=insufficient-evidence` ou `retry --id=ID`. O Codex permite uma continuação
+por turno; o que sobrar fica visível no fim.
 
-Detecta language servers já instalados e mostra sugestões explícitas quando um parser semântico
-não está disponível. Nenhum hook instala dependências ou acessa a rede automaticamente.
+No Codex o `Stop` atribui edições pelos eventos `apply_patch`/`Edit`/`Write`; Bash comum não conta.
+Script que edita arquivos declara os alvos:
+`node "${PLUGIN_ROOT}/scripts/tracked-edit.mjs" manifest --file=CAMINHO` e depois
+`node "${PLUGIN_ROOT}/scripts/tracked-edit.mjs" --context-tools-edit=TOKEN -- EXECUTAVEL ARGUMENTOS`
+(todos os arquivos possíveis, inclusive em `extraRepos`).
 
-Não cobre variável local, chave de config nem coluna de banco. Nesses casos ele avisa e manda
-para `rg`/`grep` — siga o conselho em vez de insistir.
+Metadados opcionais de documento: `maintenance: live|historical|manual` (decisões são históricas
+por padrão), `review_sources: ["./src/a.js"]` e
+`review_dependencies: [{"source":"./src/a.js","symbols":["function foo"]}]` (nomes exatos do
+outline; não declare escopo de símbolo se o comportamento depende de fontes fora dele).
 
-## Medir uso local → `metrics.mjs`
+## Antes de commitar documentação
 
-```
-node "${PLUGIN_ROOT}/scripts/metrics.mjs"
-node "${PLUGIN_ROOT}/scripts/metrics.mjs" --json
-node "${PLUGIN_ROOT}/scripts/metrics.mjs" --clear
-```
+`ct.mjs check [arquivo.md] [--strict]` acha ponteiro de linha podre, símbolo/arquivo que não existe
+mais, hash de commit inválido e status sem data (`--strict` serve para pre-commit).
 
-Mostra contadores locais de adoção sem guardar prompts, conteúdo de arquivos ou comandos completos.
+🚫 **Nunca escreva `arquivo:linha` em documentação.** Numa auditoria real, nenhuma das 13 referências
+conferidas estava certa — a pior errava por 2.861 linhas. Cite o símbolo; a linha se resolve na hora
+com `find`/`outline`. Status ("não commitado") vira mentira em semanas: se registrar, deixe datado.
 
-## Saúde do plugin e da documentação → `health.mjs`
+## Diagnóstico e configuração
 
-```
-node "${PLUGIN_ROOT}/scripts/health.mjs" [--days=30] [--audit] [--json]
-```
-
-Use quando o usuário pedir uma revisão da saúde ou adoção do context-tools neste projeto. Resume
-métricas locais retidas, sinais de mapas/documentação desatualizados e, com `--audit`, problemas
-estruturais da documentação. No chat do Codex, o agente pode executar esse comando com o projeto
-aberto e explicar o relatório; ele não consulta dados remotos. Respostas emitidas pelo hook não
-provam que foram usadas pelo agente, e um digest atualizado não prova correção semântica. O comando
-pode atualizar caches locais de diagnóstico, mas não altera código nem documentos do projeto. Exibe
-uma estimativa aproximada do texto de instrução do hook de revisão automática, sem guardar prompt,
-fontes ou caminhos; a estimativa não representa tokens faturados nem inclui arquivos lidos ou resposta.
-
-Para medir a sobrecarga completa do `PreToolUse` Bash no Codex, fora dos hooks normais:
-
-```
-node "${PLUGIN_ROOT}/scripts/benchmark-pretool.mjs" --samples=5
-```
-
-O benchmark inicia processos Node separados com comandos sintéticos que não são executados. Ele
-mostra p50/p95 e o tempo inicial para comandos ignorados, padrões de busca textual e buscas com cara
-de símbolo. Não exibe nem persiste o texto dos comandos. Na instalação standalone do Codex, use
-`node .codex/scripts/benchmark-pretool.mjs --samples=5`.
-
-## Que testes cobrem este arquivo? → `verify.mjs`
-
-```
-node "${PLUGIN_ROOT}/scripts/verify.mjs" <arquivo> [<arquivo>…] [--json]
-```
-
-Lista testes relacionados (mesmo nome ou que importam o arquivo — pista, não prova de cobertura) e
-o comando de teste do projeto. Use depois de editar código e antes de declarar a tarefa concluída.
-Não executa nada: rodar o teste continua sendo decisão do agente.
-
-`symbols` também indexa `.sql`: tabelas, colunas, views, procedures, triggers, sequences.
-
-## Navegar arquivo grande → `outline.mjs`
-
-```
-node "${PLUGIN_ROOT}/scripts/outline.mjs" <arquivo> [filtro-regex]
-```
-
-Devolve `linha → símbolo` de **um** arquivo (em `.md`, as seções). Use depois de já saber qual
-arquivo, quando ele for grande demais para ler inteiro. Com filtro custa ~1 KB e dá a linha
-exata; depois faça uma leitura dirigida.
-
-**Não faça** dezenas de leituras com offset caçando algo num arquivo de milhares de linhas — é
-exatamente o desperdício que este comando existe para eliminar.
-
-## O que muda junto com este arquivo? → `coupling.mjs`
-
-```
-node "${PLUGIN_ROOT}/scripts/coupling.mjs" <arquivo>     # correlações deste arquivo
-node "${PLUGIN_ROOT}/scripts/coupling.mjs"               # top acoplamentos do projeto
-node "${PLUGIN_ROOT}/scripts/coupling.mjs" --changed     # o que está modificado sem o par habitual
-```
-
-Lê o histórico do git e descobre correlação que **ninguém documentou** — "toda vez que mexem
-neste controller, o validator muda junto em 88% das vezes".
-
-A confiança é **direcional**, e a distinção importa:
-- `leva junto` = das vezes que você mexe NESTE, o outro muda também ← é o que interessa antes de editar
-- `puxado por` = das vezes que o OUTRO muda, este vem junto
-
-Use ao começar uma mudança (para saber o que provavelmente virá junto) e ao escrever um mapa de
-contexto (a seção de correlações deve **partir da medição**, não da memória).
-
-Para encontrar candidatos sem cobertura que co-mudam repetidamente com fontes mapeadas:
-
-```
-node "${PLUGIN_ROOT}/scripts/map-suggestions.mjs" [--json]
-```
-
-O relatório manual reaproveita os limiares de `coupling`, ignora fontes excluídas e só sugere
-candidatos com relação direcional suficiente no histórico Git. Co-mudança é uma pista para
-revisão, não confirmação semântica; nenhum mapa é criado ou alterado. Repositórios sem Git são
-reportados sem candidatos históricos.
-
-## Registrar revisão de mapa/documento → `ack.mjs`
-
-```
-node "${PLUGIN_ROOT}/scripts/ack.mjs" <mapa-ou-documento.md> [--source=<chave>]
-```
-
-Quando um aviso disser que um mapa ou documento `ai-context` ficou defasado: confira as fontes
-citadas, corrija o texto se preciso e rode `ack`. Ele calcula e grava `source_fingerprints`,
-`source_digest` e a data — nunca copie hashes à mão.
-
-## Antes de commitar doc → `audit-docs.mjs`
-
-```
-node "${PLUGIN_ROOT}/scripts/audit-docs.mjs" [arquivo.md] [--strict]
-```
-
-Acha ponteiro de linha podre, símbolo/arquivo citado que não existe mais, hash de commit
-inválido e alegação de status sem data. `--strict` sai com código 1 se houver ponteiro de linha
-(serve para pre-commit).
-
-## Regra que vale mais que as ferramentas
-
-🚫 **Nunca escreva `arquivo:linha` em documentação.**
-
-Numa auditoria real, das 13 referências `símbolo @ arquivo:linha` conferidas contra o código,
-**nenhuma estava certa** — a pior errava por 2.861 linhas. Nenhum símbolo havia sumido; só os
-números apodreceram. Cite o símbolo e deixe a linha ser resolvida na hora por `symbols`/`outline`.
-
-O mesmo vale para status: "não commitado" escrito hoje é mentira em duas semanas. Se precisar
-registrar, deixe explícito que a informação é datada.
-
-## Configuração (opcional)
-
-Só é necessária para fugir da convenção. Use `.claude/context-tools.json` no Claude ou
-`.codex/context-tools.json` no Codex:
-
-```json
-{
-  "sourceDirs": ["packages/core/src", "packages/api/src"],
-  "ignoreDirs": ["prototypes", "old-copies"],
-  "statusLanguages": ["pt", "en"],
-  "coupling": { "since": "6 months ago", "minTogether": 3, "warnConfidence": 0.7 },
-  "claudeMdHint": false,
-  "extraRepos": ["../AppConnection", "../shared"]
-}
-```
-
-Sem o arquivo, as pastas de código são detectadas (`src`, `lib`, `app`, `packages`, `tests`…)
-e os três idiomas de status ficam ativos.
-
-`ignoreDirs` tira do índice, do hook e da documentação as pastas descartáveis do projeto (cópias,
-protótipos), pelo nome e em qualquer profundidade.
-
-`extraRepos` inclui repo(s) irmão(s) da raiz no índice — mesmo sem `.git` próprio — para quando
-a raiz precisa continuar sendo um projeto específico (workspace pai tem muitos outros projetos
-que não interessam). Caminhos relativos à raiz, restritos à subárvore da pasta PAI da raiz
-(`../vizinho` ok, `../../mais-fundo` recusado).
-
-**Sem configurar nada, o plugin tenta derivar `extraRepos` sozinho de um `*.code-workspace`
-do VS Code** (na raiz ou na pasta pai) — quem já monta workspace multi-root no editor não
-precisa repetir a curadoria numa segunda config. `extraRepos: []` explícito desliga essa
-detecção automática.
-
-Na primeira sessão com um `CLAUDE.md` ou `AGENTS.md` já existente, a integração do agente pode
-anexar (uma vez só) uma nota curta sugerindo usar `context-tools` antes de abrir um subagente de
-exploração ampla para "onde X está definido". `claudeMdHint: false` desliga a dica nos dois
-agentes; `codexMdHint: false` desliga apenas a variante Codex.
-
-## Regra de custo do hook
-
-O hook tenta `symbols` primeiro. Só monta um pack pequeno (orçamento 800) quando encontra
-definições ambíguas ou distribuídas em vários arquivos; se faltar evidência de definição exata,
-escala para 2.000. `context-pack` não é o passo padrão de toda busca.
-
-## Fila de revisão e políticas documentais
-
-`node "${PLUGIN_ROOT}/scripts/review.mjs" status --json` mostra revisões locais pendentes.
-Use `show --id=ID --json` para obter o manifesto completo. Após conferir as fontes e atualizar
-os fatos relevantes, `ack --id=ID --revision=REVISION --reviewed` registra somente as versões listadas;
-`--source=CHAVE` permite confirmação parcial. Nunca use ack sem inspecionar a fonte.
-`defer --id=ID --reason=insufficient-evidence` preserva uma pendência sem outro prompt automático;
-`retry --id=ID` libera uma tentativa solicitada. Revisões são deduplicadas por documento e versão,
-independentemente da ordem do lote. Uma nova versão pode ser revisada novamente.
-
-Documentos operacionais aceitam `maintenance: live|historical|manual`. Decisões são históricas
-por padrão: uma mera menção a código não cria obrigação de reescrever um incidente passado.
-Para uma decisão que descreve regras atuais, declare `maintenance: live`.
-`review_sources: ["./src/a.js"]` restringe referências atuais explicitamente.
-Opcionalmente `review_dependencies: [{"source":"./src/a.js","symbols":["function foo"]}]`
-usa nomes exatos do outline para delimitar a dependência. Escopos inválidos ou linguagens sem
-parser confiável voltam à comparação do arquivo inteiro e aparecem no diagnóstico.
-Não declare escopo de símbolo se o comportamento também depende de fontes fora dele.
-Sincronizar um digest com fingerprints completos e válidos é trabalho mecânico offline;
-confirmar fatos continua exigindo inspeção. Um hash não prova correção semântica.
+- `ct.mjs health [--days=30] [--audit] [--json]`: saúde local, atualidade do conhecimento e uso.
+  Resposta emitida por hook não prova uso; digest em dia não prova correção. Contadores crus:
+  `node "${PLUGIN_ROOT}/scripts/metrics.mjs" [--json|--clear]`.
+- `ct.mjs providers [--install-plan]`: language servers opcionais; nenhum hook instala nada.
+- `map-suggestions.mjs`: arquivos sem mapa que co-mudam com fontes mapeadas (pista, não confirmação).
+- Configuração opcional em `.claude/context-tools.json` ou `.codex/context-tools.json`:
+  `sourceDirs`, `ignoreDirs` (pastas descartáveis, por nome), `extraRepos` (repos irmãos; derivado
+  de um `*.code-workspace` quando existe, `[]` desliga), `coupling`, `lang`,
+  `claudeMdHint`/`codexMdHint`, `documentation.{enabled,autoInit,captureHint,root}`, `updateCheck`.

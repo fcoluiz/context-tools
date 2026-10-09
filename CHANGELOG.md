@@ -59,6 +59,11 @@ reconstructed from git history.
   per-source SHA-256 fingerprints it was reviewed against, how CRLF is normalized, how the aggregate
   digest is built and who may write them. Tests derive from the code: every field the readers parse
   must be in the schema, and a fingerprint computed by the written rule must equal the implementation's.
+- **Outcome benchmark harness.** `benchmark-outcome.mjs` runs the same task with a real agent
+  (`claude -p`) with and without the plugin, on clean copies, and checks the result objectively —
+  solved or not, cost, turns, context tokens. Both arms exclude the user's plugins, hooks and MCP
+  servers; per-run and total cost caps; it refuses to start without a logged-in CLI and stops at the
+  first run that made no model call. A three-case pilot ships in `docs/benchmarks/outcome/`.
 
 ### Fixed
 

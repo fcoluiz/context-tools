@@ -1,6 +1,6 @@
 ---
 name: context-tools
-description: Navegação de código e higiene de documentação sem re-explorar na mão. Use ao procurar onde um símbolo está definido, ao navegar arquivo grande (>1.500 linhas), ao querer saber que arquivos mudam junto com outro, explicar uma decisão de revisão de mapa ou identificar candidatos a cobertura documental pelo histórico. Também antes de commitar documentação ou quando o objetivo é reduzir leitura repetida entre sessões.
+description: Navegação de código e higiene de documentação sem re-explorar na mão. Use ao procurar onde um símbolo está definido, navegar arquivo grande (>1.500 linhas), ver que arquivos mudam junto, explicar uma revisão de mapa ou achar candidatos a cobertura documental. Também antes de commitar documentação, para reduzir leitura repetida entre sessões, ou quando o usuário pedir para registrar, guardar ou documentar algo "no contexto".
 ---
 
 # Ferramentas de contexto
@@ -106,6 +106,16 @@ os mapas que cobrem o arquivo, os documentos operacionais que o referenciam, o e
 fingerprint e a decisão prevista do `Stop`. A data de revisão dos documentos é informativa; o
 comando não certifica atualidade semântica. É local, não edita mapas e não persiste fingerprints;
 `unknown` significa que não há evidência suficiente para atribuir o arquivo.
+
+### Pedido "registre no contexto" ("save this to context")
+
+Vale para o que ESTA conversa investigou; não exige pasta nem tipo. Tipo pelo conteúdo: fluxo
+entre telas/units → `feature`; tela → `tela`; tabelas → `banco`; sistema externo →
+`integracao`; escolha técnica → `decisao`. Documento que já cobre a área é atualizado; senão,
+`context-docs.mjs create --type=<tipo> --name=<nome>`. Só o que o código confirmou, sem
+`arquivo:linha`; o resto fica `A mapear`. Some uma linha ao índice e mostre o que registrou. O
+`Stop` sugere a frase ao usuário quando a sessão só leu código sem cobertura; não registre por
+conta própria (`"captureHint": false` desliga).
 
 Para desativar no projeto, use `"documentation": { "enabled": false }` na configuração do
 plugin. `autoInit: false` preserva a consulta e os comandos, mas impede a criação automática da

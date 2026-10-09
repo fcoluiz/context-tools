@@ -772,6 +772,7 @@ projeto; `--project <caminho>` só é necessário ao administrar outro projeto.
 | `Stop` | Codex revisa somente as fontes alteradas nesta sessão que estão ligadas a mapas/documentos; fontes antigas do mesmo mapa continuam no relatório global | só para mudanças relevantes da sessão; mesma revisão em cooldown por 24h |
 | `Stop` | avisa se você editou A e não tocou em B, que muda junto historicamente | só quando ocorre |
 | `Stop` (Claude) | aponta código editado depois do último teste, com testes relacionados e o comando de teste | **uma vez por sessão**; calado sem estrutura de teste |
+| `Stop` | sessão que só **leu** código (sem editar código), 3 arquivos ou mais em 2+ pastas sem mapa nem documento `ai-context`, recebe uma linha sugerindo ao usuário pedir o registro do fluxo; offline, pela transcrição local do host, nunca escreve nada | **uma vez por sessão**; lê só os bytes que a transcrição ganhou desde o `Stop` anterior |
 
 Toda mensagem de hook passa por um ponto único de deduplicação: o mesmo (evento, sessão, texto) é
 entregue uma vez a cada 90 s, então plugin mais cópia standalone — ou um hook registrado duas
@@ -927,10 +928,14 @@ O diretório raiz pode ser configurado, mas a estrutura interna não:
   "documentation": {
     "enabled": true,
     "autoInit": true,
+    "captureHint": true,
     "root": "ai-context"
   }
 }
 ```
+
+`captureHint: false` desliga a sugestão para sessões que só leram código. Vem ligada porque só mostra
+uma linha ao usuário (`systemMessage` no Claude e no Codex); o agente nunca é instruído a agir sobre ela.
 
 Comandos disponíveis:
 

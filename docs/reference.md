@@ -787,6 +787,7 @@ directory; `--project <path>` is only needed when administering another project.
 | `Stop` | reviews changed code without related `ai-context` under the same rule; stale existing documents remain immediate | only for relevant changes |
 | `Stop` | warns if you edited A and did not touch B, which historically changes with it | only when it happens |
 | `Stop` (Claude) | notes code edited after the last test run, with related tests and the test command | **once per session**; silent without a test setup |
+| `Stop` | a session that only **read** code (no code edits) across at least 3 files in 2+ folders that no map or `ai-context` document covers gets one line suggesting the user ask for the flow to be recorded; offline, from the host's local transcript, never writes anything | **once per session**; reads only the transcript bytes added since the last `Stop` |
 
 Every hook message goes through one deduplication point: the same (event, session, text) is
 delivered once per 90 s, so a plugin plus a standalone copy — or a hook registered twice — does not
@@ -948,10 +949,14 @@ The root directory is configurable, but its internal structure is not:
   "documentation": {
     "enabled": true,
     "autoInit": true,
+    "captureHint": true,
     "root": "ai-context"
   }
 }
 ```
+
+`captureHint: false` turns off the read-only session suggestion. It is on by default because it only
+shows a line to the user (Claude and Codex `systemMessage`); the agent is never told to act on it.
 
 Available commands:
 

@@ -40,8 +40,10 @@ seu código, então nunca fica defasado.
 O agente não precisa lembrar de nada disso. **Hooks** trazem as ferramentas sozinhos: antes de um
 `grep` por símbolo o índice responde primeiro, a sessão começa com uma lista curta dos mapas de
 contexto que ficaram defasados, e o fim da sessão aponta arquivos que historicamente mudam juntos
-mas não foram editados juntos — e, uma vez por sessão, código editado depois do último teste. Cada
-mensagem chega uma vez só, mesmo com o plugin e uma cópia standalone instalados juntos.
+mas não foram editados juntos — e, uma vez por sessão, código editado depois do último teste. Sessão
+que só leu código para responder uma pergunta recebe uma linha sugerindo dizer "registre no
+contexto"; o agente então registra em `ai-context/`. Cada mensagem chega uma vez só, mesmo com o
+plugin e uma cópia standalone instalados juntos.
 
 ## Instalar ou atualizar
 

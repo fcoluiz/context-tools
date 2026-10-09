@@ -53,6 +53,20 @@ const env = {
 };
 Object.assign(process.env, env);
 
+async function writeCaptureHint() {
+  try {
+    const { loadConfig } = await import('./lib/roots.mjs');
+    const { readCaptureSuggestion } = await import('./lib/session-reads.mjs');
+    const hint = await readCaptureSuggestion(cwd, loadConfig(cwd), {
+      sessionId: evento.session_id,
+      transcriptPath: typeof evento.transcript_path === 'string' ? evento.transcript_path : null,
+    });
+    if (hint) process.stdout.write(JSON.stringify({ systemMessage: hint }));
+  } catch {
+    // M4: a sugestão é opcional e nunca pode afetar o Stop.
+  }
+}
+
 async function main() {
   // Track explicit file edits around the tool call. This is Codex-only, local, and silent;
   // Stop later uses the recorded paths instead of claiming every shared-workspace diff.
@@ -103,6 +117,9 @@ async function main() {
       });
       const output = codexReviewOutput(result);
       if (output) process.stdout.write(output);
+      // Sessão que só leu código não chega à revisão acima (ela parte das edições). Sem revisão
+      // pendente neste turno, a sugestão de registro pode falar — nunca as duas juntas.
+      else await writeCaptureHint();
     } catch (error) {
       recordMetric(cwd, 'auto-review', { outcome: 'hook-error', errorKind: error.code || 'review-engine-error' });
     }

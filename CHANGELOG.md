@@ -17,6 +17,18 @@ reconstructed from git history.
 - **Context budget under test** (`tests/orcamento.test.mjs`): the skill description and the
   CLAUDE.md/AGENTS.md block (paid on every prompt), the skill body, and the `SessionStart` notes of a
   typical project each have a ceiling slightly above today's size, so growing them is a decision.
+- **Suggestion to record read-only investigations.** A session that answered a question by reading
+  code — no code edits, at least 3 files in 2+ folders with no context map or `ai-context` document —
+  now gets one line at `Stop` suggesting the user ask for the flow to be recorded. Before, the Stop
+  review only looked at edits, so the next session redid the whole investigation. It works the same
+  for Claude and Codex, offline, from the transcript the host already writes; it reads only the bytes
+  added since the previous `Stop`, shows at most once per session and never writes maps or documents.
+  Turn it off with `"documentation": { "captureHint": false }`.
+- **"Save this to context" ("registre no contexto").** The user no longer needs to name a folder or a
+  document type. The skill now tells the agent to pick the type from what the conversation
+  investigated (flow → feature, screen, database, integration, decision), update an existing
+  document before creating one, add it to the index and show what was recorded. The `Stop`
+  suggestion asks for exactly that phrase.
 
 ### Changed
 
@@ -26,6 +38,13 @@ reconstructed from git history.
   automatic review queue consumes.
 - **Every `Stop` note has a ceiling (900 characters).** Overflow is cut at a line end with a pointer
   to `health.mjs`, where the backlog belongs; the handoff resume prompt is exempt.
+
+### Fixed
+
+- **Delphi IDE backup copies showed up as definitions.** Files under `__history/` and
+  `__recovery/` were indexed, so a symbol lookup returned the backup next to the real unit as an
+  exact definition (seen in the Delphi benchmark of 2026-08-07 and again in real use). Both folders
+  are now ignored, like `node_modules`.
 
 ## [2.4.0] — 2026-10-08
 

@@ -19,7 +19,16 @@ export const safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 const IGNORED = new Set([
   'node_modules', '.git', 'dist', 'build', 'coverage', '.next', '.nuxt', 'out',
   'vendor', 'target', '__pycache__', '.venv', 'venv', '.cache', 'tmp', '.claude', '.codex',
+  // Cópias que o IDE do Delphi grava sozinho ao lado da unit. Sem isto, a cópia em `__recovery`
+  // saía como "definição exata" junto com a unit oficial (benchmark Delphi de 2026-08-07, e de
+  // novo em uso real: a resposta do hook foi gasta distinguindo as duas).
+  '__history', '__recovery',
 ]);
+
+/** O caminho relativo passa por alguma pasta que a varredura ignora? */
+export function isIgnoredPath(relativePath) {
+  return String(relativePath || '').split(/[\\/]+/).some((part) => IGNORED.has(part));
+}
 
 /**
  * Extensões que o índice cross-file lê. FONTE ÚNICA — mora aqui, e não em `symbols.mjs`,

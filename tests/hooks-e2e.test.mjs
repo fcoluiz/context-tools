@@ -722,7 +722,7 @@ test('E2E: o .gitignore instalado cobre TODO estado que os scripts gravam', () =
     // Os nomes precisam ser os que os scripts escrevem de verdade, não parecidos com eles.
     for (const real of ['.pre-tool-state.json', '.handoff-aviso.json', '.symbols-cache.json',
       '.context-maps-session-baseline.json', '.stop-report-state', '.coupling-state', '.coupling-sessions.json',
-      '.source-fingerprints.json', '.context-maps-session-notice.json', '.documentation-session-notice.json',
+      '.source-fingerprints.json', '.context-maps-session-notice.json', '.documentation-session-notice.json', '.session-reads.json',
       '.context-tools-metrics.1234.tmp']) {
       assert.ok(esperado.includes(real)
         || esperado.some((p) => p.endsWith('*') && real.startsWith(p.slice(0, -1)))

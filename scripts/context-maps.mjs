@@ -881,6 +881,12 @@ function runSessionStart() {
     ? `${lines.join('\n')}\n${anyNoGit ? t('map.footer.nogit') : t(codex ? 'map.sessionFooter' : 'map.footer.stale')}`
     : '';
   const notice = [mapNotice, ...baselineLines].filter(Boolean).join('\n');
+  // Série local da atualidade dos mapas: uma amostra por abertura de sessão, sem caminho nem nome.
+  // É o que permite ao `health` dizer se o conhecimento escrito está melhorando ou apodrecendo.
+  recordMetric(root, 'map-freshness', {
+    total: maps.length,
+    fresh: [...frescosPorRepo.values()].reduce((sum, areas) => sum + areas.length, 0),
+  });
   emitContext('SessionStart', text, notice);
 }
 
@@ -1176,6 +1182,34 @@ export function contextMapsExplainFile(root = workspaceRoot(), token = '') {
   };
 }
 
+/**
+ * Mapas deixados para trás por um diff (CI): o diff mudou uma fonte coberta e a revisão portátil do
+ * mapa (`source_fingerprints`/`source_digest`, gravada pelo `ack`) não corresponde ao conteúdo
+ * novo. Só a revisão gravada no próprio mapa conta — em CI não há cache local, e editar o texto do
+ * mapa sem registrar a revisão é sinalizado também, com outro motivo.
+ */
+export function contextMapsDrift(root = workspaceRoot(), changedPaths = []) {
+  const chave = (p) => (process.platform === 'win32' ? resolve(p).toLowerCase() : resolve(p));
+  const changed = new Set(changedPaths.map(chave));
+  const items = [];
+  for (const m of loadMaps(root)) {
+    const touched = m.covers.filter((cover) => changed.has(chave(join(m.repo, cover))));
+    if (!touched.length) continue;
+    const fingerprint = fingerprintMap(m, { entries: {} }, null, true);
+    if (fingerprint.status === 'fresh') continue;
+    items.push({
+      kind: 'map',
+      path: relative(root, m.path).replace(/\\/g, '/'),
+      title: m.area,
+      sources: touched,
+      documentUpdated: changed.has(chave(m.path)),
+      reason: fingerprint.invalidSourceFingerprints ? 'invalid-fingerprints'
+        : m.source_fingerprints || m.source_digest ? 'review-outdated' : 'no-recorded-review',
+    });
+  }
+  return items;
+}
+
 /** Minimal map coverage catalog for read-only, history-based suggestions. */
 export function contextMapCoverage(root = workspaceRoot()) {
   return loadMaps(root).map((map) => ({
@@ -1236,6 +1270,7 @@ export function contextMapsStopReport(root = workspaceRoot(), options = {}) {
     .filter((map) => !validMapPaths.has(resolve(map.path).toLowerCase()))
     .filter((map) => !sessionOnly || mapFileChangedThisSession(map, sessionFilesForRepo(map.repo, changedByRepo, options)))
     .map((map) => {
+      options.onStatus?.(relative(root, map.path).replace(/\\/g, '/'), 'invalid');
       options.onIssue?.({ kind: 'invalid-map-metadata', document: map.path });
       const path = sanitizar(relative(root, map.path).split('\\').join('/'), 120);
       return t('map.invalidMetadata', { path });
@@ -1247,11 +1282,14 @@ export function contextMapsStopReport(root = workspaceRoot(), options = {}) {
     const forced = options.forceDocuments?.has(resolve(m.path));
     if (sessionOnly && !forced && !mapCoversSessionChanges(m, sessionFiles)) continue;
     const fingerprint = fingerprintMap(m, fingerprintState, options.fingerprintCache, sessionOnly);
+    const status = (value) => options.onStatus?.(relative(root, m.path).replace(/\\/g, '/'), value);
     if (fingerprint.current.markers.length) {
+      status('unavailable');
       options.onIssue?.({ kind: 'source-unavailable', document: m.path, errors: fingerprint.current.errors });
       continue;
     }
     if (fingerprint.status === 'fresh') {
+      status('fresh');
       if (!fingerprint.metadataOutdated) options.onReviewed?.(reviewFinding(root, { kind: 'map', document: m.path, fingerprint: fingerprint.current, keys: Object.keys(fingerprint.current.sources) }));
       fingerprintStateChanged ||= fingerprint.updated;
       if (fingerprint.metadataOutdated) {
@@ -1265,11 +1303,13 @@ export function contextMapsStopReport(root = workspaceRoot(), options = {}) {
       continue;
     }
     if (fingerprint.invalidSourceFingerprints) {
+      status('invalid');
       publish(m, fingerprint, sessionOnly ? m.covers.filter((file) => sessionFiles?.some((changed) => sessionPathKey(changed) === sessionPathKey(file))) : m.covers, 'invalid-review-metadata');
       staleLines.push(t('map.fingerprintInvalid', { repo: m.repoName, area: m.area }));
       continue;
     }
     if (fingerprint.status === 'stale') {
+      status('stale');
       const changed = fingerprintMapChangedNames(m, fingerprint);
       const scoped = sessionOnly
         ? changed.filter((file) => sessionFiles?.some((sessionFile) => sessionPathKey(sessionFile) === sessionPathKey(file)))
@@ -1295,11 +1335,13 @@ export function contextMapsStopReport(root = workspaceRoot(), options = {}) {
       // No Stop automático, o mapa já passou pelo filtro de interseção com arquivos da sessão.
       const coversChanged = safe(() => gitDiffNames(m.repo, m.verified_at, m.covers), null);
       if (coversChanged === null) {
+        status('unverifiable');
         staleLines.push(t('map.unverifiable', { repo: m.repoName, area: m.area, at: m.verified_at }));
         continue;
       }
       const unreviewed = afterMapReview(m, coversChanged).filter((file) => !sessionOnly || sessionFiles?.some((sessionFile) => sessionPathKey(sessionFile) === sessionPathKey(file)));
       if (sessionOnly && !unreviewed.length) continue;
+      status(unreviewed.length ? 'stale' : 'fresh');
       if (unreviewed.length === 0) {
         rememberFingerprint(fingerprintState, fingerprint.key, fingerprint.current);
         fingerprintStateChanged = true;
@@ -1313,11 +1355,13 @@ export function contextMapsStopReport(root = workspaceRoot(), options = {}) {
     // Sem git: use a data de verified_at como referência persistente entre sessões.
     const verificadoEm = parseVerifiedAtDate(m.verified_at);
     if (verificadoEm === null) {
+      status('unverifiable');
       staleLines.push(t('map.unverifiable.mtime', { repo: m.repoName, area: m.area, at: m.verified_at }));
       continue;
     }
     const coversChanged = afterMapReview(m, mtimeChangedSince(m.repo, verificadoEm, m.covers)).filter((file) => !sessionOnly || sessionFiles?.some((sessionFile) => sessionPathKey(sessionFile) === sessionPathKey(file)));
     if (sessionOnly && !coversChanged.length) continue;
+    status(coversChanged.length ? 'stale' : 'fresh');
     if (coversChanged.length === 0) {
       rememberFingerprint(fingerprintState, fingerprint.key, fingerprint.current);
       fingerprintStateChanged = true;

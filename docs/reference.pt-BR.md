@@ -1094,6 +1094,33 @@ negava ler a linguagem que acabara de passar a ler. A lista agora é gerada da f
 teste garantindo que toda extensão suportada apareça. Numa ferramenta cuja tese é "falha visível",
 errar na própria mensagem de falha é o pior lugar possível.
 
+## Conhecimento deixado para trás: `drift-check` e o número do health
+
+Os hooks avisam quem está na sessão. Um time precisa do mesmo sinal onde a mudança é revisada — o pull
+request. `drift-check.mjs --base=<ref>` pega os arquivos que o diff `base...head` mudou e lista cada
+mapa de contexto e documento `ai-context` **live** que cita um deles **sem revisão registrada do
+conteúdo novo**. "Revisão registrada" é o fingerprint por fonte que o `ack` grava no próprio arquivo:
+em CI não há cache local, e um cache nunca provou que alguém olhou. Um mapa cujo texto foi editado no
+mesmo pull request, mas cuja revisão não foi registrada, também aparece, com outro motivo — editar a
+prosa não é o mesmo que conferir a fonte.
+
+| código de saída | significado |
+|---|---|
+| 0 | nada para trás, ou achados sem `--strict` |
+| 1 | achados com `--strict` |
+| 2 | o diff não pôde ser calculado (ref desconhecida, clone raso, ref que parece opção) |
+
+O código 2 existe porque "não consegui olhar" passando por "nada mudou" é exatamente a falha que esta
+ferramenta existe para evitar. `--format=github` transforma cada achado em anotação no pull request e
+acrescenta um resumo a `GITHUB_STEP_SUMMARY`; a raiz do repositório traz uma action composta que faz
+exatamente isso.
+
+O `health.mjs` mostra o mesmo estado como número: a fração dos mapas e documentos **verificáveis**
+cujas fontes não mudaram desde a revisão. Documentos históricos, manuais e sem fonte citada são
+contados à parte em vez de inflar o número, e "nada verificável" aparece assim, nunca como 100%. Cada
+`SessionStart` grava uma amostra local da fração dos mapas (sem caminho, sem nome), para o relatório
+dizer se o conhecimento escrito está melhorando ou apodrecendo.
+
 ## Segurança
 
 Os hooks injetam texto **direto no contexto do modelo**, e boa parte desse texto vem do repositório

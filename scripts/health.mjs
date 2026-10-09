@@ -125,6 +125,41 @@ function summarizeMetrics(events, days, now) {
   };
 }
 
+/**
+ * Conhecimento em dia, como número. Conta só o que dá para verificar (documento histórico, manual ou
+ * sem fonte citada fica fora da conta, dito à parte) e mostra a série local dos mapas — uma amostra
+ * por abertura de sessão — para dizer se o conhecimento escrito está melhorando ou apodrecendo.
+ * "Em dia" continua significando "a fonte não mudou desde a revisão", nunca "o texto está certo".
+ */
+export function summarizeKnowledge(mapStatus, docStatus, events = [], days = 30, now = Date.now()) {
+  const contar = (statuses) => {
+    const out = { total: 0, fresh: 0, stale: 0, unverifiable: 0, invalid: 0, unavailable: 0, notTracked: 0 };
+    for (const status of statuses.values()) {
+      if (status === 'not-live' || status === 'no-sources') { out.notTracked++; continue; }
+      out.total++;
+      if (Object.hasOwn(out, status)) out[status]++;
+      else out.unverifiable++;
+    }
+    return out;
+  };
+  const maps = contar(mapStatus);
+  const documents = contar(docStatus);
+  const verificaveis = maps.total + documents.total;
+  const emDia = maps.fresh + documents.fresh;
+  const since = now - days * 24 * 60 * 60 * 1000;
+  const samples = events
+    .filter((e) => e?.type === 'map-freshness' && (typeof e.at === 'number' ? e.at : Date.parse(e.at)) >= since && Number(e.total) > 0)
+    .map((e) => Math.round((Number(e.fresh) / Number(e.total)) * 100));
+  return {
+    score: verificaveis ? Math.round((emDia / verificaveis) * 100) : null,
+    fresh: emDia,
+    verifiable: verificaveis,
+    maps,
+    documents,
+    mapTrend: samples.length >= 2 ? { first: samples[0], last: samples[samples.length - 1], samples: samples.length } : null,
+  };
+}
+
 function reportFindings(fn) {
   try {
     const issues = [];
@@ -162,9 +197,12 @@ function buildReport(root, days, includeAudit) {
   const reviewQueue = reviewQueueDiagnostics(root);
   const trackingIssues = host === 'codex' ? [] : sessionBaseline;
   const docs = documentationStatus(root, config);
-  const mapFreshness = reportFindings((onIssue) => contextMapsStopReport(root, { onIssue }));
+  const mapStatus = new Map();
+  const docStatus = new Map();
+  const mapFreshness = reportFindings((onIssue) => contextMapsStopReport(root, { onIssue, onStatus: (path, status) => mapStatus.set(path, status) }));
   // A diagnostic report must show current findings even if a hook already showed the same text.
-  const documentFreshness = reportFindings((onIssue) => documentationStopReport(root, config, { dedupe: false, onIssue }));
+  const documentFreshness = reportFindings((onIssue) => documentationStopReport(root, config, { dedupe: false, onIssue, onStatus: (path, status) => docStatus.set(path, status) }));
+  const knowledge = summarizeKnowledge(mapStatus, docStatus, events, days, now);
   const audit = includeAudit ? reportAudit(root, config) : null;
   const metrics = summarizeMetrics(events, days, now);
   metrics.storageStatus = storage.status;
@@ -221,6 +259,7 @@ function buildReport(root, days, includeAudit) {
         ...(audit.error ? { error: audit.error } : {}),
       } : null,
     },
+    knowledge,
     freshness: {
       contextMaps: mapFreshness,
       operationalDocuments: documentFreshness,
@@ -267,6 +306,16 @@ function printHuman(report, portuguese) {
     'documentation-unavailable': say('documentação indisponível ou desativada', 'documentation unavailable or disabled'),
   }[report.status] || report.status;
   console.log(say(`Sinal geral: ${statusText}`, `Overall signal: ${statusText}`));
+  const k = report.knowledge;
+  if (k.score === null) {
+    console.log(say('Conhecimento em dia: nada verificável ainda (nenhum mapa ou documento live que cite fontes).', 'Knowledge up to date: nothing verifiable yet (no map or live document citing sources).'));
+  } else {
+    const trend = k.mapTrend ? say(`; mapas ${k.mapTrend.first}% → ${k.mapTrend.last}% em ${k.mapTrend.samples} sessões`, `; maps ${k.mapTrend.first}% → ${k.mapTrend.last}% over ${k.mapTrend.samples} sessions`) : '';
+    console.log(say(
+      `Conhecimento em dia: ${k.score}% (${k.fresh}/${k.verifiable} verificáveis — mapas ${k.maps.fresh}/${k.maps.total}, documentos ${k.documents.fresh}/${k.documents.total})${trend}. "Em dia" = fonte igual à revisada, não texto certo.`,
+      `Knowledge up to date: ${k.score}% (${k.fresh}/${k.verifiable} verifiable — maps ${k.maps.fresh}/${k.maps.total}, documents ${k.documents.fresh}/${k.documents.total})${trend}. "Up to date" = source unchanged since review, not text proven right.`,
+    ));
+  }
   console.log(say(`Fila de revisão: ${report.reviewQueue.status}; ${report.reviewQueue.pending ?? '?'} pendência(s).`, `Review queue: ${report.reviewQueue.status}; ${report.reviewQueue.pending ?? '?'} pending item(s).`));
   if (report.sessionTracking.method === 'codex-write-journal') {
     const attribution = report.sessionTracking.writeAttribution;

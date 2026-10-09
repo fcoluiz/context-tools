@@ -1115,6 +1115,32 @@ diagnosis denied reading the language it had just started reading. The list is n
 the single source, and there is a test ensuring every supported extension appears. In a tool whose
 thesis is "fail visibly", getting your own failure message wrong is the worst possible place.
 
+## Knowledge left behind: `drift-check` and the health score
+
+The hooks tell the person in the session. A team needs the same signal where changes are reviewed —
+the pull request. `drift-check.mjs --base=<ref>` takes the files the diff `base...head` changed and
+lists every context map and **live** `ai-context` document that cites one of them **without a recorded
+review of the new content**. "Recorded review" means the per-source fingerprint `ack` writes into the
+file itself: in CI there is no local cache, and a cache never proved that anyone looked. A map whose
+text was edited in the same pull request but whose review was not recorded is reported too, with a
+different reason, because editing prose is not the same as checking the source.
+
+| exit code | meaning |
+|---|---|
+| 0 | nothing left behind, or findings without `--strict` |
+| 1 | findings with `--strict` |
+| 2 | the diff could not be computed (unknown ref, shallow clone, ref that looks like an option) |
+
+Exit 2 exists because "could not look" passing as "nothing changed" is the failure this tool is built
+to avoid. `--format=github` turns each finding into a pull-request annotation and appends a summary to
+`GITHUB_STEP_SUMMARY`; the repository root ships a composite action that does exactly that.
+
+`health.mjs` shows the same state as a number: the share of **verifiable** maps and documents whose
+sources are unchanged since their review. Historical, manual and source-less documents are counted
+apart rather than inflating the score, and "nothing verifiable" is reported as such, never as 100%.
+Each `SessionStart` records one local sample of the maps' share (no paths, no names), so the report
+can say whether written knowledge is improving or rotting.
+
 ## Security
 
 The hooks inject text **directly into the model's context**, and much of that text comes from the

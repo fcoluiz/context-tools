@@ -99,6 +99,8 @@ com `find`/`outline`. Status ("não commitado") vira mentira em semanas: se regi
   `node "${PLUGIN_ROOT}/scripts/metrics.mjs" [--json|--clear]`.
 - `ct.mjs providers [--install-plan]`: language servers opcionais; nenhum hook instala nada.
 - `map-suggestions.mjs`: arquivos sem mapa que co-mudam com fontes mapeadas (pista, não confirmação).
+- `ct.mjs drift --base=<ref> [--strict]`: mapas/documentos cuja fonte mudou no diff sem revisão
+  registrada — para PR/CI (há uma GitHub Action no repositório do plugin).
 - Configuração opcional em `.claude/context-tools.json` ou `.codex/context-tools.json`:
   `sourceDirs`, `ignoreDirs` (pastas descartáveis, por nome), `extraRepos` (repos irmãos; derivado
   de um `*.code-workspace` quando existe, `[]` desliga), `coupling`, `lang`,

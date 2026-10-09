@@ -37,6 +37,16 @@ reconstructed from git history.
   strongest co-changes, the test command and how much is written down — from the code and git only.
   The `SessionStart` note for an empty `ai-context/` points to it.
 
+- **Knowledge drift check for pull requests.** `drift-check.mjs --base=<ref>` (or `ct.mjs drift`) lists
+  every context map or live `ai-context` document whose cited source changed in the diff without a
+  recorded review — the fingerprint `ack` writes into the file, the only proof that holds in CI. A
+  composite GitHub Action (`uses: fcoluiz/context-tools@<tag>`) annotates the pull request and writes a
+  job summary; `strict` fails the job. When the diff cannot be computed it exits with 2, never 0.
+- **"Knowledge up to date" as a number.** `health.mjs` now opens with the share of verifiable maps and
+  documents whose sources are unchanged since their review, and the trend of the maps' share over
+  recent sessions (one local sample per `SessionStart`, no paths or names stored). Documents that are
+  historical, manual or cite no source are counted apart instead of inflating the score.
+
 ### Changed
 
 - **The skill is 59% shorter.** It now uses the `ct.mjs` verbs and drops internals the agent does not

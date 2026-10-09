@@ -782,6 +782,7 @@ directory; `--project <path>` is only needed when administering another project.
 | `SessionStart` | lists context maps and flags the stale ones; shows a visible notice when action is needed | ~175 tokens |
 | `SessionStart` | ensures the standard `ai-context` structure, points to its index, and announces first setup | only when documentation is enabled |
 | `SessionStart` | says whether the last session split won, tied, or lost | only when there was a split |
+| `SessionStart` | tells the user (not the agent) a newer release is out, with the update command; reads a cache, and refreshes it with a detached `git ls-remote --tags` when older than 24 h | only when a newer release exists; again after 7 days if not updated |
 | `Stop` | Codex reviews only changed source files connected to maps and operational docs in this session; stale sibling sources remain in `health.mjs` | only for a new relevant finding; repeated sessions share a project-level pending claim |
 | `Stop` | flags uncovered code when sibling files change together or the same source recurs across sessions; isolated candidates remain a health finding | only for grouped or recurring changes |
 | `Stop` | reviews changed code without related `ai-context` under the same rule; stale existing documents remain immediate | only for relevant changes |
@@ -946,6 +947,7 @@ The root directory is configurable, but its internal structure is not:
 ```json
 {
   "lang": "en",
+  "updateCheck": true,
   "documentation": {
     "enabled": true,
     "autoInit": true,
@@ -957,6 +959,9 @@ The root directory is configurable, but its internal structure is not:
 
 `captureHint: false` turns off the read-only session suggestion. It is on by default because it only
 shows a line to the user (Claude and Codex `systemMessage`); the agent is never told to act on it.
+
+`updateCheck: false` (or `CONTEXT_TOOLS_UPDATE_CHECK=0` for every project) turns off the new-release
+check, the only network call the hooks make. It is also off whenever `CI` is set.
 
 Available commands:
 

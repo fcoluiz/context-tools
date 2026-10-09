@@ -8,6 +8,11 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.6.0] — 2026-10-09
+
+A project can name its own throwaway folders with `ignoreDirs`, so copies and prototypes stop
+coming back as definitions.
+
 ### Added
 
 - **`ignoreDirs`: a project can name its own throwaway folders.** `"ignoreDirs": ["prototypes",

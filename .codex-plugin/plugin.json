@@ -1,6 +1,6 @@
 {
   "name": "context-tools",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Code navigation and documentation hygiene for coding agents.",
   "author": {
     "name": "Luiz Nogueira"

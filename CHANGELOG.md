@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.7.1] — 2026-10-10
+
 What the first outcome benchmark showed, fixed
 ([report](docs/benchmarks/outcome-pilot-2026-10-09.pt-BR.md)): 22 runs, with the plugin 10/11 solved
 and without it 11/11. In the traces, the agent never called the skill or `ct.mjs` — everything the

@@ -16,7 +16,7 @@ import { linhasPorArquivo } from '../scripts/grep-context.mjs';
 import { sessionTestLine, testDetails } from '../scripts/verify.mjs';
 import { documentationSessionContext } from '../scripts/lib/documentation.mjs';
 import { buildContextPack } from '../scripts/context-pack.mjs';
-import { parseStream, claudeArgs } from '../scripts/benchmark-outcome.mjs';
+import { parseStream, claudeArgs, anonimizar } from '../scripts/benchmark-outcome.mjs';
 import { makeT } from '../scripts/lib/i18n.mjs';
 
 const S = (nome) => localPath(`../scripts/${nome}`);
@@ -197,6 +197,13 @@ test('benchmark: stream-json dá o resultado e a lista de ferramentas consultada
   assert.equal(json.result, 'resposta');
   assert.deepEqual(tools, ['Grep: MaxDepth', 'Read: Src/JsonReader.cs']);
   assert.deepEqual(parseStream('').tools, []);
+  // results.json é publicável: cópia temporária e pasta do usuário somem em toda grafia.
+  const dir = 'C:\\Users\\fulano\\AppData\\Local\\Temp\\ct-outcome-x-AbC';
+  const home = 'C:\\Users\\fulano';
+  assert.equal(
+    anonimizar(`Read: ${dir}\\src\\a.cs | C:/Users/fulano/AppData/Local/Temp/ct-outcome-x-AbC/b.cs | /c/Users/fulano/tmp | "C:\\\\Users\\\\fulano\\\\x"`, dir, home),
+    'Read: <copy>\\src\\a.cs | <copy>/b.cs | <home>/tmp | "<home>\\\\x"',
+  );
   const args = claudeArgs('with');
   assert.equal(args[args.indexOf('--output-format') + 1], 'stream-json');
   assert.ok(args.includes('--verbose'), 'stream-json no modo -p exige --verbose');

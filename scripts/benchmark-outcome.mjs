@@ -23,7 +23,7 @@
 
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMain } from './lib/roots.mjs';
@@ -146,6 +146,22 @@ export function parseStream(stdout) {
   return { json, tools };
 }
 
+/**
+ * `results.json` é feito para ser publicado: a cópia temporária vira `<copy>` e a pasta do usuário
+ * vira `<home>` (com `\` ou `/`, como o agente tiver escrito). O transcript bruto fica como está.
+ */
+export function anonimizar(texto, dir, home = homedir()) {
+  let s = String(texto ?? '');
+  // `C:\x`, `C:/x`, `C:\\x` (JSON ou shell escapado) e `/c/x` (Git Bash).
+  const variantes = (p) => (p ? [...new Set([
+    p, p.replace(/\\/g, '/'), p.replace(/\//g, '\\'), p.replace(/\\/g, '\\\\'),
+    p.replace(/^([A-Za-z]):[\\/]/, (_, d) => `/${d.toLowerCase()}/`).replace(/\\/g, '/'),
+  ])] : []);
+  for (const v of variantes(dir).sort((a, b) => b.length - a.length)) s = s.split(v).join('<copy>');
+  for (const v of variantes(home).sort((a, b) => b.length - a.length)) s = s.split(v).join('<home>');
+  return s;
+}
+
 function executar(item, opts) {
   const dir = prepararCopia(item.case);
   const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !ENV_DESCARTADO.test(k)));
@@ -171,8 +187,9 @@ function executar(item, opts) {
     },
     filesChanged: changed.filter((f) => !/^(ai-context|\.claude|\.codex)\//.test(f)).length,
     error: runError(json, r),
-    tools,
-    answer: resposta.slice(0, 2000),
+    model: json?.modelUsage ? Object.keys(json.modelUsage).join(',') : (opts.model || null),
+    tools: tools.map((t) => anonimizar(t, dir)),
+    answer: anonimizar(resposta.slice(0, 2000), dir),
   };
   if (!opts.keep) rmSync(dir, { recursive: true, force: true });
   return out;

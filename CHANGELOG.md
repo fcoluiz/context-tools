@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.7.2] — 2026-10-10
+
 ### Fixed
 
 - **The Grep context no longer stops silently.** It annotated the first 8 files and said nothing

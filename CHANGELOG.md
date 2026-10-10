@@ -8,6 +8,17 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Grep context no longer stops silently.** It annotated the first 8 files and said nothing
+  about the rest; in the second outcome round
+  ([report](docs/benchmarks/outcome-round2-2026-10-10.pt-BR.md)), a "who calls X" Grep over 11 files
+  left out the one holding 4 of the 13 callers, and a run gave exactly that incomplete list. Now up
+  to 20 files, production code before tests, and any file left out is named as not annotated. When
+  it fits in the budget (2,000 characters), each symbol also carries its declaration line, so
+  overloads come with their parameters. Same two cases, with the plugin, 5 runs each: 5/5 and 5/5,
+  2–3 turns, against 3/5 and 5/5 with up to 10 turns before.
+
 ## [2.7.1] — 2026-10-10
 
 What the first outcome benchmark showed, fixed

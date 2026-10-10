@@ -14,6 +14,7 @@ Measurements taken while developing context-tools. The reports are written in Po
 | [adaptive-routing-2026-08-07](adaptive-routing-2026-08-07.pt-BR.md) | Is `context-pack` worth calling every time, or only when results are ambiguous? |
 | [large-delphi-workspace-2026-08-07](large-delphi-workspace-2026-08-07.pt-BR.md) | Index and diagnostics on a 1,878-file Delphi workspace without git. |
 | [outcome-pilot-2026-10-09](outcome-pilot-2026-10-09.pt-BR.md) | First outcome runs: does a real agent solve the same task with and without the plugin? 22 runs on public code; what the traces showed and what changed because of it. |
+| [outcome-round2-2026-10-10](outcome-round2-2026-10-10.pt-BR.md) | Second outcome round, 60 runs on 6 cases including "who calls X" across 10 files and same-name overloads: 26/30 without the plugin, 28/30 with it, 15% cheaper; a silent cut in the Grep context found and fixed, then re-measured. |
 
 ## Outcome benchmark: does the task get solved, and at what cost?
 

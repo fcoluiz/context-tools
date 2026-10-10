@@ -197,7 +197,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0          # the base branch is needed to compute the diff
-      - uses: fcoluiz/context-tools@v2.7.0
+      - uses: fcoluiz/context-tools@v2.7.1
         with:
           strict: 'false'         # 'true' fails the job instead of only annotating
 ```

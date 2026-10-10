@@ -1,0 +1,177 @@
+{
+  "cases": [
+    {
+      "id": "qa-newtonsoft-maxdepth",
+      "git": "https://github.com/JamesNK/Newtonsoft.Json.git",
+      "ref": "52fa3aef1f2cadcd3a3f874251eddc98d3efbbaa",
+      "prompt": "Answer from the code in this repository, without modifying any file. When JsonReader reads nested JSON, where exactly is the maximum depth enforced (class and method), what is the default maximum depth, and which exception type is thrown when it is exceeded? Reply in at most five lines.",
+      "check": {
+        "answer": [
+          "JsonReader",
+          "\\bPush\\b",
+          "\\b64\\b",
+          "JsonReaderException"
+        ]
+      }
+    },
+    {
+      "id": "qa-newtonsoft-ensuredatetime-callers",
+      "git": "https://github.com/JamesNK/Newtonsoft.Json.git",
+      "ref": "52fa3aef1f2cadcd3a3f874251eddc98d3efbbaa",
+      "prompt": "Answer from the code in this repository, without modifying any file. List every method outside the test project that calls DateTimeUtils.EnsureDateTime. Write each one as Class.Method, one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "DateTimeUtils\\.TryParseDateTimeIso\\b",
+          "DateTimeUtils\\.TryParseDateTime\\b",
+          "DateTimeUtils\\.TryParseDateTimeMicrosoft\\b",
+          "DateTimeUtils\\.TryParseDateTimeExact\\b",
+          "JsonReader\\.ReadDateTimeString\\b",
+          "BsonWriter\\.WriteValue\\b",
+          "JsonConvert\\.ToString\\b",
+          "JsonTextWriter\\.DoWriteValueAsync\\b",
+          "JsonTextWriter\\.WriteValue\\b",
+          "JTokenReader\\.SetToken\\b",
+          "JTokenWriter\\.WriteValue\\b",
+          "JsonSerializerInternalReader\\.EnsureType\\b",
+          "JsonSerializerInternalWriter\\.GetPropertyName\\b"
+        ]
+      }
+    },
+    {
+      "id": "qa-newtonsoft-additional-text",
+      "git": "https://github.com/JamesNK/Newtonsoft.Json.git",
+      "ref": "52fa3aef1f2cadcd3a3f874251eddc98d3efbbaa",
+      "prompt": "Answer from the code in this repository, without modifying any file. In the synchronous JsonTextReader (JsonTextReader.cs, not the Async file), which methods throw the error \"Additional text encountered after finished reading JSON content\"? Write each method name followed by (), one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "(^|[^\\w])Read\\(\\)",
+          "\\bReadFinished\\(\\)"
+        ]
+      }
+    },
+    {
+      "id": "qa-commons-lang-abbreviate",
+      "git": "https://github.com/apache/commons-lang.git",
+      "ref": "32dc4c501e3acba29d53a466eebd611bb2f093a5",
+      "prompt": "Answer from the code in this repository, without modifying any file. In StringUtils.abbreviate with the default \"...\" marker, what is the smallest maxWidth accepted without an offset, how is that minimum computed, and which exception is thrown below it? Reply in at most five lines.",
+      "check": {
+        "answer": [
+          "IllegalArgumentException",
+          "\\b4\\b"
+        ]
+      }
+    },
+    {
+      "id": "qa-commons-lang-strings-null",
+      "git": "https://github.com/apache/commons-lang.git",
+      "ref": "32dc4c501e3acba29d53a466eebd611bb2f093a5",
+      "prompt": "Answer from the code in this repository, without modifying any file. Which methods of StringUtils throw IllegalArgumentException(\"Strings must not be null\")? Treat overloads as separate methods: write each one with its parameter list, one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "getFuzzyDistance",
+          "getJaroWinklerDistance",
+          "getLevenshteinDistance\\s*\\([^)\\n]*\\)[\\s\\S]*getLevenshteinDistance\\s*\\([^)\\n]*\\)",
+          "threshold"
+        ]
+      }
+    },
+    {
+      "id": "fix-qualified-lookup",
+      "repo": "../../..",
+      "ref": "4a8fcad9590b134ec1d1250c926cff7ecd037bb6",
+      "remove": [
+        ".claude",
+        ".codex"
+      ],
+      "setup": [
+        [
+          "node",
+          "-e",
+          "const fs=require('fs');const f='scripts/symbols.mjs';const a=\"const queryNua = query.replace(QUALIFICADOR_RE, '');\";let s=fs.readFileSync(f,'utf8');if(!s.includes(a))process.exit(1);fs.writeFileSync(f,s.replace(a,'const queryNua = query;'));"
+        ]
+      ],
+      "prompt": "A user reports: looking up a Delphi method by its qualified name, for example `node scripts/symbols.mjs TPedido.Confirmar`, says there is no definition, although `procedure TPedido.Confirmar` exists in their project and the bare name `Confirmar` is found. Find the cause in this repository and fix it with a minimal change. Do not change the tests.",
+      "check": {
+        "command": [
+          "node",
+          "{casesDir}/check-qualified-lookup.mjs"
+        ]
+      }
+    },
+    {
+      "id": "ts-zod-escaperegex-users",
+      "git": "https://github.com/colinhacks/zod.git",
+      "ref": "284243fb0d6532665afdc9239188773bb624f73c",
+      "prompt": "Answer from the code in this repository, without modifying any file. In packages/zod/src/v4/core (excluding tests), which exported constants call util.escapeRegex in live code (not in comments)? Write each constant name, one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "\\$ZodCheckIncludes\\b",
+          "\\$ZodCheckStartsWith\\b",
+          "\\$ZodCheckEndsWith\\b",
+          "(^|[^\\w$])mac\\b",
+          "\\$ZodEnum\\b",
+          "\\$ZodLiteral\\b",
+          "\\$ZodTemplateLiteral\\b"
+        ]
+      }
+    },
+    {
+      "id": "ts-zod-cleanregex-users",
+      "git": "https://github.com/colinhacks/zod.git",
+      "ref": "284243fb0d6532665afdc9239188773bb624f73c",
+      "prompt": "Answer from the code in this repository, without modifying any file. In packages/zod/src/v4/core/schemas.ts, which exported constants or functions call util.cleanRegex? Write each name, one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "\\$ZodUnion\\b",
+          "\\$ZodOptional\\b",
+          "\\$ZodNullable\\b",
+          "\\$ZodTemplateLiteral\\b"
+        ]
+      },
+      "note": "partPattern also calls util.cleanRegex but is not exported, so the prompt excludes it (the first version of this check required it by mistake; results were re-scored)."
+    },
+    {
+      "id": "py-requests-to-native-string-callers",
+      "git": "https://github.com/psf/requests.git",
+      "ref": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+      "prompt": "Answer from the code in this repository, without modifying any file. Which functions or methods under src/requests call to_native_string? Write each one as Class.method (or just the function name when it is not in a class), one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "\\b_basic_auth_str\\b",
+          "\\bget_full_url\\b",
+          "\\bprepare_method\\b",
+          "\\bprepare_url\\b",
+          "\\bprepare_headers\\b",
+          "\\bget_redirect_target\\b",
+          "\\bresolve_redirects\\b"
+        ]
+      }
+    },
+    {
+      "id": "py-requests-two-tuples",
+      "git": "https://github.com/psf/requests.git",
+      "ref": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+      "prompt": "Answer from the code in this repository, without modifying any file. Which functions raise ValueError(\"cannot encode objects that are not 2-tuples\")? Write each function name, one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "\\bfrom_key_val_list\\b",
+          "\\bto_key_val_list\\b"
+        ]
+      }
+    },
+    {
+      "id": "py-requests-redirect-limit",
+      "git": "https://github.com/psf/requests.git",
+      "ref": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+      "prompt": "Answer from the code in this repository, without modifying any file. When a Session follows redirects, where exactly is the maximum number of redirects enforced (class and method), what is the default limit, and which exception is raised when it is exceeded? Reply in at most five lines.",
+      "check": {
+        "answer": [
+          "SessionRedirectMixin",
+          "\\bresolve_redirects\\b",
+          "\\b30\\b",
+          "TooManyRedirects"
+        ]
+      }
+    }
+  ]
+}

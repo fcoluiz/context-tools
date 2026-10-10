@@ -162,10 +162,12 @@ export function medidaValida(r) {
  */
 export function anonimizar(texto, dir, home = homedir()) {
   let s = String(texto ?? '');
-  // `C:\x`, `C:/x`, `C:\\x` (JSON ou shell escapado) e `/c/x` (Git Bash).
+  // `C:\x`, `C:/x`, `C:\\x` (JSON ou shell escapado), `/c/x` (Git Bash) e `C--x` (a pasta de
+  // transcripts do Claude Code, que troca todo caractere não alfanumérico por `-`).
   const variantes = (p) => (p ? [...new Set([
     p, p.replace(/\\/g, '/'), p.replace(/\//g, '\\'), p.replace(/\\/g, '\\\\'),
     p.replace(/^([A-Za-z]):[\\/]/, (_, d) => `/${d.toLowerCase()}/`).replace(/\\/g, '/'),
+    p.replace(/[^A-Za-z0-9]/g, '-'),
   ])] : []);
   for (const v of variantes(dir).sort((a, b) => b.length - a.length)) s = s.split(v).join('<copy>');
   for (const v of variantes(home).sort((a, b) => b.length - a.length)) s = s.split(v).join('<home>');

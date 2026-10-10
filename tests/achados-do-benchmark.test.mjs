@@ -204,6 +204,8 @@ test('benchmark: stream-json dá o resultado e a lista de ferramentas consultada
     anonimizar(`Read: ${dir}\\src\\a.cs | C:/Users/fulano/AppData/Local/Temp/ct-outcome-x-AbC/b.cs | /c/Users/fulano/tmp | "C:\\\\Users\\\\fulano\\\\x"`, dir, home),
     'Read: <copy>\\src\\a.cs | <copy>/b.cs | <home>/tmp | "<home>\\\\x"',
   );
+  assert.equal(anonimizar('<home>\\.claude\\projects\\C--Users-fulano-AppData-Local-Temp-ct-outcome-x-AbC\\t.txt', dir, home),
+    '<home>\\.claude\\projects\\<copy>\\t.txt', 'pasta de transcripts do Claude Code');
   // Limite de uso: is_error com subtype "success", custo zero e o aviso como resposta. Não é medida.
   const limite = { is_error: true, subtype: 'success', api_error_status: 429, total_cost_usd: 0, usage: { input_tokens: 0, output_tokens: 0 }, result: "You've hit your session limit · resets 1:40pm" };
   assert.equal(runError(limite), 'no-model-call');

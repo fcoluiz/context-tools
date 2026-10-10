@@ -8,6 +8,25 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Measured results in the README.** A short table of the three outcome rounds — including a
+  held-out round on cases the plugin was never tuned on (TypeScript and Python) and a round on
+  Haiku 4.5 — with what it does not show yet, linking to the reports and the raw data of every run
+  ([round 3](docs/benchmarks/outcome-round3-2026-10-10.pt-BR.md)).
+- **Outcome harness: other models and resumable rounds.** Each result records the model that
+  answered (`--model=haiku` runs a round on Haiku); `--resume` reuses the valid runs of a previous
+  `results.json` and runs only what is missing.
+
+### Fixed
+
+- **A usage limit no longer counts as a wrong answer.** On HTTP 429 the CLI returns `is_error` with
+  subtype "success", zero cost and the notice as the answer; the harness scored it as "not solved",
+  which produced false 0/5 rows mid-round. It now stops the round like any run without a model call.
+- **`results.json` is safe to publish as written.** The temporary copy becomes `<copy>` and the
+  user's home `<home>` in every spelling an agent may produce (`\`, `/`, escaped, Git Bash, and the
+  dash-encoded Claude Code transcript folder).
+
 ## [2.7.2] — 2026-10-10
 
 ### Fixed

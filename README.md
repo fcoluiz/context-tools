@@ -165,6 +165,28 @@ as a file, never presented as a definition.
 production code — about **9,000 files and 192,000 symbols** across Python, Go, Delphi/Pascal, Rust,
 TypeScript, C#, Java and PHP projects — with **zero symbols reported at the wrong line**.
 
+## Does it help? Measured
+
+A real agent (`claude -p`) does the same task on a clean copy of a public repository, once without
+the plugin and once with it, and the answer is checked against a hand-verified ground truth. Five
+runs per arm per case:
+
+| round | model | cases | without | with | cost with vs. without |
+|---|---|---|---:|---:|---:|
+| 2 | Sonnet 5 | 6 (C#, Java, a fix) | 26/30 | 28/30 | −15% |
+| 3 — **held out** | Sonnet 5 | 5 new (TypeScript, Python) | 21/25 | 24/25 | −24% |
+| 3 | Haiku 4.5 | 11 | 48/55 | 50/55 | −36% |
+
+- **Never worse, consistently cheaper.** The plugin solved at least as many tasks in every round and
+  cost less in every one; the gap is largest on "who uses X" questions and on the smaller model.
+- **Where the accuracy gain comes from:** Grep returns lines without the method around them, and an
+  agent that answers from that alone names the wrong method or class. A hook now says which symbol
+  each matched line falls in.
+- **What it does not show yet:** five runs per arm, read-heavy questions, public code. Round 3 also
+  found a miss the plugin does not fix yet (a qualified search that skips unqualified calls).
+
+Reports, cases and every run's raw data: [docs/benchmarks](docs/benchmarks/).
+
 ## What it costs
 
 - **Speed:** a 1,543-file workspace indexes in ~1.75 s from scratch and ~130 ms from cache. The cache

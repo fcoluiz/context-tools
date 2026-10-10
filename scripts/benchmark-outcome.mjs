@@ -23,7 +23,7 @@
 
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMain } from './lib/roots.mjs';
@@ -116,10 +116,13 @@ export function conferir(check, dir, resposta) {
  */
 export function runError(json, r = {}) {
   if (!json) return `no JSON result (exit ${r.status}): ${String(r.stderr || r.stdout || '').slice(0, 300)}`;
-  if (json.is_error) return json.subtype || 'error';
   const u = json.usage || {};
   const tokens = (u.input_tokens || 0) + (u.output_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
+  // Limite de uso (429) chega como `is_error` com subtype "success", custo zero e o aviso como
+  // resposta: contá-lo como "não resolveu" inventou 0/5 em casos inteiros da rodada 3.
+  if (json.api_error_status === 429 || /hit your (session|usage) limit|rate limit/i.test(String(json.result || ''))) return 'no-model-call';
   if (!tokens || /^(Failed to authenticate|Invalid API key|API Error)/i.test(String(json.result || ''))) return 'no-model-call';
+  if (json.is_error) return json.subtype && json.subtype !== 'success' ? json.subtype : 'error';
   return null;
 }
 
@@ -144,6 +147,31 @@ export function parseStream(stdout) {
     }
   }
   return { json, tools };
+}
+
+/** Uma execução registrada conta como medida: o modelo foi chamado e não houve limite de uso. */
+export function medidaValida(r) {
+  const t = r?.tokens || {};
+  const tokens = (t.input || 0) + (t.output || 0) + (t.cacheCreation || 0) + (t.cacheRead || 0);
+  return tokens > 0 && r.error !== 'no-model-call' && !/hit your (session|usage) limit/i.test(String(r.answer || ''));
+}
+
+/**
+ * `results.json` é feito para ser publicado: a cópia temporária vira `<copy>` e a pasta do usuário
+ * vira `<home>` (com `\` ou `/`, como o agente tiver escrito). O transcript bruto fica como está.
+ */
+export function anonimizar(texto, dir, home = homedir()) {
+  let s = String(texto ?? '');
+  // `C:\x`, `C:/x`, `C:\\x` (JSON ou shell escapado), `/c/x` (Git Bash) e `C--x` (a pasta de
+  // transcripts do Claude Code, que troca todo caractere não alfanumérico por `-`).
+  const variantes = (p) => (p ? [...new Set([
+    p, p.replace(/\\/g, '/'), p.replace(/\//g, '\\'), p.replace(/\\/g, '\\\\'),
+    p.replace(/^([A-Za-z]):[\\/]/, (_, d) => `/${d.toLowerCase()}/`).replace(/\\/g, '/'),
+    p.replace(/[^A-Za-z0-9]/g, '-'),
+  ])] : []);
+  for (const v of variantes(dir).sort((a, b) => b.length - a.length)) s = s.split(v).join('<copy>');
+  for (const v of variantes(home).sort((a, b) => b.length - a.length)) s = s.split(v).join('<home>');
+  return s;
 }
 
 function executar(item, opts) {
@@ -171,8 +199,9 @@ function executar(item, opts) {
     },
     filesChanged: changed.filter((f) => !/^(ai-context|\.claude|\.codex)\//.test(f)).length,
     error: runError(json, r),
-    tools,
-    answer: resposta.slice(0, 2000),
+    model: json?.modelUsage ? Object.keys(json.modelUsage).join(',') : (opts.model || null),
+    tools: tools.map((t) => anonimizar(t, dir)),
+    answer: anonimizar(resposta.slice(0, 2000), dir),
   };
   if (!opts.keep) rmSync(dir, { recursive: true, force: true });
   return out;
@@ -220,7 +249,7 @@ export function markdownReport(results, meta = {}) {
 async function main() {
   const args = process.argv.slice(2);
   const file = arg(args, '--cases');
-  if (!file) { console.log('usage: benchmark-outcome.mjs --cases=<file.json> [--arms=without,with] [--reps=1] [--max-cost=10] [--per-run-cost=2] [--model=<m>] [--out=<dir>] [--dry-run]'); return 2; }
+  if (!file) { console.log('usage: benchmark-outcome.mjs --cases=<file.json> [--arms=without,with] [--reps=1] [--max-cost=10] [--per-run-cost=2] [--model=<m>] [--out=<dir>] [--resume] [--dry-run]'); return 2; }
   const cases = loadCases(file);
   const arms = (arg(args, '--arms', 'without,with')).split(',').map((s) => s.trim()).filter(Boolean);
   if (arms.some((a) => a !== 'with' && a !== 'without')) throw new Error('arms must be with and/or without');
@@ -244,9 +273,16 @@ async function main() {
   }
   const outDir = resolve(arg(args, '--out', join(tmpdir(), `ct-outcome-${Date.now()}`)));
   mkdirSync(outDir, { recursive: true });
-  const results = [];
+  // --resume: aproveita as medidas válidas de um results.json anterior na mesma pasta e roda só o
+  // que falta — uma rodada interrompida (limite de uso, queda) não precisa ser paga de novo.
+  const anteriores = args.includes('--resume') && existsSync(join(outDir, 'results.json'))
+    ? JSON.parse(readFileSync(join(outDir, 'results.json'), 'utf8')).filter(medidaValida) : [];
+  const feitas = new Set(anteriores.map((r) => `${r.case}|${r.arm}|${r.rep}`));
+  if (anteriores.length) console.log(`resume: ${anteriores.length} valid run(s) kept`);
+  const results = [...anteriores];
   let gasto = 0;
   for (const item of itens) {
+    if (feitas.has(`${item.case.id}|${item.arm}|${item.rep}`)) continue;
     if (gasto >= maxCost) { console.log(`total cap reached ($${gasto.toFixed(2)}); ${itens.length - results.length} run(s) not started`); break; }
     process.stdout.write(`▶ ${item.case.id} · ${item.arm} · rep ${item.rep} … `);
     const traceFile = join(outDir, `${item.case.id}.${item.arm}.${item.rep}.jsonl`);

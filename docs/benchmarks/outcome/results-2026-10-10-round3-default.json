@@ -1,0 +1,1305 @@
+[
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "without",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.15526310000000001,
+    "turns": 5,
+    "durationMs": 16460,
+    "tokens": {
+      "input": 6,
+      "output": 1211,
+      "cacheCreation": 18487,
+      "cacheRead": 84967
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: util\\.escapeRegex",
+      "Grep: ^export const",
+      "Grep: ^export const",
+      "Grep: ^export const"
+    ],
+    "answer": "$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0946569,
+    "turns": 2,
+    "durationMs": 41062,
+    "tokens": {
+      "input": 4,
+      "output": 610,
+      "cacheCreation": 11574,
+      "cacheRead": 53503
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: escapeRegex"
+    ],
+    "answer": "$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "without",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1759461,
+    "turns": 6,
+    "durationMs": 15952,
+    "tokens": {
+      "input": 8,
+      "output": 1332,
+      "cacheCreation": 19638,
+      "cacheRead": 124787
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: escapeRegex",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\checks.ts",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\regexes.ts",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts"
+    ],
+    "answer": "Based on the search, the exported constants in `packages/zod/src/v4/core` (excluding tests and the commented-out `$ZodConst` block) whose live code calls `util.escapeRegex` are:\n\n$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1462908,
+    "turns": 8,
+    "durationMs": 31852,
+    "tokens": {
+      "input": 8,
+      "output": 1677,
+      "cacheCreation": 14254,
+      "cacheRead": 118626
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: escapeRegex",
+      "Grep: escapeRegex",
+      "Grep: escapeRegex",
+      "Grep: escapeRegex",
+      "Grep: escapeRegex",
+      "Grep: escapeRegex",
+      "Grep: escapeRegex"
+    ],
+    "answer": "mac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral\n$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "without",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.2175959,
+    "turns": 7,
+    "durationMs": 26475,
+    "tokens": {
+      "input": 14,
+      "output": 1323,
+      "cacheCreation": 20890,
+      "cacheRead": 239003
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: escapeRegex",
+      "Grep: escapeRegex",
+      "Grep: ^export const \\$Zod",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\checks.ts",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts"
+    ],
+    "answer": "`$ZodTemplateLiteral`. Now `mac` in regexes.ts is already an exported constant directly calling it.\n\n$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral\nmac"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1359438,
+    "turns": 3,
+    "durationMs": 20214,
+    "tokens": {
+      "input": 6,
+      "output": 747,
+      "cacheCreation": 16501,
+      "cacheRead": 85716
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: escapeRegex",
+      "Grep: escapeRegex"
+    ],
+    "answer": "$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "without",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.20683229999999997,
+    "turns": 7,
+    "durationMs": 30266,
+    "tokens": {
+      "input": 12,
+      "output": 1807,
+      "cacheCreation": 19723,
+      "cacheRead": 202251
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: escapeRegex",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\regexes.ts",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\checks.ts",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts",
+      "Bash: find \"packages/zod/src/v4/core\" -type d | grep -i test"
+    ],
+    "answer": "The grep already excluded those since results were all in checks.ts, regexes.ts, schemas.ts, util.ts (the definition itself). That's confirmed complete.\n\n$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.11172599999999999,
+    "turns": 3,
+    "durationMs": 22108,
+    "tokens": {
+      "input": 6,
+      "output": 771,
+      "cacheCreation": 12348,
+      "cacheRead": 86850
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: escapeRegex",
+      "Read: packages/zod/src/v4/core/schemas.ts"
+    ],
+    "answer": "Confirmed line 3784 is commented-out code, so it's excluded.\n\n$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "without",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.15592319999999998,
+    "turns": 5,
+    "durationMs": 17693,
+    "tokens": {
+      "input": 6,
+      "output": 1240,
+      "cacheCreation": 18522,
+      "cacheRead": 84984
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: util\\.escapeRegex",
+      "Grep: ^export const",
+      "Grep: ^export const",
+      "Grep: ^export const"
+    ],
+    "answer": "$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0920127,
+    "turns": 2,
+    "durationMs": 15012,
+    "tokens": {
+      "input": 4,
+      "output": 433,
+      "cacheCreation": 11576,
+      "cacheRead": 53499
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: escapeRegex"
+    ],
+    "answer": "$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "without",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.13010899999999997,
+    "turns": 3,
+    "durationMs": 11092,
+    "tokens": {
+      "input": 6,
+      "output": 552,
+      "cacheCreation": 15893,
+      "cacheRead": 85990
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: cleanRegex",
+      "Grep: ^export const \\$Zod\\w+"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral",
+    "rescored": {
+      "from": "missing: \\bpartPattern\\b"
+    }
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1186101,
+    "turns": 3,
+    "durationMs": 19578,
+    "tokens": {
+      "input": 6,
+      "output": 705,
+      "cacheCreation": 13598,
+      "cacheRead": 88097
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cleanRegex",
+      "Grep: ^export const \\$ZodTemplateLiteral"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral",
+    "rescored": {
+      "from": "missing: \\bpartPattern\\b"
+    }
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "without",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1379384,
+    "turns": 4,
+    "durationMs": 16633,
+    "tokens": {
+      "input": 8,
+      "output": 1095,
+      "cacheCreation": 14205,
+      "cacheRead": 118678
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: cleanRegex",
+      "Grep: cleanRegex",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts"
+    ],
+    "answer": "Confirmed: line 2511 is inside `$ZodUnion`, line 3947 inside `$ZodOptional`, line 4038 inside `$ZodNullable`, and line 4792 inside `$ZodTemplateLiteral` — all of these are exported constants. The other two calls (lines 4769, 4775) are inside `partPattern`, which is an unexported helper.\n\n$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1169322,
+    "turns": 3,
+    "durationMs": 23785,
+    "tokens": {
+      "input": 6,
+      "output": 708,
+      "cacheCreation": 13319,
+      "cacheRead": 87934
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: util\\.cleanRegex",
+      "Grep: ^function partPattern|^export function partPattern"
+    ],
+    "answer": "partPattern is not exported, confirming it's just an internal helper. The exported constants that directly call `util.cleanRegex`:\n\n$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "without",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.17920899999999998,
+    "turns": 7,
+    "durationMs": 24389,
+    "tokens": {
+      "input": 14,
+      "output": 1274,
+      "cacheCreation": 15664,
+      "cacheRead": 218040
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: cleanRegex",
+      "Grep: cleanRegex",
+      "Read: packages/zod/src/v4/core/schemas.ts",
+      "Read: packages/zod/src/v4/core/schemas.ts",
+      "Read: packages/zod/src/v4/core/schemas.ts",
+      "Read: packages/zod/src/v4/core/schemas.ts"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral",
+    "rescored": {
+      "from": "missing: \\bpartPattern\\b"
+    }
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1057884,
+    "turns": 3,
+    "durationMs": 17108,
+    "tokens": {
+      "input": 6,
+      "output": 648,
+      "cacheCreation": 11700,
+      "cacheRead": 86168
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: util\\.cleanRegex",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral",
+    "rescored": {
+      "from": "missing: \\bpartPattern\\b"
+    }
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "without",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1491769,
+    "turns": 4,
+    "durationMs": 13735,
+    "tokens": {
+      "input": 8,
+      "output": 745,
+      "cacheCreation": 16957,
+      "cacheRead": 118583
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: cleanRegex",
+      "Grep: cleanRegex",
+      "Grep: ^export const \\$Zod\\w+: core\\.\\$constructor"
+    ],
+    "answer": "The call site at line 2511 falls within `$ZodUnion` (2486–2595), and the one at 4769/4775 is inside `partPattern`, an internal (non-exported) helper used by `$ZodTemplateLiteral`.\n\n$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1444638,
+    "turns": 4,
+    "durationMs": 30398,
+    "tokens": {
+      "input": 8,
+      "output": 1306,
+      "cacheCreation": 14762,
+      "cacheRead": 120926
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cleanRegex",
+      "Grep: cleanRegex",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts"
+    ],
+    "answer": "Confirmed `partPattern` is not exported (no `export` keyword). So the exported constants/functions in `packages/zod/src/v4/core/schemas.ts` that directly call `util.cleanRegex` are:\n\n$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "without",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.15486309999999998,
+    "turns": 4,
+    "durationMs": 18885,
+    "tokens": {
+      "input": 8,
+      "output": 1192,
+      "cacheCreation": 16805,
+      "cacheRead": 118277
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: cleanRegex",
+      "Grep: cleanRegex",
+      "Grep: ^export const \\$Zod\\w+: core\\.\\$constructor"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral",
+    "rescored": {
+      "from": "missing: \\bpartPattern\\b"
+    }
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.15749219999999997,
+    "turns": 6,
+    "durationMs": 28142,
+    "tokens": {
+      "input": 12,
+      "output": 1007,
+      "cacheCreation": 14275,
+      "cacheRead": 189004
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cleanRegex",
+      "Grep: util\\.cleanRegex",
+      "Grep: util\\.cleanRegex",
+      "Grep: ^(export )?function partPattern",
+      "Grep: ^(export )?function partPattern"
+    ],
+    "answer": "partPattern is not exported, so it's excluded per the question's scope.\n\n$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "without",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1771645,
+    "turns": 12,
+    "durationMs": 26710,
+    "tokens": {
+      "input": 10,
+      "output": 2138,
+      "cacheCreation": 16443,
+      "cacheRead": 152475
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Read: src/requests/cookies.py",
+      "Read: src/requests/auth.py"
+    ],
+    "answer": "Confirmed. Final list:\n\n```\n_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects\n```"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.12928109999999998,
+    "turns": 8,
+    "durationMs": 20254,
+    "tokens": {
+      "input": 8,
+      "output": 1202,
+      "cacheCreation": 12619,
+      "cacheRead": 118377
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class "
+    ],
+    "answer": "get_full_url is at line 60-79, within MockRequest (31-113). prepare_method/prepare_url/prepare_headers (467-575) fall within PreparedRequest (378-731). get_redirect_target/resolve_redirects (134-308) fall within SessionRedirectMixin (127-394). auth.py's `_basic_auth_str` is a module-level function, not a method.\n\n_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "without",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1986388,
+    "turns": 10,
+    "durationMs": 25510,
+    "tokens": {
+      "input": 12,
+      "output": 1784,
+      "cacheCreation": 19130,
+      "cacheRead": 187996
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Grep: to_native_string",
+      "Grep: to_native_string",
+      "Read: <copy>\\src\\requests\\auth.py",
+      "Read: <copy>\\src\\requests\\cookies.py",
+      "Read: <copy>\\src\\requests\\models.py",
+      "Read: <copy>\\src\\requests\\sessions.py",
+      "Read: <copy>\\src\\requests\\auth.py",
+      "Read: <copy>\\src\\requests\\cookies.py"
+    ],
+    "answer": "_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.11010120000000001,
+    "turns": 5,
+    "durationMs": 15490,
+    "tokens": {
+      "input": 6,
+      "output": 897,
+      "cacheCreation": 11857,
+      "cacheRead": 84954
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string\\(",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class "
+    ],
+    "answer": "_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "without",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.16782570000000002,
+    "turns": 9,
+    "durationMs": 21251,
+    "tokens": {
+      "input": 8,
+      "output": 1602,
+      "cacheCreation": 17813,
+      "cacheRead": 120799
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Read: <copy>\\src\\requests\\auth.py",
+      "Read: <copy>\\src\\requests\\cookies.py",
+      "Read: <copy>\\src\\requests\\models.py",
+      "Read: <copy>\\src\\requests\\sessions.py",
+      "Read: <copy>\\src\\requests\\auth.py",
+      "Read: <copy>\\src\\requests\\cookies.py",
+      "Read: <copy>\\src\\requests\\sessions.py"
+    ],
+    "answer": "`_basic_auth_str` is a module-level function, not a class method.\n\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects\n_basic_auth_str"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1313562,
+    "turns": 9,
+    "durationMs": 18672,
+    "tokens": {
+      "input": 8,
+      "output": 1176,
+      "cacheCreation": 13032,
+      "cacheRead": 118334
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class "
+    ],
+    "answer": "_basic_auth_str (module-level function in auth.py, not in a class)\nRequestsCookieJar.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "without",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.17644999999999997,
+    "turns": 12,
+    "durationMs": 24499,
+    "tokens": {
+      "input": 10,
+      "output": 2081,
+      "cacheCreation": 16471,
+      "cacheRead": 152400
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Grep: ^class |^ def |^def ",
+      "Read: src/requests/auth.py",
+      "Read: src/requests/cookies.py"
+    ],
+    "answer": "Confirmed. Final list:\n\n```\n_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects\n```"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1281972,
+    "turns": 8,
+    "durationMs": 20113,
+    "tokens": {
+      "input": 8,
+      "output": 1117,
+      "cacheCreation": 12648,
+      "cacheRead": 118434
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class "
+    ],
+    "answer": "Based on the enclosing classes:\n\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects\n_basic_auth_str"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "without",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.25443509999999997,
+    "turns": 15,
+    "durationMs": 39359,
+    "tokens": {
+      "input": 22,
+      "output": 2514,
+      "cacheCreation": 18204,
+      "cacheRead": 355937
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Grep: to_native_string",
+      "Grep: to_native_string",
+      "Read: <copy>\\src\\requests\\auth.py",
+      "Grep: ^def |^class ",
+      "Grep: ^def |^class ",
+      "Grep: ^class |^ def ",
+      "Grep: ^class |^ def ",
+      "Grep: ^class |^ def |^def ",
+      "Read: <copy>\\src\\requests\\cookies.py",
+      "Read: <copy>\\src\\requests\\models.py",
+      "Read: <copy>\\src\\requests\\models.py",
+      "Read: <copy>\\src\\requests\\sessions.py",
+      "Read: <copy>\\src\\requests\\sessions.py"
+    ],
+    "answer": "All three sessions.py usages (151, 227, 245) are within `SessionRedirectMixin` — line 151 in `get_redirect_target`, 227 and 245 in `resolve_redirects`.\n\nNow I have complete mapping. Final answer:\n\n```\n_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects\n```"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1267245,
+    "turns": 8,
+    "durationMs": 19098,
+    "tokens": {
+      "input": 8,
+      "output": 1043,
+      "cacheCreation": 12592,
+      "cacheRead": 118345
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class "
+    ],
+    "answer": "_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "without",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.09366709999999999,
+    "turns": 3,
+    "durationMs": 8024,
+    "tokens": {
+      "input": 6,
+      "output": 293,
+      "cacheCreation": 10590,
+      "cacheRead": 83527
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples",
+      "Read: <copy>\\src\\requests\\utils.py"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.08299920000000001,
+    "turns": 2,
+    "durationMs": 6343,
+    "tokens": {
+      "input": 4,
+      "output": 140,
+      "cacheCreation": 10839,
+      "cacheRead": 52844
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "without",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.093512,
+    "turns": 3,
+    "durationMs": 7802,
+    "tokens": {
+      "input": 6,
+      "output": 288,
+      "cacheCreation": 10577,
+      "cacheRead": 83520
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples",
+      "Read: <copy>\\src\\requests\\utils.py"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.07684649999999998,
+    "turns": 2,
+    "durationMs": 8355,
+    "tokens": {
+      "input": 4,
+      "output": 147,
+      "cacheCreation": 9796,
+      "cacheRead": 52845
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "without",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.08123930000000001,
+    "turns": 2,
+    "durationMs": 5470,
+    "tokens": {
+      "input": 4,
+      "output": 165,
+      "cacheCreation": 10392,
+      "cacheRead": 52481
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.07676249999999998,
+    "turns": 2,
+    "durationMs": 7395,
+    "tokens": {
+      "input": 4,
+      "output": 143,
+      "cacheCreation": 9792,
+      "cacheRead": 52845
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "without",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0936188,
+    "turns": 3,
+    "durationMs": 10825,
+    "tokens": {
+      "input": 6,
+      "output": 291,
+      "cacheCreation": 10587,
+      "cacheRead": 83526
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples",
+      "Read: <copy>\\src\\requests\\utils.py"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0767907,
+    "turns": 2,
+    "durationMs": 7135,
+    "tokens": {
+      "input": 4,
+      "output": 144,
+      "cacheCreation": 9794,
+      "cacheRead": 52849
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "without",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0936049,
+    "turns": 3,
+    "durationMs": 5355,
+    "tokens": {
+      "input": 6,
+      "output": 293,
+      "cacheCreation": 10584,
+      "cacheRead": 83523
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples",
+      "Read: <copy>\\src\\requests\\utils.py"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.07744500000000001,
+    "turns": 2,
+    "durationMs": 7065,
+    "tokens": {
+      "input": 4,
+      "output": 174,
+      "cacheCreation": 9828,
+      "cacheRead": 52850
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "without",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.11018009999999999,
+    "turns": 4,
+    "durationMs": 13534,
+    "tokens": {
+      "input": 8,
+      "output": 804,
+      "cacheCreation": 10496,
+      "cacheRead": 114897
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|too many redirects|TooManyRedirects",
+      "Grep: max_redirects|TooManyRedirects",
+      "Grep: max_redirects|TooManyRedirects"
+    ],
+    "answer": "The check is enforced in `SessionRedirectMixin.resolve_redirects()` (src/requests/sessions.py:216-219): `if len(resp.history) >= self.max_redirects: raise TooManyRedirects(...)`.\n\n- Default limit: `Session.max_redirects` is set to `DEFAULT_REDIRECT_LIMIT` (src/requests/sessions.py:488), which equals **30** (defined in `src/requests/models.py`).\n- Exception raised: `requests.exceptions.TooManyRedirects`."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1021872,
+    "turns": 3,
+    "durationMs": 13486,
+    "tokens": {
+      "input": 6,
+      "output": 539,
+      "cacheCreation": 11463,
+      "cacheRead": 84354
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|DEFAULT_REDIRECT_LIMIT|TooManyRedirects",
+      "Grep: max_redirects|DEFAULT_REDIRECT_LIMIT|TooManyRedirects"
+    ],
+    "answer": "The limit is enforced in `SessionRedirectMixin.resolve_redirects` (`src/requests/sessions.py:216-218`), which raises `TooManyRedirects` (`src/requests/exceptions.py:106`) once `len(resp.history) >= self.max_redirects`.\n\n`self.max_redirects` is set in `Session.__init__` (`sessions.py:488`) to `DEFAULT_REDIRECT_LIMIT`, defined in `src/requests/models.py:103` as `30`."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "without",
+    "rep": 2,
+    "ok": false,
+    "check": "missing: SessionRedirectMixin",
+    "costUsd": 0.0821043,
+    "turns": 2,
+    "durationMs": 7581,
+    "tokens": {
+      "input": 4,
+      "output": 385,
+      "cacheCreation": 9986,
+      "cacheRead": 52501
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|TooManyRedirects|DEFAULT_REDIRECT_LIMIT"
+    ],
+    "answer": "Enforced in `Session.resolve_redirects` at `src/requests/sessions.py:216-218` (checks `len(resp.history) >= self.max_redirects`). Default limit is `DEFAULT_REDIRECT_LIMIT = 30` (`src/requests/models.py:103`), assigned to `Session.max_redirects` in `Session.__init__` (`src/requests/sessions.py:488`). Exceeding it raises `requests.exceptions.TooManyRedirects` (`src/requests/exceptions.py:106`)."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.100077,
+    "turns": 3,
+    "durationMs": 12151,
+    "tokens": {
+      "input": 6,
+      "output": 476,
+      "cacheCreation": 11218,
+      "cacheRead": 85370
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|too many redirects|TooManyRedirects",
+      "Grep: DEFAULT_REDIRECT_LIMIT"
+    ],
+    "answer": "The limit is enforced in `SessionRedirectMixin.resolve_redirects` at `src/requests/sessions.py:216-218`, which checks `len(resp.history) >= self.max_redirects`. The default, `DEFAULT_REDIRECT_LIMIT = 30` (`src/requests/models.py:103`), is set on `Session.__init__` (`src/requests/sessions.py:488`). When exceeded, it raises `requests.exceptions.TooManyRedirects`."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "without",
+    "rep": 3,
+    "ok": false,
+    "check": "missing: SessionRedirectMixin",
+    "costUsd": 0.0974688,
+    "turns": 3,
+    "durationMs": 11564,
+    "tokens": {
+      "input": 6,
+      "output": 641,
+      "cacheCreation": 10323,
+      "cacheRead": 84156
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|TooManyRedirects",
+      "Grep: DEFAULT_REDIRECT_LIMIT"
+    ],
+    "answer": "Enforced in `Session.resolve_redirects` at `src/requests/sessions.py:216-218`: `if len(resp.history) >= self.max_redirects: raise TooManyRedirects(...)`. Default limit is `DEFAULT_REDIRECT_LIMIT = 30` (`src/requests/models.py:103`), assigned to `Session.max_redirects` in `Session.__init__` (`src/requests/sessions.py:488`). Exception raised: `requests.exceptions.TooManyRedirects` (`src/requests/exceptions.py:106`)."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 3,
+    "ok": false,
+    "check": "missing: \\b30\\b",
+    "costUsd": 0.0866913,
+    "turns": 2,
+    "durationMs": 11121,
+    "tokens": {
+      "input": 4,
+      "output": 330,
+      "cacheCreation": 10978,
+      "cacheRead": 52871
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|TooManyRedirects"
+    ],
+    "answer": "The limit is enforced in `SessionRedirectMixin.resolve_redirects` (`src/requests/sessions.py:216-218`), which checks `len(resp.history) >= self.max_redirects`. The default is `DEFAULT_REDIRECT_LIMIT` (set on `Session.__init__`, `sessions.py:488`), and exceeding it raises `requests.exceptions.TooManyRedirects` (`src/requests/exceptions.py:106`)."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "without",
+    "rep": 4,
+    "ok": false,
+    "check": "missing: SessionRedirectMixin",
+    "costUsd": 0.0968331,
+    "turns": 3,
+    "durationMs": 12039,
+    "tokens": {
+      "input": 6,
+      "output": 597,
+      "cacheCreation": 10329,
+      "cacheRead": 84117
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|TooManyRedirects",
+      "Grep: DEFAULT_REDIRECT_LIMIT|def resolve_redirects"
+    ],
+    "answer": "Enforced in `Session.resolve_redirects` (`src/requests/sessions.py:186,216-218`), which raises `requests.exceptions.TooManyRedirects` once `len(resp.history) >= self.max_redirects`. The default limit is `DEFAULT_REDIRECT_LIMIT = 30` (`src/requests/models.py:103`), assigned to `Session.max_redirects` in `Session.__init__` (`src/requests/sessions.py:488`)."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.09899759999999999,
+    "turns": 3,
+    "durationMs": 11380,
+    "tokens": {
+      "input": 6,
+      "output": 430,
+      "cacheCreation": 11208,
+      "cacheRead": 84272
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|TooManyRedirects",
+      "Grep: max_redirects|TooManyRedirects"
+    ],
+    "answer": "The check lives in `SessionRedirectMixin.resolve_redirects` (src/requests/sessions.py:216-218): once `len(resp.history) >= self.max_redirects`, it raises `TooManyRedirects` (src/requests/exceptions.py:106).\n\nThe default limit is `DEFAULT_REDIRECT_LIMIT`, assigned to `self.max_redirects` in `Session.__init__` (src/requests/sessions.py:488) — that constant is `30`."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "without",
+    "rep": 5,
+    "ok": false,
+    "check": "missing: SessionRedirectMixin",
+    "costUsd": 0.10257089999999999,
+    "turns": 4,
+    "durationMs": 12942,
+    "tokens": {
+      "input": 6,
+      "output": 757,
+      "cacheCreation": 10884,
+      "cacheRead": 84143
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|TooManyRedirects",
+      "Grep: DEFAULT_REDIRECT_LIMIT",
+      "Read: <copy>\\src\\requests\\sessions.py"
+    ],
+    "answer": "The limit is enforced in `requests.sessions.Session.resolve_redirects` (src/requests/sessions.py:216-219), checking `len(resp.history) >= self.max_redirects`.\n\n- Default limit: `DEFAULT_REDIRECT_LIMIT = 30` (src/requests/models.py:103), assigned to `Session.max_redirects` in `Session.__init__` (sessions.py:488).\n- Exception raised: `requests.exceptions.TooManyRedirects`."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0878757,
+    "turns": 2,
+    "durationMs": 10002,
+    "tokens": {
+      "input": 4,
+      "output": 387,
+      "cacheCreation": 11033,
+      "cacheRead": 52869
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|TooManyRedirects"
+    ],
+    "answer": "The limit is enforced in `SessionRedirectMixin.resolve_redirects` (`src/requests/sessions.py:216-218`), which checks `len(resp.history) >= self.max_redirects`.\n\nThe default is `DEFAULT_REDIRECT_LIMIT`, set on `Session.__init__` (`sessions.py:488`) — its value is 30.\n\nWhen exceeded, `TooManyRedirects` (`src/requests/exceptions.py:106`) is raised."
+  }
+]

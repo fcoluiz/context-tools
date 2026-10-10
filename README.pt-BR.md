@@ -167,6 +167,29 @@ nunca apresentado como definição.
 produção de terceiros — cerca de **9.000 arquivos e 192.000 símbolos** em projetos Python, Go,
 Delphi/Pascal, Rust, TypeScript, C#, Java e PHP — com **zero símbolos apontando a linha errada**.
 
+## Ajuda? O que foi medido
+
+Um agente real (`claude -p`) faz a mesma tarefa numa cópia limpa de um repositório público, uma vez
+sem o plugin e outra com ele, e a resposta é conferida contra um gabarito verificado à mão. Cinco
+execuções por braço em cada caso:
+
+| rodada | modelo | casos | sem | com | custo com × sem |
+|---|---|---|---:|---:|---:|
+| 2 | Sonnet 5 | 6 (C#, Java, uma correção) | 26/30 | 28/30 | −15% |
+| 3 — **casos novos** | Sonnet 5 | 5 novos (TypeScript, Python) | 21/25 | 24/25 | −24% |
+| 3 | Haiku 4.5 | 11 | 48/55 | 50/55 | −36% |
+
+- **Nunca pior, sempre mais barato.** O plugin resolveu pelo menos tanto quanto sem ele em todas as
+  rodadas e custou menos em todas; a diferença é maior em perguntas de "quem usa X" e no modelo menor.
+- **De onde vem o ganho de acerto:** o Grep devolve linhas sem o método em volta, e o agente que
+  responde só com isso nomeia o método ou a classe errada. Um hook agora diz em qual símbolo cai cada
+  linha encontrada.
+- **O que ainda não mostra:** cinco execuções por braço, perguntas de leitura, código público. A
+  rodada 3 também achou um erro que o plugin ainda não corrige (busca qualificada que perde chamadas
+  sem o prefixo).
+
+Relatórios, casos e os dados brutos de cada execução: [docs/benchmarks](docs/benchmarks/).
+
 ## Quanto custa
 
 - **Velocidade:** um workspace de 1.543 arquivos indexa em ~1,75 s do zero e ~130 ms com cache. O

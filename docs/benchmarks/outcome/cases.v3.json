@@ -1,0 +1,80 @@
+{
+  "description": "Outcome round 3 (held out): five read-only questions in TypeScript and Python that the hooks were never tuned on. Ground truth checked by hand against the source at the pinned commit; one escapeRegex mention sits in commented-out code and does not count.",
+  "cases": [
+    {
+      "id": "ts-zod-escaperegex-users",
+      "git": "https://github.com/colinhacks/zod.git",
+      "ref": "284243fb0d6532665afdc9239188773bb624f73c",
+      "prompt": "Answer from the code in this repository, without modifying any file. In packages/zod/src/v4/core (excluding tests), which exported constants call util.escapeRegex in live code (not in comments)? Write each constant name, one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "\\$ZodCheckIncludes\\b",
+          "\\$ZodCheckStartsWith\\b",
+          "\\$ZodCheckEndsWith\\b",
+          "(^|[^\\w$])mac\\b",
+          "\\$ZodEnum\\b",
+          "\\$ZodLiteral\\b",
+          "\\$ZodTemplateLiteral\\b"
+        ]
+      }
+    },
+    {
+      "id": "ts-zod-cleanregex-users",
+      "git": "https://github.com/colinhacks/zod.git",
+      "ref": "284243fb0d6532665afdc9239188773bb624f73c",
+      "prompt": "Answer from the code in this repository, without modifying any file. In packages/zod/src/v4/core/schemas.ts, which exported constants or functions call util.cleanRegex? Write each name, one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "\\$ZodUnion\\b",
+          "\\$ZodOptional\\b",
+          "\\$ZodNullable\\b",
+          "\\$ZodTemplateLiteral\\b"
+        ]
+      },
+      "note": "partPattern also calls util.cleanRegex but is not exported, so the prompt excludes it (the first version of this check required it by mistake; results were re-scored)."
+    },
+    {
+      "id": "py-requests-to-native-string-callers",
+      "git": "https://github.com/psf/requests.git",
+      "ref": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+      "prompt": "Answer from the code in this repository, without modifying any file. Which functions or methods under src/requests call to_native_string? Write each one as Class.method (or just the function name when it is not in a class), one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "\\b_basic_auth_str\\b",
+          "\\bget_full_url\\b",
+          "\\bprepare_method\\b",
+          "\\bprepare_url\\b",
+          "\\bprepare_headers\\b",
+          "\\bget_redirect_target\\b",
+          "\\bresolve_redirects\\b"
+        ]
+      }
+    },
+    {
+      "id": "py-requests-two-tuples",
+      "git": "https://github.com/psf/requests.git",
+      "ref": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+      "prompt": "Answer from the code in this repository, without modifying any file. Which functions raise ValueError(\"cannot encode objects that are not 2-tuples\")? Write each function name, one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "\\bfrom_key_val_list\\b",
+          "\\bto_key_val_list\\b"
+        ]
+      }
+    },
+    {
+      "id": "py-requests-redirect-limit",
+      "git": "https://github.com/psf/requests.git",
+      "ref": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+      "prompt": "Answer from the code in this repository, without modifying any file. When a Session follows redirects, where exactly is the maximum number of redirects enforced (class and method), what is the default limit, and which exception is raised when it is exceeded? Reply in at most five lines.",
+      "check": {
+        "answer": [
+          "SessionRedirectMixin",
+          "\\bresolve_redirects\\b",
+          "\\b30\\b",
+          "TooManyRedirects"
+        ]
+      }
+    }
+  ]
+}

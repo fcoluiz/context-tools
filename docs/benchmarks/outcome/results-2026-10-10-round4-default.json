@@ -1,0 +1,613 @@
+[
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.09055079999999999,
+    "turns": 2,
+    "durationMs": 16585,
+    "tokens": {
+      "input": 4,
+      "output": 433,
+      "cacheCreation": 11332,
+      "cacheRead": 53506
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: util\\.escapeRegex"
+    ],
+    "answer": "$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1437666,
+    "turns": 8,
+    "durationMs": 27468,
+    "tokens": {
+      "input": 8,
+      "output": 1546,
+      "cacheCreation": 14164,
+      "cacheRead": 118562
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: escapeRegex",
+      "Grep: escapeRegex",
+      "Grep: escapeRegex",
+      "Grep: escapeRegex",
+      "Grep: escapeRegex",
+      "Grep: escapeRegex",
+      "Grep: escapeRegex"
+    ],
+    "answer": "$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral\nmac\n$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.09728819999999999,
+    "turns": 2,
+    "durationMs": 21564,
+    "tokens": {
+      "input": 4,
+      "output": 759,
+      "cacheCreation": 11640,
+      "cacheRead": 53504
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: escapeRegex"
+    ],
+    "answer": "$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0910611,
+    "turns": 2,
+    "durationMs": 16444,
+    "tokens": {
+      "input": 4,
+      "output": 468,
+      "cacheCreation": 11330,
+      "cacheRead": 53497
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: util\\.escapeRegex"
+    ],
+    "answer": "$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1084602,
+    "turns": 3,
+    "durationMs": 21815,
+    "tokens": {
+      "input": 6,
+      "output": 637,
+      "cacheCreation": 12141,
+      "cacheRead": 86804
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: escapeRegex",
+      "Read: packages/zod/src/v4/core/schemas.ts"
+    ],
+    "answer": "Confirmed — that line is commented out, so it's excluded. The live calls map to these exported constants:\n\n$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1094262,
+    "turns": 3,
+    "durationMs": 20714,
+    "tokens": {
+      "input": 6,
+      "output": 613,
+      "cacheCreation": 12388,
+      "cacheRead": 86284
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cleanRegex",
+      "Read: packages/zod/src/v4/core/schemas.ts"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral\n\n(`partPattern` also calls `util.cleanRegex` but it's an internal, non-exported helper used by `$ZodTemplateLiteral`.)"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0953361,
+    "turns": 2,
+    "durationMs": 11157,
+    "tokens": {
+      "input": 4,
+      "output": 217,
+      "cacheCreation": 12670,
+      "cacheRead": 53497
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: util\\.cleanRegex"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\npartPattern\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.08940479999999999,
+    "turns": 2,
+    "durationMs": 15418,
+    "tokens": {
+      "input": 4,
+      "output": 480,
+      "cacheCreation": 11024,
+      "cacheRead": 53496
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cleanRegex"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.11817420000000001,
+    "turns": 3,
+    "durationMs": 20469,
+    "tokens": {
+      "input": 6,
+      "output": 702,
+      "cacheCreation": 13541,
+      "cacheRead": 87934
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: util\\.cleanRegex",
+      "Read: packages/zod/src/v4/core/schemas.ts"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.10920750000000001,
+    "turns": 3,
+    "durationMs": 19659,
+    "tokens": {
+      "input": 6,
+      "output": 495,
+      "cacheCreation": 12592,
+      "cacheRead": 87375
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: util\\.cleanRegex",
+      "Read: packages/zod/src/v4/core/schemas.ts"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral\n\n(`partPattern`, which also calls `util.cleanRegex`, is a module-local helper — not exported.)"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1423194,
+    "turns": 9,
+    "durationMs": 24271,
+    "tokens": {
+      "input": 10,
+      "output": 1172,
+      "cacheCreation": 13157,
+      "cacheRead": 152558
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class |^def "
+    ],
+    "answer": "_basic_auth_str\nRequestsCookieJar.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.12763680000000002,
+    "turns": 8,
+    "durationMs": 22207,
+    "tokens": {
+      "input": 8,
+      "output": 1132,
+      "cacheCreation": 12526,
+      "cacheRead": 118256
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class "
+    ],
+    "answer": "get_full_url at line 66 is within MockRequest (31-113), and prepare_method/prepare_url/prepare_headers (467-575) are within PreparedRequest (378-731). get_redirect_target (134-153) and resolve_redirects (186-308) are within SessionRedirectMixin (127-394). auth.py's _basic_auth_str (34-77) is top-level.\n\nFunctions/methods under src/requests calling to_native_string:\n\n_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1280856,
+    "turns": 8,
+    "durationMs": 25260,
+    "tokens": {
+      "input": 8,
+      "output": 1145,
+      "cacheCreation": 12565,
+      "cacheRead": 118322
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class "
+    ],
+    "answer": "get_full_url is line 66 within MockRequest (31-113). prepare_method/prepare_url/prepare_headers (467-575) within PreparedRequest (378-731). get_redirect_target (134-153) and resolve_redirects (186-308) within SessionRedirectMixin (127-394). _basic_auth_str is top-level in auth.py.\n\n```\n_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects\n```"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.11015820000000001,
+    "turns": 5,
+    "durationMs": 15471,
+    "tokens": {
+      "input": 6,
+      "output": 818,
+      "cacheCreation": 12046,
+      "cacheRead": 85314
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string",
+      "Grep: ^class ",
+      "Grep: ^class ",
+      "Grep: ^class "
+    ],
+    "answer": "cookies.py line 66 (get_full_url, lines 60-79) falls within MockRequest (31-113).\nmodels.py: prepare_method, prepare_url, prepare_headers are within PreparedRequest (378-731).\nsessions.py: get_redirect_target, resolve_redirects are within SessionRedirectMixin (127-394).\n\n_basic_auth_str in auth.py is a top-level function (not in a class).\n\n_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1072194,
+    "turns": 5,
+    "durationMs": 13654,
+    "tokens": {
+      "input": 6,
+      "output": 746,
+      "cacheCreation": 11757,
+      "cacheRead": 84898
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: to_native_string\\(",
+      "Grep: class \\w+",
+      "Grep: class \\w+",
+      "Grep: class \\w+"
+    ],
+    "answer": "get_full_url is in MockRequest (line 60, within 31-113). prepare_method/prepare_url/prepare_headers are in PreparedRequest (378-731). get_redirect_target/resolve_redirects are in SessionRedirectMixin (127-394). _basic_auth_str is a module-level function.\n\n```\n_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects\n```"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.07646400000000002,
+    "turns": 2,
+    "durationMs": 7341,
+    "tokens": {
+      "input": 4,
+      "output": 127,
+      "cacheCreation": 9782,
+      "cacheRead": 52850
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0764586,
+    "turns": 2,
+    "durationMs": 8477,
+    "tokens": {
+      "input": 4,
+      "output": 127,
+      "cacheCreation": 9781,
+      "cacheRead": 52852
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0781107,
+    "turns": 2,
+    "durationMs": 7623,
+    "tokens": {
+      "input": 4,
+      "output": 206,
+      "cacheCreation": 9859,
+      "cacheRead": 52849
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0766731,
+    "turns": 2,
+    "durationMs": 7627,
+    "tokens": {
+      "input": 4,
+      "output": 139,
+      "cacheCreation": 9787,
+      "cacheRead": 52847
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0764271,
+    "turns": 2,
+    "durationMs": 5523,
+    "tokens": {
+      "input": 4,
+      "output": 127,
+      "cacheCreation": 9776,
+      "cacheRead": 52847
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.08613,
+    "turns": 2,
+    "durationMs": 9841,
+    "tokens": {
+      "input": 4,
+      "output": 429,
+      "cacheCreation": 10637,
+      "cacheRead": 52870
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|TooManyRedirects|DEFAULT_REDIRECT_LIMIT"
+    ],
+    "answer": "The limit is enforced in `SessionRedirectMixin.resolve_redirects` (`src/requests/sessions.py:216-218`), which checks `len(resp.history) >= self.max_redirects`. The default comes from `DEFAULT_REDIRECT_LIMIT = 30` in `src/requests/models.py:103`, assigned to `Session.max_redirects` in `Session.__init__` (`sessions.py:488`). When exceeded, it raises `requests.exceptions.TooManyRedirects`."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.1014939,
+    "turns": 3,
+    "durationMs": 10984,
+    "tokens": {
+      "input": 6,
+      "output": 507,
+      "cacheCreation": 11429,
+      "cacheRead": 84323
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|TooManyRedirects|DEFAULT_REDIRECT_LIMIT",
+      "Grep: max_redirects|TooManyRedirects|DEFAULT_REDIRECT_LIMIT"
+    ],
+    "answer": "Enforced in `SessionRedirectMixin.resolve_redirects()` (src/requests/sessions.py:216-218), comparing `len(resp.history) >= self.max_redirects`.\n\nDefault limit: `DEFAULT_REDIRECT_LIMIT = 30` (src/requests/models.py:103), assigned to `Session.max_redirects` in `Session.__init__` (sessions.py:488).\n\nException raised: `requests.exceptions.TooManyRedirects` (sessions.py:217)."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.08945339999999999,
+    "turns": 2,
+    "durationMs": 10738,
+    "tokens": {
+      "input": 4,
+      "output": 419,
+      "cacheCreation": 11216,
+      "cacheRead": 52868
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|TooManyRedirects|DEFAULT_REDIRECT_LIMIT"
+    ],
+    "answer": "Enforced in `src/requests/sessions.py:216-218`, inside `SessionRedirectMixin.resolve_redirects` — it checks `len(resp.history) >= self.max_redirects`. The default is set in `Session.__init__` (`sessions.py:488`) to `DEFAULT_REDIRECT_LIMIT` (`src/requests/models.py:103`), which equals `30`. When exceeded, it raises `requests.exceptions.TooManyRedirects`."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.09094229999999999,
+    "turns": 2,
+    "durationMs": 10537,
+    "tokens": {
+      "input": 4,
+      "output": 499,
+      "cacheCreation": 11264,
+      "cacheRead": 52871
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|TooManyRedirects|DEFAULT_REDIRECT_LIMIT"
+    ],
+    "answer": "The limit is enforced in `SessionRedirectMixin.resolve_redirects` (`src/requests/sessions.py:216-218`), which checks `len(resp.history) >= self.max_redirects`.\n\nThe default value, `self.max_redirects = DEFAULT_REDIRECT_LIMIT` (= 30), is set in `Session.__init__` (`src/requests/sessions.py:488`, constant defined in `src/requests/models.py:103`).\n\nWhen exceeded, it raises `requests.exceptions.TooManyRedirects` (`src/requests/sessions.py:217`)."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.08799870000000001,
+    "turns": 2,
+    "durationMs": 10079,
+    "tokens": {
+      "input": 4,
+      "output": 356,
+      "cacheCreation": 11131,
+      "cacheRead": 52869
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: max_redirects|TooManyRedirects|DEFAULT_REDIRECT_LIMIT"
+    ],
+    "answer": "The limit is enforced in `SessionRedirectMixin.resolve_redirects` at `src/requests/sessions.py:216-218` — it checks `len(resp.history) >= self.max_redirects`. The default is `DEFAULT_REDIRECT_LIMIT = 30` (`src/requests/models.py:103`), assigned to `Session.max_redirects` in `Session.__init__` (`sessions.py:488`). When exceeded, `TooManyRedirects` (`src/requests/exceptions.py:106`) is raised."
+  }
+]

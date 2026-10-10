@@ -1,6 +1,6 @@
 {
   "name": "context-tools",
-  "version": "2.7.1",
+  "version": "2.7.2",
   "private": true,
   "description": "Project knowledge that does not rot, for AI coding agents: symbol index, who-uses-what, pre-change impact, git change coupling, and documentation bound to the code by fingerprint. Zero dependencies.",
   "license": "MIT",

@@ -24,7 +24,7 @@
 // quando vai usar devolve esses ~39 ms a cada Grep descartado, e num projeto que o índice nem
 // consegue ler devolve 100% deles — que é justamente onde o plugin não pode cobrar nada.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, extname } from 'node:path';
 import { resolveRoot, safe, loadConfig, isMain, statePath } from './lib/roots.mjs';
 import { writeHookOutput } from './lib/hook-output.mjs';
 
@@ -97,6 +97,7 @@ export async function executarPreTool(entrada) {
     return '';
   }
 
+  if (padrao && QUALIFICADO.test(padrao)) return avisoQualificado(padrao, ferramenta, handlerDurationMs);
   if (!padrao || !CARA_DE_SIMBOLO.test(padrao)) return '';
 
   const root = resolveRoot();
@@ -179,6 +180,70 @@ export async function executarPreTool(entrada) {
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
       additionalContext: `${t('pre.cabecalho', { busca })}\n${corpo}`,
+    },
+  });
+}
+
+/**
+ * Busca qualificada: `DateTimeUtils\.EnsureDateTime`, `util.cleanRegex`, `Classe.metodo(`. Medido na
+ * rodada 3 do benchmark de resultado: o Haiku procurou "quem chama EnsureDateTime" pelo nome com o
+ * prefixo da classe e perdeu as 4 chamadas feitas de dentro da própria classe, que não usam o prefixo
+ * — 1/5 com e sem o plugin. O Grep vai rodar como pedido; aqui só se diz o que ele não vai ver: os
+ * usos do nome SEM o prefixo no arquivo que o define, com o símbolo que contém cada um. Fora desse
+ * arquivo, um uso sem prefixo seria outro símbolo com o mesmo nome — não é dito.
+ */
+const QUALIFICADO = /^([A-Za-z_$][\w$]*)\\?\.([A-Za-z_$][\w$]{2,})(?:\\?\()?$/;
+// Prefixos que não são o nome de um tipo ou módulo: aqui o "sem prefixo" não é a mesma coisa.
+const PREFIXO_DE_INSTANCIA = /^(self|this|cls|base|super|me|parent|static)$/i;
+const MAX_QUALIFICADO = 10;
+
+async function avisoQualificado(padrao, ferramenta, handlerDurationMs) {
+  const [, prefixo, nome] = padrao.match(QUALIFICADO);
+  if (PREFIXO_DE_INSTANCIA.test(prefixo)) return '';
+  const root = resolveRoot();
+  if (!root) return '';
+  const sid = process.env.CONTEXT_TOOLS_SESSION_ID || process.env.CLAUDE_CODE_SESSION_ID || process.env.CLAUDE_SESSION_ID || 'sem-sessao';
+  if (jaRespondido(root, `${sid}|q|${padrao.toLowerCase()}`)) return '';
+  const { simboloDaLinha } = await import('./refs.mjs');
+  const { buildIndex, comIntervalos } = await import('./symbols.mjs');
+  const { parserForExt, codeOnlyLines } = await import('./outline.mjs');
+  const { isTestFile } = await import('./lib/verification.mjs');
+  const { makeT, detectLang } = await import('./lib/i18n.mjs');
+  const { recordMetric } = await import('./lib/telemetry.mjs');
+  const { lerTexto, relPath } = await import('./lib/roots.mjs');
+  const cfg = loadConfig(root);
+  const t = makeT(detectLang(cfg));
+  const indice = buildIndex(root, cfg);
+  // Só o arquivo que define o nome é lido: é ali que a chamada interna dispensa o prefixo.
+  const locs = (indice.defs.get(nome) || []).filter((l) => !/^(key|test) /.test(l.kind) && !isTestFile(l.file));
+  if (!locs.length) return '';
+  const esc = (s) => s.replace(/[$]/g, '\\$');
+  // Chamada solta: `Nome(` sem `.` antes — `valor.ToString()` é outro objeto, não este método.
+  const chamadaSolta = new RegExp(`(?<![\\w$.])${esc(nome)}\\s*\\(`);
+  const comPrefixo = new RegExp(`${esc(prefixo)}\\s*\\??\\.\\s*${esc(nome)}`);
+  const semPrefixo = [];
+  for (const arquivo of new Set(locs.map((l) => l.file))) {
+    const abs = join(root, arquivo);
+    const linhas = (lerTexto(abs) || '').split('\n');
+    const codigo = codeOnlyLines(linhas, extname(abs)) || linhas;
+    const definicoes = new Set(locs.filter((l) => l.file === arquivo).map((l) => l.line));
+    const parser = parserForExt(extname(abs));
+    const intervalos = parser ? comIntervalos(parser(linhas), linhas.length) : [];
+    for (let i = 0; i < linhas.length; i++) {
+      if (definicoes.has(i + 1) || !chamadaSolta.test(codigo[i] || '') || comPrefixo.test(codigo[i] || '')) continue;
+      const dentro = simboloDaLinha(abs, linhas, intervalos, i + 1);
+      semPrefixo.push({ file: relPath(root, abs), line: i + 1, in: dentro?.name || null });
+    }
+  }
+  recordMetric(root, 'pretool', { host: ferramenta, outcome: semPrefixo.length ? 'qualified-hint' : 'qualified-none', patternLength: padrao.length, durationMs: handlerDurationMs() });
+  if (!semPrefixo.length) return '';
+  const lista = semPrefixo.slice(0, MAX_QUALIFICADO)
+    .map((u) => `${u.file.replace(/\\/g, '/')}:${u.line}${u.in ? ` ${u.in}` : ''}`).join('; ');
+  const mais = semPrefixo.length > MAX_QUALIFICADO ? ` (+${semPrefixo.length - MAX_QUALIFICADO})` : '';
+  return JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      additionalContext: t('pre.qualified', { q: padrao, prefix: prefixo, name: nome, n: semPrefixo.length, list: lista + mais }).slice(0, MAX_BLOCO),
     },
   });
 }

@@ -141,6 +141,31 @@ test('grep-context: cala sem número de linha, fora do projeto, em outro comando
   assert.deepEqual([...pares.entries()], [['a.js', [3, 4]], ['b.js', [1]]]);
 });
 
+test('pre-tool: busca qualificada avisa das chamadas internas sem o prefixo', () => {
+  // Rodada 3: o Haiku buscou `DateTimeUtils\.EnsureDateTime` e perdeu as chamadas feitas de dentro
+  // da própria classe, que não usam o prefixo — 1/5 com e sem o plugin.
+  const dir = projeto({
+    'src/Datas.cs': [
+      'public static class Datas', '{',
+      '    public static int Garante(int v)', '    {', '        return v.ToString().Length;', '    }',
+      '    public static int Le(int v)', '    {', '        // Garante(v) em comentário não conta', '        return Garante(v);', '    }',
+      '    public static string Texto(int v)', '    {', '        return v.ToString();', '    }',
+      '}', '',
+    ].join('\n'),
+    'src/Uso.cs': 'public class Uso\n{\n    public int A() { return Datas.Garante(1); }\n}\n',
+  });
+  try {
+    const pre = (pattern) => hook('pre-tool.mjs', dir, { hook_event_name: 'PreToolUse', tool_name: 'Grep', tool_input: { pattern } });
+    const aviso = pre('Datas\\.Garante');
+    assert.match(aviso, /These 1 place\(s\) also call `Datas\.Garante` — from inside the file that defines it, without the prefix — and will NOT appear in this search; count them as callers too/,
+      'diz que são chamadores também: sem isso, o Haiku via o aviso e mesmo assim os deixava de fora');
+    assert.match(aviso, /src\/Datas\.cs:10 Datas\.Le\(\)/, 'a chamada interna, com o método que a contém');
+    assert.doesNotMatch(aviso, /:9 /, 'comentário não é chamada');
+    assert.equal(pre('Datas\\.Texto'), '', '`v.ToString()` é outro objeto; Texto não tem chamada interna');
+    assert.equal(pre('self\\.Garante'), '', 'self/this não é nome de tipo');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('verify --session-start: o comando de teste e como rodar um arquivo só, ou silêncio', () => {
   const nodeTest = projeto({ 'package.json': JSON.stringify({ scripts: { test: 'node --test' } }) });
   const runner = projeto({

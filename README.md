@@ -176,14 +176,18 @@ runs per arm per case:
 | 2 | Sonnet 5 | 6 (C#, Java, a fix) | 26/30 | 28/30 | −15% |
 | 3 — **held out** | Sonnet 5 | 5 new (TypeScript, Python) | 21/25 | 24/25 | −24% |
 | 3 | Haiku 4.5 | 11 | 48/55 | 50/55 | −36% |
+| 4 | Sonnet 5 | the 5 new ones | 21/25 ¹ | **25/25** | −30% |
+| 4 | Haiku 4.5 | 11 | 48/55 ¹ | **53/55** | −18% |
+
+¹ Round 4 measured only the arm with the plugin (2.7.3); the arm without it is round 3's.
 
 - **Never worse, consistently cheaper.** The plugin solved at least as many tasks in every round and
   cost less in every one; the gap is largest on "who uses X" questions and on the smaller model.
 - **Where the accuracy gain comes from:** Grep returns lines without the method around them, and an
-  agent that answers from that alone names the wrong method or class. A hook now says which symbol
-  each matched line falls in.
-- **What it does not show yet:** five runs per arm, read-heavy questions, public code. Round 3 also
-  found a miss the plugin does not fix yet (a qualified search that skips unqualified calls).
+  agent that answers from that alone names the wrong method or class. A hook says which symbol each
+  matched line falls in, and warns when a qualified search (`Class\.method`) will miss the calls made
+  from inside the class without the prefix.
+- **What it does not show yet:** five runs per arm, read-heavy questions, public code, one fix task.
 
 Reports, cases and every run's raw data: [docs/benchmarks](docs/benchmarks/).
 

@@ -10,6 +10,21 @@ reconstructed from git history.
 
 ### Added
 
+- **Qualified searches no longer hide the calls inside the class.** Before a Grep (or `rg`/`grep`)
+  for `Prefix.name` — `DateTimeUtils\.EnsureDateTime`, `util.cleanRegex`, `Class.method(` — the
+  `PreToolUse` hook reads the file that defines `name` and lists the bare calls to it there, written
+  without the prefix, each with the method that contains it, saying they are callers too. In round 3
+  of the outcome benchmark, Haiku searched by the qualified name and missed the 4 calls made from
+  inside `DateTimeUtils` (1/5 with and without the plugin); with the hint, 4/5. The first wording
+  only said those calls "will not appear in this search", and Haiku, which did receive it, still left
+  them out (0/5) — so the hint now says they call it too
+  ([round 4](docs/benchmarks/outcome-round4-2026-10-10.pt-BR.md)). `value.ToString()` on another
+  object does not count, `self.`/`this.` do not trigger it, comments and strings are ignored.
+- **README: round 4.** With 2.7.3, Sonnet 5 solved 25/25 of the held-out cases (21/25 without the
+  plugin, 30% cheaper) and Haiku 4.5 53/55 (48/55 without, 18% cheaper).
+
+### Added
+
 - **Measured results in the README.** A short table of the three outcome rounds — including a
   held-out round on cases the plugin was never tuned on (TypeScript and Python) and a round on
   Haiku 4.5 — with what it does not show yet, linking to the reports and the raw data of every run

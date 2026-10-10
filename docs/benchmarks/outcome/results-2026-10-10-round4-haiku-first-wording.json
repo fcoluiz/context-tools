@@ -1,0 +1,573 @@
+[
+  {
+    "case": "qa-newtonsoft-maxdepth",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0530799,
+    "turns": 3,
+    "durationMs": 15563,
+    "tokens": {
+      "input": 26,
+      "output": 673,
+      "cacheCreation": 21719,
+      "cacheRead": 62509
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: class JsonReader",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\JsonReader.cs"
+    ],
+    "answer": "Maximum depth is enforced in the **Push** method of the **JsonReader** class (lines 356-360). The default maximum depth is **64** (set in the constructor at line 332). When exceeded, a **JsonReaderException** is thrown with the message \"The reader's MaxDepth of {0} has been exceeded.\""
+  },
+  {
+    "case": "qa-newtonsoft-maxdepth",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.053763599999999995,
+    "turns": 3,
+    "durationMs": 16741,
+    "tokens": {
+      "input": 26,
+      "output": 670,
+      "cacheCreation": 22052,
+      "cacheRead": 62836
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: maxDepth|MaxDepth",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\JsonReader.cs"
+    ],
+    "answer": "Maximum depth enforcement occurs in the **`JsonReader.Push()` method** (line 356-360). The check compares `Depth + 1` against `_maxDepth` and throws if exceeded. The **default maximum depth is 64** (initialized at line 332). When exceeded, a **`JsonReaderException`** is thrown with the message \"The reader's MaxDepth of {maxDepth} has been exceeded.\""
+  },
+  {
+    "case": "qa-newtonsoft-maxdepth",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.03979400000000001,
+    "turns": 5,
+    "durationMs": 18585,
+    "tokens": {
+      "input": 44,
+      "output": 998,
+      "cacheCreation": 11548,
+      "cacheRead": 116640
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: maxdepth|max.*depth|Maximum.*[Dd]epth",
+      "Grep: maxdepth|MaxDepth",
+      "Read: Src\\Newtonsoft.Json\\JsonReader.cs",
+      "Read: Src\\Newtonsoft.Json\\JsonSerializerSettings.cs"
+    ],
+    "answer": "Maximum depth is enforced in **`JsonReader.Push()` method** (lines 356–359). The default maximum depth is **64** (defined in `JsonSerializerSettings.cs` as `DefaultMaxDepth`). When exceeded, **`JsonReaderException`** is thrown with the message \"The reader's MaxDepth of {0} has been exceeded.\""
+  },
+  {
+    "case": "qa-newtonsoft-maxdepth",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0428648,
+    "turns": 5,
+    "durationMs": 16897,
+    "tokens": {
+      "input": 28,
+      "output": 770,
+      "cacheCreation": 15988,
+      "cacheRead": 70108
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: class JsonReader",
+      "Grep: MaxDepth",
+      "Read: Src/Newtonsoft.Json/JsonReader.cs",
+      "Read: Src/Newtonsoft.Json/JsonSerializerSettings.cs"
+    ],
+    "answer": "Maximum depth is enforced in **`JsonReader.Push()`** method (line 356-359). The default maximum depth is **64** (`JsonSerializerSettings.DefaultMaxDepth`). **`JsonReaderException`** is thrown when exceeded. The check compares `Depth + 1` against `_maxDepth` and raises: `\"The reader's MaxDepth of {0} has been exceeded.\"` Only the first depth violation triggers an exception (`_hasExceededMaxDepth` flag prevents recursive errors)."
+  },
+  {
+    "case": "qa-newtonsoft-maxdepth",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.05827450000000001,
+    "turns": 4,
+    "durationMs": 27291,
+    "tokens": {
+      "input": 34,
+      "output": 802,
+      "cacheCreation": 22106,
+      "cacheRead": 100185
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: class JsonReader",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\JsonReader.cs",
+      "Grep: class JsonReaderException"
+    ],
+    "answer": "Maximum depth is enforced in `JsonReader.Push()` method (lines 356-359), which throws `JsonReaderException` when exceeded. Default maximum depth is **64** (initialized at line 332). The check compares `Depth + 1 > _maxDepth` and throws with message: \"The reader's MaxDepth of {0} has been exceeded.\""
+  },
+  {
+    "case": "qa-newtonsoft-ensuredatetime-callers",
+    "arm": "with",
+    "rep": 1,
+    "ok": false,
+    "check": "missing: DateTimeUtils\\.TryParseDateTimeIso\\b | DateTimeUtils\\.TryParseDateTime\\b | DateTimeUtils\\.TryParseDateTimeMicrosoft\\b | DateTimeUtils\\.TryParseDateTimeExact\\b",
+    "costUsd": 0.0251326,
+    "turns": 2,
+    "durationMs": 14663,
+    "tokens": {
+      "input": 20,
+      "output": 800,
+      "cacheCreation": 8603,
+      "cacheRead": 39066
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: DateTimeUtils\\.EnsureDateTime"
+    ],
+    "answer": "BsonWriter.WriteValue\nJsonConvert.ToString\nJsonReader.ReadDateTimeString\nJsonTextWriter.WriteValue\nJsonTextWriter.DoWriteValueAsync\nJTokenReader.SetToken\nJTokenWriter.WriteValue\nJsonSerializerInternalReader.EnsureType\nJsonSerializerInternalWriter.GetPropertyName"
+  },
+  {
+    "case": "qa-newtonsoft-ensuredatetime-callers",
+    "arm": "with",
+    "rep": 2,
+    "ok": false,
+    "check": "missing: DateTimeUtils\\.TryParseDateTimeIso\\b | DateTimeUtils\\.TryParseDateTime\\b | DateTimeUtils\\.TryParseDateTimeMicrosoft\\b | DateTimeUtils\\.TryParseDateTimeExact\\b",
+    "costUsd": 0.025104599999999998,
+    "turns": 2,
+    "durationMs": 13712,
+    "tokens": {
+      "input": 20,
+      "output": 794,
+      "cacheCreation": 8604,
+      "cacheRead": 39066
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: DateTimeUtils\\.EnsureDateTime"
+    ],
+    "answer": "BsonWriter.WriteValue\nJsonConvert.ToString\nJsonReader.ReadDateTimeString\nJsonTextWriter.WriteValue\nJsonTextWriter.DoWriteValueAsync\nJTokenReader.SetToken\nJTokenWriter.WriteValue\nJsonSerializerInternalReader.EnsureType\nJsonSerializerInternalWriter.GetPropertyName"
+  },
+  {
+    "case": "qa-newtonsoft-ensuredatetime-callers",
+    "arm": "with",
+    "rep": 3,
+    "ok": false,
+    "check": "missing: DateTimeUtils\\.TryParseDateTimeIso\\b | DateTimeUtils\\.TryParseDateTime\\b | DateTimeUtils\\.TryParseDateTimeMicrosoft\\b | DateTimeUtils\\.TryParseDateTimeExact\\b",
+    "costUsd": 0.0233657,
+    "turns": 2,
+    "durationMs": 12177,
+    "tokens": {
+      "input": 20,
+      "output": 455,
+      "cacheCreation": 8582,
+      "cacheRead": 39067
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: DateTimeUtils\\.EnsureDateTime"
+    ],
+    "answer": "BsonWriter.WriteValue\nJsonConvert.ToString\nJsonReader.ReadDateTimeString\nJsonTextWriter.WriteValue\nJsonTextWriter.DoWriteValueAsync\nJTokenReader.SetToken\nJTokenWriter.WriteValue\nJsonSerializerInternalReader.EnsureType\nJsonSerializerInternalWriter.GetPropertyName"
+  },
+  {
+    "case": "qa-newtonsoft-ensuredatetime-callers",
+    "arm": "with",
+    "rep": 4,
+    "ok": false,
+    "check": "missing: DateTimeUtils\\.TryParseDateTimeIso\\b | DateTimeUtils\\.TryParseDateTime\\b | DateTimeUtils\\.TryParseDateTimeMicrosoft\\b | DateTimeUtils\\.TryParseDateTimeExact\\b",
+    "costUsd": 0.034691,
+    "turns": 2,
+    "durationMs": 14913,
+    "tokens": {
+      "input": 20,
+      "output": 766,
+      "cacheCreation": 13467,
+      "cacheRead": 39070
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: DateTimeUtils\\.EnsureDateTime"
+    ],
+    "answer": "BsonWriter.WriteValue\nJsonConvert.ToString\nJsonReader.ReadDateTimeString\nJsonTextWriter.WriteValue\nJsonTextWriter.DoWriteValueAsync\nJTokenReader.SetToken\nJTokenWriter.WriteValue\nJsonSerializerInternalReader.EnsureType\nJsonSerializerInternalWriter.GetPropertyName"
+  },
+  {
+    "case": "qa-newtonsoft-ensuredatetime-callers",
+    "arm": "with",
+    "rep": 5,
+    "ok": false,
+    "check": "missing: DateTimeUtils\\.TryParseDateTimeIso\\b | DateTimeUtils\\.TryParseDateTime\\b | DateTimeUtils\\.TryParseDateTimeMicrosoft\\b | DateTimeUtils\\.TryParseDateTimeExact\\b",
+    "costUsd": 0.0349881,
+    "turns": 3,
+    "durationMs": 16890,
+    "tokens": {
+      "input": 30,
+      "output": 877,
+      "cacheCreation": 12146,
+      "cacheRead": 62811
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: EnsureDateTime",
+      "Grep: \\.EnsureDateTime\\("
+    ],
+    "answer": "BsonWriter.WriteValue\nJsonConvert.ToString\nJsonReader.ReadDateTimeString\nJsonTextWriter.WriteValue\nJsonTextWriter.DoWriteValueAsync\nJTokenWriter.WriteValue\nJTokenReader.SetToken\nJsonSerializerInternalWriter.GetPropertyName\nJsonSerializerInternalReader.EnsureType"
+  },
+  {
+    "case": "qa-newtonsoft-additional-text",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.024078800000000004,
+    "turns": 3,
+    "durationMs": 8230,
+    "tokens": {
+      "input": 28,
+      "output": 412,
+      "cacheCreation": 7873,
+      "cacheRead": 62448
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/JsonTextReader.cs",
+      "Grep: Additional text encountered after finished reading JSON content"
+    ],
+    "answer": "Read()\nReadFinished()"
+  },
+  {
+    "case": "qa-newtonsoft-additional-text",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.09263569999999999,
+    "turns": 3,
+    "durationMs": 29651,
+    "tokens": {
+      "input": 26,
+      "output": 2400,
+      "cacheCreation": 37172,
+      "cacheRead": 62657
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: Additional text encountered after finished reading JSON content",
+      "Read: Src\\Newtonsoft.Json\\JsonTextReader.cs"
+    ],
+    "answer": "Read()\nReadFinished()"
+  },
+  {
+    "case": "qa-newtonsoft-additional-text",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0396602,
+    "turns": 6,
+    "durationMs": 21522,
+    "tokens": {
+      "input": 50,
+      "output": 853,
+      "cacheCreation": 10824,
+      "cacheRead": 136972
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: Additional text encountered after finished reading JSON content",
+      "Bash: grep -n \"Additional text encountered after finished reading JSON content\" \"Src/Newtonsoft.Json/JsonTextReader.cs\"",
+      "Read: Src/Newtonsoft.Json/JsonTextReader.cs",
+      "Read: Src/Newtonsoft.Json/JsonTextReader.cs",
+      "Read: Src/Newtonsoft.Json/JsonTextReader.cs"
+    ],
+    "answer": "Read()\nReadFinished()"
+  },
+  {
+    "case": "qa-newtonsoft-additional-text",
+    "arm": "with",
+    "rep": 4,
+    "ok": false,
+    "check": "missing: \\bReadFinished\\(\\)",
+    "costUsd": 0.112178,
+    "turns": 4,
+    "durationMs": 43002,
+    "tokens": {
+      "input": 36,
+      "output": 3933,
+      "cacheCreation": 40451,
+      "cacheRead": 115750
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: Additional text encountered after finished reading JSON content",
+      "Read: Src\\Newtonsoft.Json\\JsonTextReader.cs",
+      "Grep: throw JsonReaderException\\.Create.*Additional text encountered after finished reading JSON content"
+    ],
+    "answer": "Read()\nReadAsBytes()\nReadAsBoolean()\nReadAsInt32()\nReadAsDateTime()\nReadAsString()\nReadAsDateTimeOffset()\nReadAsDecimal()\nReadAsDouble()"
+  },
+  {
+    "case": "qa-newtonsoft-additional-text",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.08402849999999999,
+    "turns": 4,
+    "durationMs": 12799,
+    "tokens": {
+      "input": 26,
+      "output": 638,
+      "cacheCreation": 37268,
+      "cacheRead": 62765
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/JsonTextReader.cs",
+      "Grep: Additional text encountered after finished reading JSON content",
+      "Read: Src\\Newtonsoft.Json\\JsonTextReader.cs"
+    ],
+    "answer": "Read()\nReadFinished()"
+  },
+  {
+    "case": "qa-commons-lang-abbreviate",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.036799,
+    "turns": 5,
+    "durationMs": 25248,
+    "tokens": {
+      "input": 46,
+      "output": 1019,
+      "cacheCreation": 10188,
+      "cacheRead": 112820
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/StringUtils.java",
+      "Grep: public static String abbreviate\\(",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java",
+      "Grep: ELLIPSIS3"
+    ],
+    "answer": "For `abbreviate(String, int)` with the default \"...\" marker and no offset:\n\n**Smallest maxWidth:** 4  \n**Minimum computed:** `abbrevMarkerLength + 1` (3 + 1 for \"...\")  \n**Exception thrown:** `IllegalArgumentException` with message \"Minimum abbreviation width is 4\"\n\n(See line 372 and 375-376 in StringUtils.java)"
+  },
+  {
+    "case": "qa-commons-lang-abbreviate",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0412899,
+    "turns": 6,
+    "durationMs": 23571,
+    "tokens": {
+      "input": 54,
+      "output": 1126,
+      "cacheCreation": 10830,
+      "cacheRead": 139459
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: class StringUtils",
+      "Grep: public static String abbreviate\\(",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java",
+      "Grep: ELLIPSIS3.*="
+    ],
+    "answer": "The smallest maxWidth is **4**. It's computed as `abbrevMarkerLength + 1` (line 372: the marker length of 3 for \"...\" plus 1). An `IllegalArgumentException` is thrown if maxWidth is less than this minimum (line 375-376)."
+  },
+  {
+    "case": "qa-commons-lang-abbreviate",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0373514,
+    "turns": 5,
+    "durationMs": 22946,
+    "tokens": {
+      "input": 44,
+      "output": 911,
+      "cacheCreation": 10811,
+      "cacheRead": 111304
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: public static String abbreviate",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java",
+      "Grep: public static String abbreviate.*String str.*int maxWidth",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java"
+    ],
+    "answer": "**Minimum maxWidth: 4**\n\nThe minimum is computed as `abbrevMarker.length + 1`. With the default \"...\" marker (3 characters), this yields 3 + 1 = 4. Below that, `IllegalArgumentException` is thrown. See line 226-227: abbreviation formula is `substring(str, 0, maxWidth - 3) + \"...\"`, requiring at least 4 to fit 1 char + \"...\"."
+  },
+  {
+    "case": "qa-commons-lang-abbreviate",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0407526,
+    "turns": 5,
+    "durationMs": 23967,
+    "tokens": {
+      "input": 44,
+      "output": 1082,
+      "cacheCreation": 11977,
+      "cacheRead": 113446
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: public static String abbreviate\\(String str, int maxWidth\\)",
+      "Grep: abbreviate",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java"
+    ],
+    "answer": "Based on the code, here's the answer:\n\n**Smallest maxWidth:** 4 (without offset)\n\n**Computation:** `abbrevMarkerLength + 1` where abbrevMarkerLength is 3 for the default \"...\" marker, so: 3 + 1 = 4\n\n**Exception:** `IllegalArgumentException` with message \"Minimum abbreviation width is 4\" (thrown at line 376 when `maxWidth < minAbbrevWidth`)"
+  },
+  {
+    "case": "qa-commons-lang-abbreviate",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0379836,
+    "turns": 5,
+    "durationMs": 25905,
+    "tokens": {
+      "input": 44,
+      "output": 1132,
+      "cacheCreation": 10624,
+      "cacheRead": 110316
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: def abbreviate|public.*abbreviate",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java",
+      "Grep: public static String abbreviate\\(String str, int maxWidth\\)",
+      "Grep: abbreviate.*int maxWidth"
+    ],
+    "answer": "The smallest `maxWidth` accepted without an offset is **4**. The minimum is computed as `abbrevMarkerLength + 1` (line 372), where the default marker \"...\" has length 3, thus 3 + 1 = 4. An `IllegalArgumentException` is thrown if `maxWidth` is less than this minimum (lines 375–376)."
+  },
+  {
+    "case": "qa-commons-lang-strings-null",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.029547499999999997,
+    "turns": 4,
+    "durationMs": 15318,
+    "tokens": {
+      "input": 36,
+      "output": 716,
+      "cacheCreation": 8654,
+      "cacheRead": 86235
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/StringUtils.java",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java",
+      "Grep: Strings must not be null"
+    ],
+    "answer": "getFuzzyDistance(final CharSequence term, final CharSequence query, final Locale locale)\ngetJaroWinklerDistance(final CharSequence first, final CharSequence second)\ngetLevenshteinDistance(CharSequence s, CharSequence t)\ngetLevenshteinDistance(CharSequence s, CharSequence t, final int threshold)"
+  },
+  {
+    "case": "qa-commons-lang-strings-null",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.033651600000000004,
+    "turns": 4,
+    "durationMs": 16528,
+    "tokens": {
+      "input": 36,
+      "output": 914,
+      "cacheCreation": 10207,
+      "cacheRead": 86316
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/StringUtils.java",
+      "Read: src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java",
+      "Grep: throw new IllegalArgumentException\\(\"Strings must not be null\"\\)"
+    ],
+    "answer": "Based on the grep results, here are the methods that throw `IllegalArgumentException(\"Strings must not be null\")`:\n\n```\ngetFuzzyDistance(CharSequence term, CharSequence query, Locale locale)\ngetJaroWinklerDistance(CharSequence first, CharSequence second)\ngetLevenshteinDistance(CharSequence s, CharSequence t)\ngetLevenshteinDistance(CharSequence s, CharSequence t, int threshold)\n```"
+  },
+  {
+    "case": "qa-commons-lang-strings-null",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.026958100000000002,
+    "turns": 3,
+    "durationMs": 15966,
+    "tokens": {
+      "input": 28,
+      "output": 673,
+      "cacheCreation": 8654,
+      "cacheRead": 62571
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/StringUtils.java",
+      "Grep: throw new IllegalArgumentException\\(\"Strings must not be null\"\\)"
+    ],
+    "answer": "public static int getFuzzyDistance(final CharSequence term, final CharSequence query, final Locale locale)\npublic static double getJaroWinklerDistance(final CharSequence first, final CharSequence second)\npublic static int getLevenshteinDistance(CharSequence s, CharSequence t)\npublic static int getLevenshteinDistance(CharSequence s, CharSequence t, final int threshold)"
+  }
+]

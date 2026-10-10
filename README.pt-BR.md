@@ -178,15 +178,19 @@ execuções por braço em cada caso:
 | 2 | Sonnet 5 | 6 (C#, Java, uma correção) | 26/30 | 28/30 | −15% |
 | 3 — **casos novos** | Sonnet 5 | 5 novos (TypeScript, Python) | 21/25 | 24/25 | −24% |
 | 3 | Haiku 4.5 | 11 | 48/55 | 50/55 | −36% |
+| 4 | Sonnet 5 | os 5 novos | 21/25 ¹ | **25/25** | −30% |
+| 4 | Haiku 4.5 | 11 | 48/55 ¹ | **53/55** | −18% |
+
+¹ A rodada 4 mediu só o braço com o plugin (2.7.3); o braço sem ele é o da rodada 3.
 
 - **Nunca pior, sempre mais barato.** O plugin resolveu pelo menos tanto quanto sem ele em todas as
   rodadas e custou menos em todas; a diferença é maior em perguntas de "quem usa X" e no modelo menor.
 - **De onde vem o ganho de acerto:** o Grep devolve linhas sem o método em volta, e o agente que
-  responde só com isso nomeia o método ou a classe errada. Um hook agora diz em qual símbolo cai cada
-  linha encontrada.
-- **O que ainda não mostra:** cinco execuções por braço, perguntas de leitura, código público. A
-  rodada 3 também achou um erro que o plugin ainda não corrige (busca qualificada que perde chamadas
-  sem o prefixo).
+  responde só com isso nomeia o método ou a classe errada. Um hook diz em qual símbolo cai cada linha
+  encontrada, e avisa quando uma busca qualificada (`Classe\.metodo`) vai perder as chamadas feitas
+  de dentro da classe sem o prefixo.
+- **O que ainda não mostra:** cinco execuções por braço, perguntas de leitura, código público, uma
+  só tarefa de correção.
 
 Relatórios, casos e os dados brutos de cada execução: [docs/benchmarks](docs/benchmarks/).
 

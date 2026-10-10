@@ -1,0 +1,1480 @@
+[
+  {
+    "case": "qa-newtonsoft-maxdepth",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0528515,
+    "turns": 8,
+    "durationMs": 25601,
+    "tokens": {
+      "input": 54,
+      "output": 1250,
+      "cacheCreation": 15597,
+      "cacheRead": 153535
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: class JsonReader",
+      "Grep: MaxDepth",
+      "Read: Src/Newtonsoft.Json/JsonReader.cs",
+      "Read: Src/Newtonsoft.Json/JsonSerializerSettings.cs",
+      "Grep: _hasExceededMaxDepth|MaxDepth.*exceeded|depth.*exceeded",
+      "Grep: MaxDepth.*Depth|_maxDepth.*_stack|CheckMaxDepth",
+      "Read: Src/Newtonsoft.Json/JsonReader.cs"
+    ],
+    "answer": "Maximum depth is enforced in **`JsonReader.Push()` method (line 356-359)** by checking if `Depth + 1 > _maxDepth` and throwing `JsonReaderException`. The **default maximum depth is 64** (`DefaultMaxDepth` constant in `JsonSerializerSettings.cs`). When exceeded, a **`JsonReaderException`** is thrown with the message \"The reader's MaxDepth of {0} has been exceeded.\""
+  },
+  {
+    "case": "qa-newtonsoft-maxdepth",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0571651,
+    "turns": 4,
+    "durationMs": 20995,
+    "tokens": {
+      "input": 38,
+      "output": 1030,
+      "cacheCreation": 21376,
+      "cacheRead": 92251
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: MaxDepth",
+      "Read: Src/Newtonsoft.Json/JsonReader.cs",
+      "Grep: _hasExceededMaxDepth|_maxDepth.*throw|MaxDepth.*exceeded"
+    ],
+    "answer": "Maximum depth is enforced in **`JsonReader.Push()`** method at lines 356-359. When `Depth + 1 > _maxDepth`, it throws **`JsonReaderException`**. The default maximum depth is **64**."
+  },
+  {
+    "case": "qa-newtonsoft-maxdepth",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.052788800000000004,
+    "turns": 3,
+    "durationMs": 18438,
+    "tokens": {
+      "input": 26,
+      "output": 617,
+      "cacheCreation": 21714,
+      "cacheRead": 62498
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: class JsonReader",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\JsonReader.cs"
+    ],
+    "answer": "Maximum depth is enforced in the **`Push` method of the `JsonReader` class** (line 356-359). The default maximum depth is **64**. When exceeded, a **`JsonReaderException`** is thrown with the message \"The reader's MaxDepth of {0} has been exceeded.\" The depth check occurs when pushing a new container onto the stack during parsing of nested JSON structures."
+  },
+  {
+    "case": "qa-newtonsoft-maxdepth",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.052676400000000005,
+    "turns": 3,
+    "durationMs": 12995,
+    "tokens": {
+      "input": 26,
+      "output": 602,
+      "cacheCreation": 21694,
+      "cacheRead": 62524
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: class JsonReader",
+      "Read: Src\\Newtonsoft.Json\\JsonReader.cs"
+    ],
+    "answer": "Maximum depth is enforced in **JsonReader.Push()** method (line 356–360). The default maximum depth is **64** (line 332). A **JsonReaderException** is thrown when exceeded with message \"The reader's MaxDepth of {0} has been exceeded.\""
+  },
+  {
+    "case": "qa-newtonsoft-maxdepth",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.053088399999999994,
+    "turns": 3,
+    "durationMs": 13036,
+    "tokens": {
+      "input": 26,
+      "output": 660,
+      "cacheCreation": 21754,
+      "cacheRead": 62544
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: class JsonReader",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\JsonReader.cs"
+    ],
+    "answer": "Based on the code:\n\n**JsonReader.Push() method** (lines 356-359) enforces maximum depth when reading nested JSON. The **default maximum depth is 64** (set in the constructor at line 332). When exceeded, a **JsonReaderException** is thrown with the message \"The reader's MaxDepth of {0} has been exceeded.\""
+  },
+  {
+    "case": "qa-newtonsoft-ensuredatetime-callers",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.027865,
+    "turns": 2,
+    "durationMs": 21885,
+    "tokens": {
+      "input": 20,
+      "output": 1318,
+      "cacheCreation": 8674,
+      "cacheRead": 39070
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: DateTimeUtils\\.EnsureDateTime"
+    ],
+    "answer": "BsonWriter.WriteValue\nJsonConvert.ToString\nJsonReader.ReadDateTimeString\nJsonTextWriter.DoWriteValueAsync\nJsonTextWriter.WriteValue\nJTokenReader.SetToken\nJTokenWriter.WriteValue\nJsonSerializerInternalReader.EnsureType\nJsonSerializerInternalWriter.GetPropertyName\nDateTimeUtils.TryParseDateTimeIso\nDateTimeUtils.TryParseDateTime\nDateTimeUtils.TryParseDateTimeMicrosoft\nDateTimeUtils.TryParseDateTimeExact"
+  },
+  {
+    "case": "qa-newtonsoft-ensuredatetime-callers",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.3032039,
+    "turns": 12,
+    "durationMs": 47101,
+    "tokens": {
+      "input": 28,
+      "output": 2337,
+      "cacheCreation": 142601,
+      "cacheRead": 62889
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: DateTimeUtils\\.EnsureDateTime",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\Serialization\\JsonSerializerInternalWriter.cs",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\Serialization\\JsonSerializerInternalReader.cs",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\Linq\\JTokenWriter.cs",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\Linq\\JTokenReader.cs",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\JsonTextWriter.cs",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\JsonTextWriter.Async.cs",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\JsonReader.cs",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\JsonConvert.cs",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\Bson\\BsonWriter.cs",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\Utilities\\DateTimeUtils.cs"
+    ],
+    "answer": "JsonSerializerInternalWriter.GetPropertyName\nJsonSerializerInternalReader.EnsureType\nJTokenWriter.WriteValue\nJTokenReader.SetToken\nJsonTextWriter.WriteValue\nJsonTextWriter.DoWriteValueAsync\nJsonReader.ReadDateTimeString\nJsonConvert.ToString\nBsonWriter.WriteValue\nDateTimeUtils.TryParseDateTimeIso\nDateTimeUtils.TryParseDateTime\nDateTimeUtils.TryParseDateTimeMicrosoft\nDateTimeUtils.TryParseDateTimeExact"
+  },
+  {
+    "case": "qa-newtonsoft-ensuredatetime-callers",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0266594,
+    "turns": 2,
+    "durationMs": 16806,
+    "tokens": {
+      "input": 20,
+      "output": 1019,
+      "cacheCreation": 8819,
+      "cacheRead": 39064
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: EnsureDateTime"
+    ],
+    "answer": "BsonWriter.WriteValue\nJsonTextWriter.WriteValue\nJsonTextWriter.DoWriteValueAsync\nJsonReader.ReadDateTimeString\nJsonConvert.ToString\nDateTimeUtils.TryParseDateTimeIso\nDateTimeUtils.TryParseDateTime\nDateTimeUtils.TryParseDateTimeMicrosoft\nDateTimeUtils.TryParseDateTimeExact\nJTokenReader.SetToken\nJTokenWriter.WriteValue\nJsonSerializerInternalReader.EnsureType\nJsonSerializerInternalWriter.GetPropertyName"
+  },
+  {
+    "case": "qa-newtonsoft-ensuredatetime-callers",
+    "arm": "with",
+    "rep": 4,
+    "ok": false,
+    "check": "missing: DateTimeUtils\\.TryParseDateTimeIso\\b | DateTimeUtils\\.TryParseDateTime\\b | DateTimeUtils\\.TryParseDateTimeMicrosoft\\b | DateTimeUtils\\.TryParseDateTimeExact\\b",
+    "costUsd": 0.0309102,
+    "turns": 3,
+    "durationMs": 17095,
+    "tokens": {
+      "input": 30,
+      "output": 1042,
+      "cacheCreation": 9691,
+      "cacheRead": 62882
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: DateTimeUtils\\.EnsureDateTime",
+      "Grep: DateTimeUtils\\.EnsureDateTime"
+    ],
+    "answer": "JsonConvert.ToString\nJsonSerializerInternalWriter.GetPropertyName\nBsonWriter.WriteValue\nJsonSerializerInternalReader.EnsureType\nJTokenWriter.WriteValue\nJTokenReader.SetToken\nJsonTextWriter.WriteValue\nJsonTextWriter.DoWriteValueAsync\nJsonReader.ReadDateTimeString"
+  },
+  {
+    "case": "qa-newtonsoft-ensuredatetime-callers",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0540335,
+    "turns": 3,
+    "durationMs": 28148,
+    "tokens": {
+      "input": 28,
+      "output": 1791,
+      "cacheCreation": 19344,
+      "cacheRead": 63625
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: DateTimeUtils\\.EnsureDateTime",
+      "Read: Src/Newtonsoft.Json/Utilities/DateTimeUtils.cs"
+    ],
+    "answer": "BsonWriter.WriteValue\nJsonConvert.ToString\nJsonReader.ReadDateTimeString\nJsonTextWriter.DoWriteValueAsync\nJsonTextWriter.WriteValue\nJTokenReader.SetToken\nJTokenWriter.WriteValue\nJsonSerializerInternalReader.EnsureType\nJsonSerializerInternalWriter.GetPropertyName\nDateTimeUtils.TryParseDateTimeIso\nDateTimeUtils.TryParseDateTime\nDateTimeUtils.TryParseDateTimeMicrosoft\nDateTimeUtils.TryParseDateTimeExact"
+  },
+  {
+    "case": "qa-newtonsoft-additional-text",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0874739,
+    "turns": 3,
+    "durationMs": 22412,
+    "tokens": {
+      "input": 26,
+      "output": 1384,
+      "cacheCreation": 37132,
+      "cacheRead": 62639
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: Additional text encountered after finished reading JSON content",
+      "Read: Src\\Newtonsoft.Json\\JsonTextReader.cs"
+    ],
+    "answer": "Based on the code in JsonTextReader.cs, the methods that throw the error \"Additional text encountered after finished reading JSON content\" are:\n\nRead()\nReadFinished()"
+  },
+  {
+    "case": "qa-newtonsoft-additional-text",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0830443,
+    "turns": 3,
+    "durationMs": 12009,
+    "tokens": {
+      "input": 26,
+      "output": 557,
+      "cacheCreation": 36994,
+      "cacheRead": 62453
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/JsonTextReader.cs",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\JsonTextReader.cs"
+    ],
+    "answer": "Read()\nReadFinished()"
+  },
+  {
+    "case": "qa-newtonsoft-additional-text",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.08325279999999999,
+    "turns": 3,
+    "durationMs": 16070,
+    "tokens": {
+      "input": 26,
+      "output": 550,
+      "cacheCreation": 37108,
+      "cacheRead": 62608
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: Additional text encountered after finished reading JSON content",
+      "Read: Src\\Newtonsoft.Json\\JsonTextReader.cs"
+    ],
+    "answer": "Read()\nReadFinished()"
+  },
+  {
+    "case": "qa-newtonsoft-additional-text",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.08362900000000001,
+    "turns": 3,
+    "durationMs": 19992,
+    "tokens": {
+      "input": 26,
+      "output": 594,
+      "cacheCreation": 37183,
+      "cacheRead": 62670
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: Additional text encountered after finished reading JSON content",
+      "Read: Src\\Newtonsoft.Json\\JsonTextReader.cs"
+    ],
+    "answer": "Read()\nReadFinished()"
+  },
+  {
+    "case": "qa-newtonsoft-additional-text",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0837486,
+    "turns": 3,
+    "durationMs": 15478,
+    "tokens": {
+      "input": 26,
+      "output": 641,
+      "cacheCreation": 37129,
+      "cacheRead": 62596
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: Additional text encountered after finished reading JSON content",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\JsonTextReader.cs"
+    ],
+    "answer": "Read()\nReadFinished()"
+  },
+  {
+    "case": "qa-commons-lang-abbreviate",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0427946,
+    "turns": 3,
+    "durationMs": 21627,
+    "tokens": {
+      "input": 26,
+      "output": 954,
+      "cacheCreation": 15868,
+      "cacheRead": 62626
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: public static String abbreviate\\s*\\(",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java"
+    ],
+    "answer": "Looking at the `abbreviate` method implementation:\n\n**Smallest maxWidth:** **4** (for the default \"...\" marker)\n\n**Computation:** `abbrevMarkerLength + 1`, where `abbrevMarkerLength` is the marker's length. Line 372: `final int minAbbrevWidth = abbrevMarkerLength + 1;` (for \"...\", that's 3 + 1 = 4)\n\n**Exception:** **IllegalArgumentException** with message \"Minimum abbreviation width is {minAbbrevWidth}\" (line 376)"
+  },
+  {
+    "case": "qa-commons-lang-abbreviate",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.052933600000000004,
+    "turns": 9,
+    "durationMs": 34254,
+    "tokens": {
+      "input": 80,
+      "output": 1584,
+      "cacheCreation": 11665,
+      "cacheRead": 216036
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: class StringUtils",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java",
+      "Grep: public static String abbreviate\\(final String str, final int maxWidth\\)",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java",
+      "Grep: public static String abbreviate\\(final String str, final String abbrev, final int offset, final int maxWidth\\)",
+      "Grep: public static String abbreviate.*abbrev.*offset.*maxWidth",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java",
+      "Grep: ELLIPSIS3"
+    ],
+    "answer": "The smallest `maxWidth` accepted without an offset is **4**. It's computed as `abbrevMarkerLength + 1`, where `abbrevMarkerLength` is 3 for the default \"...\" marker (line 372: `final int minAbbrevWidth = abbrevMarkerLength + 1`). Below that, **IllegalArgumentException** is thrown (line 375-376)."
+  },
+  {
+    "case": "qa-commons-lang-abbreviate",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0351367,
+    "turns": 4,
+    "durationMs": 22313,
+    "tokens": {
+      "input": 36,
+      "output": 1082,
+      "cacheCreation": 10465,
+      "cacheRead": 87607
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: public static String abbreviate",
+      "Grep: public static String abbreviate\\(.*maxWidth",
+      "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java"
+    ],
+    "answer": "Based on the code in `StringUtils.java:218-249`:\n\n- **Smallest maxWidth:** 4\n- **How computed:** 3 characters for the default \"...\" marker + 1 character minimum from the string (3+1=4)\n- **Exception:** `IllegalArgumentException`\n\nThe documentation states (line 227): \"If maxWidth is less than 4, throw an IllegalArgumentException\" and the example (line 238) confirms: `abbreviate(\"abcdefg\", 3)` throws `IllegalArgumentException`."
+  },
+  {
+    "case": "qa-commons-lang-abbreviate",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0347244,
+    "turns": 4,
+    "durationMs": 18033,
+    "tokens": {
+      "input": 36,
+      "output": 853,
+      "cacheCreation": 10884,
+      "cacheRead": 86554
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: public static String abbreviate",
+      "Grep: abbreviate.*maxWidth.*offset|minLength|marker.*\\.\\.\\.",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java"
+    ],
+    "answer": "The smallest maxWidth without an offset is **4**. It is computed as `abbrevMarkerLength + 1` (line 372), where the default \"...\" marker is 3 characters long, yielding 3 + 1 = 4. Below this threshold, `IllegalArgumentException` is thrown with the message \"Minimum abbreviation width is %d\" (line 375-376)."
+  },
+  {
+    "case": "qa-commons-lang-abbreviate",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0403718,
+    "turns": 5,
+    "durationMs": 24223,
+    "tokens": {
+      "input": 44,
+      "output": 1110,
+      "cacheCreation": 11742,
+      "cacheRead": 112938
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/StringUtils.java",
+      "Grep: public static String abbreviate\\(String str, int maxWidth\\)",
+      "Grep: abbreviate",
+      "Read: src/main/java/org/apache/commons/lang3/StringUtils.java"
+    ],
+    "answer": "The smallest maxWidth accepted without offset is **4**. This minimum is computed as `abbrevMarkerLength + 1` (line 372), where the default marker `\"...\"` has length 3, yielding 3 + 1 = 4. An **IllegalArgumentException** is thrown (line 376) with message \"Minimum abbreviation width is 4\" if maxWidth falls below this."
+  },
+  {
+    "case": "qa-commons-lang-strings-null",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.026892199999999998,
+    "turns": 3,
+    "durationMs": 15297,
+    "tokens": {
+      "input": 28,
+      "output": 634,
+      "cacheCreation": 8716,
+      "cacheRead": 62622
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/StringUtils.java",
+      "Grep: throw new IllegalArgumentException\\(\"Strings must not be null\"\\)"
+    ],
+    "answer": "```\ngetFuzzyDistance(final CharSequence term, final CharSequence query, final Locale locale)\ngetJaroWinklerDistance(final CharSequence first, final CharSequence second)\ngetLevenshteinDistance(CharSequence s, CharSequence t)\ngetLevenshteinDistance(CharSequence s, CharSequence t, final int threshold)\n```"
+  },
+  {
+    "case": "qa-commons-lang-strings-null",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.029837699999999998,
+    "turns": 4,
+    "durationMs": 17000,
+    "tokens": {
+      "input": 36,
+      "output": 755,
+      "cacheCreation": 8698,
+      "cacheRead": 86307
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/StringUtils.java",
+      "Read: src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java",
+      "Grep: throw new IllegalArgumentException\\(\"Strings must not be null\"\\)"
+    ],
+    "answer": "getFuzzyDistance(final CharSequence term, final CharSequence query, final Locale locale)\ngetJaroWinklerDistance(final CharSequence first, final CharSequence second)\ngetLevenshteinDistance(CharSequence s, CharSequence t)\ngetLevenshteinDistance(CharSequence s, CharSequence t, final int threshold)"
+  },
+  {
+    "case": "qa-commons-lang-strings-null",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0275514,
+    "turns": 4,
+    "durationMs": 20864,
+    "tokens": {
+      "input": 28,
+      "output": 709,
+      "cacheCreation": 8851,
+      "cacheRead": 62764
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/StringUtils.java",
+      "Grep: Strings must not be null",
+      "Grep: throw new IllegalArgumentException\\(\"Strings must not be null\"\\)"
+    ],
+    "answer": "```\ngetFuzzyDistance(final CharSequence term, final CharSequence query, final Locale locale)\ngetJaroWinklerDistance(final CharSequence first, final CharSequence second)\ngetLevenshteinDistance(CharSequence s, CharSequence t)\ngetLevenshteinDistance(CharSequence s, CharSequence t, final int threshold)\n```"
+  },
+  {
+    "case": "qa-commons-lang-strings-null",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.026660200000000002,
+    "turns": 3,
+    "durationMs": 15828,
+    "tokens": {
+      "input": 28,
+      "output": 605,
+      "cacheCreation": 8674,
+      "cacheRead": 62592
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/StringUtils.java",
+      "Grep: throw new IllegalArgumentException\\(\"Strings must not be null\"\\)"
+    ],
+    "answer": "```\ngetFuzzyDistance(final CharSequence term, final CharSequence query, final Locale locale)\ngetJaroWinklerDistance(final CharSequence first, final CharSequence second)\ngetLevenshteinDistance(CharSequence s, CharSequence t)\ngetLevenshteinDistance(CharSequence s, CharSequence t, final int threshold)\n```"
+  },
+  {
+    "case": "qa-commons-lang-strings-null",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0269346,
+    "turns": 3,
+    "durationMs": 14551,
+    "tokens": {
+      "input": 28,
+      "output": 649,
+      "cacheCreation": 8700,
+      "cacheRead": 62616
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: **/StringUtils.java",
+      "Grep: throw new IllegalArgumentException\\(\"Strings must not be null\"\\)"
+    ],
+    "answer": "getFuzzyDistance(final CharSequence term, final CharSequence query, final Locale locale)\ngetJaroWinklerDistance(final CharSequence first, final CharSequence second)\ngetLevenshteinDistance(CharSequence s, CharSequence t)\ngetLevenshteinDistance(CharSequence s, CharSequence t, final int threshold)"
+  },
+  {
+    "case": "fix-qualified-lookup",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.225373,
+    "turns": 23,
+    "durationMs": 549928,
+    "tokens": {
+      "input": 190,
+      "output": 5511,
+      "cacheCreation": 43269,
+      "cacheRead": 1110900
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Bash: ls -la",
+      "Read: <copy>\\scripts\\symbols.mjs",
+      "Bash: find tests -type f -name \"*.mjs\" | head -20",
+      "Grep: TPedido|qualified|Confirmar|QUALIFICADOR",
+      "Read: <copy>\\tests\\comportamento.test.mjs",
+      "Grep: reportOne|TPedido|qualified",
+      "Read: <copy>\\tests\\recall-e-cache.test.mjs",
+      "Bash: npm test -- tests/recall-e-cache.test.mjs 2>&1 | head -100",
+      "Bash: npm test -- tests/recall-e-cache.test.mjs 2>&1 | grep -A 20 \"qualificada\"",
+      "Read: <copy>\\scripts\\symbols.mjs",
+      "Edit: <copy>\\scripts\\symbols.mjs",
+      "Bash: npm test -- tests/recall-e-cache.test.mjs 2>&1 | grep -A 5 \"qualificada\"",
+      "Bash: npm test 2>&1 | tail -20",
+      "Bash: npm test 2>&1 | grep -E \"^(✔|✖)\" | grep -i \"qualificad\"",
+      "Bash: npm test 2>&1 | grep -E \"^(✔|✖)\" | grep -E \"bareName|buildIndex|reportOne\"",
+      "Read: <copy>\\scripts\\symbols.mjs",
+      "Bash: cd /tmp && mkdir -p test-qualified && cd test-qualified && cat > test.pas << 'EOF' unit TPedido; interface procedure TPedido.Confirmar; implementation procedure",
+      "Bash: cd /tmp/test-qualified && node \"<copy>\\scripts\\symbols.mjs\" TPedido.Confirmar",
+      "Bash: mkdir -p \"<copy>\\test-qualified\\src\" && cd \"<home>\\AppData\\Local\\Temp\\ct-outcome-fix",
+      "Bash: ls -la \"<copy>\\test-qualified\\src\\\"",
+      "PowerShell: $testDir = \"<copy>\\test-qualified\" mkdir \"$testDir\\src\" -Force | Out-Null $pasWith = @' unit ",
+      "PowerShell: $testDir = '<copy>\\test-qualified' mkdir \"$testDir\\src\" -Force | Out-Null @\" unit pedido; int"
+    ],
+    "answer": "Perfect! The fix is complete and verified. Let me summarize what was done:\n\n## Summary\n\n**Problem**: Qualified Delphi method lookups (e.g., `node scripts/symbols.mjs TPedido.Confirmar`) were failing even though the unqualified name (`Confirmar`) was found correctly.\n\n**Root Cause**: The `reportOne` function in `scripts/symbols.mjs` was not stripping the class qualifier from the search query. The index stores only the bare method name (e.g., `Confirmar`), but the query was being matched literally (e.g., `TPedido.Confirmar`), so no matches were found.\n\n**Fix**: Applied the same `QUALIFICADOR_RE` regex replacement that the `bareName` function uses when indexing symbols. Changed line 510 from:\n```javascript\nconst queryNua = query;\n```\nto:\n```javascript\nconst queryNua = query.replace(QUALIFICADOR_RE, '');\n```\n\nThis ensures that when searching for `TPedido.Confirmar`, it gets converted to `Confirmar` before matching against the index, just like the indexing process does.\n\n**Verification**: The test `reportOne: busca qualificada (Classe.Metodo) acha o mesmo símbolo que a busca nua` now passes, confirming that qualified searches find the same symbols as bare searches."
+  },
+  {
+    "case": "fix-qualified-lookup",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.15399090000000001,
+    "turns": 17,
+    "durationMs": 73720,
+    "tokens": {
+      "input": 142,
+      "output": 5793,
+      "cacheCreation": 30733,
+      "cacheRead": 634179
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Bash: find /d . -type f -name \"*.mjs\" -o -name \"*.js\" | head -20",
+      "Glob: **/*.mjs",
+      "Read: <copy>\\scripts\\symbols.mjs",
+      "Edit: <copy>\\scripts\\symbols.mjs",
+      "Bash: cd /d \"<copy>\" && npm test 2>&1 | head -100",
+      "PowerShell: cd \"<copy>\"; npm test 2>&1 | Select-Object -First 150",
+      "PowerShell: npm test --prefix \"<copy>\" 2>&1 | Select-Object -First 200",
+      "Glob: tests/**/*.test.mjs",
+      "Grep: bareName|QUALIFICADOR|qualified|TPedido|Confirmar",
+      "Read: <copy>\\tests\\comportamento.test.mjs",
+      "Grep: reportOne",
+      "Read: <copy>\\tests\\recall-e-cache.test.mjs",
+      "Write: <copy>\\test-fix.mjs",
+      "PowerShell: Set-Location \"<copy>\"; node test-fix.mjs",
+      "Read: <copy>\\scripts\\symbols.mjs",
+      "Bash: rm \"<copy>\\test-fix.mjs\""
+    ],
+    "answer": "## Summary\n\nI found and fixed the issue in **scripts/symbols.mjs** line 510.\n\n**The Problem:**\nWhen searching for a Delphi method by its qualified name (e.g., `TPedido.Confirmar`), the query wasn't being de-qualified before matching against the index. However, during indexing, the `bareName` function strips the class prefix, so only `Confirmar` is stored in the index.\n\n**The Fix:**\nChanged line 510 from:\n```javascript\nconst queryNua = query;\n```\nto:\n```javascript\nconst queryNua = query.replace(QUALIFICADOR_RE, '');\n```\n\nThis applies the same `QUALIFICADOR_RE` pattern that the indexing side uses, so `TPedido.Confirmar` becomes `Confirmar` before matching, just like it was stored.\n\n**Why This Is Correct:**\n- The code comment at lines 506-509 already explains this exact scenario\n- There's a dedicated test case for this at `tests/recall-e-cache.test.mjs:175` that verifies qualified queries find the same symbol as bare queries\n- The fix uses the same regex pattern that's already exported and used in `bareName`"
+  },
+  {
+    "case": "fix-qualified-lookup",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.2525209,
+    "turns": 25,
+    "durationMs": 199762,
+    "tokens": {
+      "input": 204,
+      "output": 7245,
+      "cacheCreation": 47930,
+      "cacheRead": 1202319
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Bash: ls -la",
+      "Bash: ls -la scripts/",
+      "Read: <copy>\\scripts\\symbols.mjs",
+      "Bash: find tests -name \"*.mjs\" -o -name \"*.js\" | head -20",
+      "Bash: grep -l \"symbols\\|Confirmar\\|qualified\" tests/*.test.mjs",
+      "Grep: qualified|Confirmar|TPedido|\\w+\\.\\w+",
+      "Grep: reportOne|bareName",
+      "Read: <copy>\\tests\\parsers.test.mjs",
+      "Read: <copy>\\scripts\\symbols.mjs",
+      "Edit: <copy>\\scripts\\symbols.mjs",
+      "Bash: cd /d <copy> && npm test 2>&1 | head -100",
+      "PowerShell: cd \"<copy>\"; npm test 2>&1 | Select-Object -First 100",
+      "PowerShell: npm test",
+      "Bash: cd <copy> && npm test 2>&1 | head -150",
+      "Bash: node --version",
+      "Write: <copy>\\test-qualified-fix.mjs",
+      "Bash: node \"<copy>\\\\test-qualified-fix.mjs\"",
+      "Bash: node tests/run.mjs 2>&1 | tail -50",
+      "Bash: node --test \"<copy>\\\\tests\\\\parsers.test.mjs\" 2>&1",
+      "Bash: node --test \"<copy>\\\\tests\\\\recall-e-cache.test.mjs\" 2>&1",
+      "Grep: busca qualificada.*Classe\\.Metodo",
+      "Read: <copy>\\tests\\recall-e-cache.test.mjs",
+      "Bash: rm \"<copy>\\\\test-qualified-fix.mjs\"",
+      "Read: <copy>\\scripts\\symbols.mjs"
+    ],
+    "answer": "Perfect! The fix is complete and verified. Here's a summary:\n\n## Problem\nWhen searching for a Delphi method by its qualified name (e.g., `node scripts/symbols.mjs TPedido.Confirmar`), the lookup failed even though the method was indexed.\n\n## Root Cause\nThe index indexing process (`bareName` function) strips the class qualifier from method names:\n- `procedure TPedido.Confirmar` → indexed as `Confirmar`\n\nBut the query lookup (`reportOne` function) wasn't applying the same stripping, so searching for `TPedido.Confirmar` never matched the indexed `Confirmar`.\n\n## Fix\nApplied the same `QUALIFICADOR_RE` regex replacement to the query on line 510 of `scripts/symbols.mjs`:\n\n```javascript\nconst queryNua = query.replace(QUALIFICADOR_RE, '');\n```\n\nThis ensures both the indexing and query lookup normalize qualified names the same way.\n\n## Verification\n- ✅ All parser tests pass (44/44)\n- ✅ All recall and cache tests pass (31/31)\n- ✅ Specific test \"reportOne: busca qualificada (Classe.Metodo) acha o mesmo símbolo que a busca nua\" passes\n\nThe change is minimal and aligned with the existing code's intent (as stated in the comment)."
+  },
+  {
+    "case": "fix-qualified-lookup",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.27562270000000005,
+    "turns": 32,
+    "durationMs": 455161,
+    "tokens": {
+      "input": 262,
+      "output": 8200,
+      "cacheCreation": 43031,
+      "cacheRead": 1482987
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Bash: find . -type f -name \"*.mjs\" -o -name \"*.js\" -o -name \"*.md\" | head -20",
+      "Read: <copy>\\scripts\\symbols.mjs",
+      "Bash: find . -type f -name \"*.test.*\" -o -name \"*test*.mjs\" | grep -i symbol",
+      "Bash: find . -type f -name \"*.test.mjs\" -o -name \"*.spec.mjs\"",
+      "Grep: TPedido|Confirmar|qualified",
+      "Grep: TPedido|Confirmar",
+      "Read: <copy>\\scripts\\symbols.mjs",
+      "Edit: <copy>\\scripts\\symbols.mjs",
+      "Read: <copy>\\tests\\parsers.test.mjs",
+      "Grep: reportOne",
+      "Read: <copy>\\tests\\recall-e-cache.test.mjs",
+      "Bash: cd /d \"<copy>\" && npm test 2>&1 | grep -A 20 \"busca qualificada\"",
+      "PowerShell: cd \"<copy>\"; npm test 2>&1 | Select-String -Pattern \"busca qualificada\" -Context 0,5",
+      "Bash: cd \"<copy>\" && npm test",
+      "Bash: cd \"<copy>\" && npm test 2>&1 | findstr /C:\"busca qualificada\" /C:\"passed\" /C:\"failed\"",
+      "Bash: cd \"<copy>\" && node --test tests/recall-e-cache.test.mjs 2>&1 | head -100",
+      "Bash: cd \"<copy>\" && mkdir -p /tmp/test-qualified && cat > /tmp/test-qualified/test.pas << 'EOF' un",
+      "Bash: cd \"<copy>\" && mkdir -p /tmp/test-qualified && cat > /tmp/test-qualified/test.pas << 'EOF' un",
+      "Bash: cd \"<copy>\" && node scripts/symbols.mjs TPedido.Confirmar --root=/tmp/test-qualified 2>&1",
+      "Bash: find \"<copy>\" -name \"*.pas\" -type f | head -5",
+      "Read: <copy>\\scripts\\symbols.mjs",
+      "Bash: cd \"<copy>\" && npm test 2>&1 | tail -15",
+      "Bash: cd \"<copy>\" && npm test 2>&1 | grep -E \"^\\s*(pass|fail)\" | tail -10",
+      "Bash: cd \"<copy>\" && npm test 2>&1 | grep \"tests\\|pass\\|fail\" | tail -20",
+      "Bash: cd \"<copy>\" && npm test 2>&1 > /tmp/test_output.txt; tail -50 /tmp/test_output.txt | head -30",
+      "Bash: cd \"<copy>\" && node --test tests/recall-e-cache.test.mjs 2>&1 | tail -10",
+      "Bash: cd \"<copy>\" && git diff scripts/symbols.mjs",
+      "Bash: cd \"<copy>\" && git commit -m \"$(cat << 'EOF' fix: qualified name lookup for Delphi methods (T",
+      "Bash: cd \"<copy>\" && git add scripts/symbols.mjs && git commit -m \"$(cat << 'EOF' fix: qualified na",
+      "Bash: cd \"<copy>\" && git log --oneline -5",
+      "Bash: cd \"<copy>\" && node --test tests/recall-e-cache.test.mjs --grep \"busca qualificada\" 2>&1"
+    ],
+    "answer": "Perfect! The fix is complete and verified. Here's a summary:\n\n## Issue\nLooking up a Delphi method by qualified name (`TPedido.Confirmar`) returned no results, even though the bare name (`Confirmar`) was found and the definition existed.\n\n## Root Cause\nIn `scripts/symbols.mjs:510`, the `queryNua` variable was not stripping the class qualifier from the search query. During indexing, the `bareName()` function removes the qualifier (via `QUALIFICADOR_RE`) so the index only stores bare names. The search needed to apply the same stripping but didn't.\n\n## Solution\nOne-line fix at `scripts/symbols.mjs:510`:\n- **Before:** `const queryNua = query;`\n- **After:** `const queryNua = query.replace(QUALIFICADOR_RE, '');`\n\nThis mirrors how the index strips qualifiers during `bareName()` processing, ensuring that searching for `TPedido.Confirmar` correctly queries the index for `Confirmar`.\n\n## Verification\n✅ The test suite passes (31/31 tests in `recall-e-cache.test.mjs`)\n✅ The specific test \"reportOne: busca qualificada (Classe.Metodo) acha o mesmo símbolo que a busca nua\" passes\n✅ No test changes required"
+  },
+  {
+    "case": "fix-qualified-lookup",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.1831366,
+    "turns": 19,
+    "durationMs": 231420,
+    "tokens": {
+      "input": 156,
+      "output": 6461,
+      "cacheCreation": 37546,
+      "cacheRead": 755836
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Read: <copy>",
+      "Bash: ls -la",
+      "Glob: scripts/**/*.mjs",
+      "Read: <copy>\\scripts\\symbols.mjs",
+      "Bash: find tests -name \"*.mjs\" -o -name \"*.js\" | head -20",
+      "Bash: grep -l \"symbols\\|Confirmar\\|qualified\" tests/*.mjs",
+      "Grep: qualified.*lookup|TPedido|Confirmar",
+      "Read: <copy>\\tests\\comportamento.test.mjs",
+      "Edit: <copy>\\scripts\\symbols.mjs",
+      "Bash: cd /d \"<copy>\" && npm test 2>&1 | head -100",
+      "PowerShell: cd \"<copy>\"; npm test 2>&1 | Select-Object -First 150",
+      "Bash: npm test",
+      "Bash: npm test 2>&1 | tail -50",
+      "Bash: cat > /tmp/test-qualified.mjs << 'EOF' import { bareName, buildIndex, reportOne, QUALIFICADOR_RE } from './scripts/symbols.mjs'; import { mkdtempSync, mkdirSync",
+      "Write: <copy>\\test-qualified.mjs",
+      "Bash: node test-qualified.mjs",
+      "Bash: rm test-qualified.mjs",
+      "Read: <copy>\\scripts\\symbols.mjs"
+    ],
+    "answer": "## Summary\n\n**Found and fixed the qualified name lookup bug in `scripts/symbols.mjs:510`.**\n\n### The Problem\nWhen searching for a Delphi method by its qualified name (e.g., `node scripts/symbols.mjs TPedido.Confirmar`), the lookup failed even though:\n- The definition `procedure TPedido.Confirmar` exists\n- The bare name `Confirmar` is found\n\n### Root Cause\nThe code had inconsistent handling of qualified method names:\n- **During indexing**: `bareName()` strips the class qualifier from `procedure TPedido.Confirmar` → stores as `Confirmar`\n- **During lookup**: The query wasn't being stripped, so `TPedido.Confirmar` tried to match against `Confirmar` in the index → no match\n\n### The Fix\nChanged line 510 in `scripts/symbols.mjs`:\n```javascript\n// Before:\nconst queryNua = query;\n\n// After:\nconst queryNua = query.replace(QUALIFICADOR_RE, '');\n```\n\nThis mirrors the qualifier-stripping in `bareName()`, ensuring both indexing and querying handle qualified names consistently. The comment at line 506-509 even documented that this step was needed but was missing from the implementation.\n\n### Verification\nTested with a Pascal method `TPedido.Confirmar`:\n- ✓ Qualified lookup `TPedido.Confirmar` now finds the definition\n- ✓ Bare name lookup `Confirmar` still works\n- ✓ Existing tests continue to pass"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.030271999999999997,
+    "turns": 3,
+    "durationMs": 19892,
+    "tokens": {
+      "input": 28,
+      "output": 732,
+      "cacheCreation": 10066,
+      "cacheRead": 64520
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: packages/zod/src/v4/core/**/*.ts",
+      "Grep: util\\.escapeRegex"
+    ],
+    "answer": "$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 2,
+    "ok": false,
+    "check": "missing: \\$ZodEnum\\b | \\$ZodLiteral\\b | \\$ZodTemplateLiteral\\b",
+    "costUsd": 0.1239981,
+    "turns": 5,
+    "durationMs": 23044,
+    "tokens": {
+      "input": 26,
+      "output": 1105,
+      "cacheCreation": 56042,
+      "cacheRead": 63631
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: util\\.escapeRegex",
+      "Read: packages/zod/src/v4/core/regexes.ts",
+      "Read: packages/zod/src/v4/core/checks.ts",
+      "Read: packages/zod/src/v4/core/schemas.ts"
+    ],
+    "answer": "Based on my search through the v4 core directory, here are the exported constants that call `util.escapeRegex` in live code:\n\n```\nmac\n$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\n```"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0249538,
+    "turns": 2,
+    "durationMs": 14417,
+    "tokens": {
+      "input": 20,
+      "output": 552,
+      "cacheCreation": 9107,
+      "cacheRead": 39598
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: escapeRegex"
+    ],
+    "answer": "$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.030089200000000003,
+    "turns": 3,
+    "durationMs": 16974,
+    "tokens": {
+      "input": 28,
+      "output": 687,
+      "cacheCreation": 10085,
+      "cacheRead": 64562
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: packages/zod/src/v4/core/**/*.ts",
+      "Grep: util\\.escapeRegex"
+    ],
+    "answer": "$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-escaperegex-users",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.030002799999999996,
+    "turns": 3,
+    "durationMs": 16439,
+    "tokens": {
+      "input": 28,
+      "output": 667,
+      "cacheCreation": 10094,
+      "cacheRead": 64518
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Glob: packages/zod/src/v4/core/**/*.ts",
+      "Grep: util\\.escapeRegex"
+    ],
+    "answer": "$ZodCheckIncludes\n$ZodCheckStartsWith\n$ZodCheckEndsWith\nmac\n$ZodEnum\n$ZodLiteral\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.11162299999999999,
+    "turns": 7,
+    "durationMs": 26602,
+    "tokens": {
+      "input": 60,
+      "output": 1551,
+      "cacheCreation": 37121,
+      "cacheRead": 295660
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts",
+      "Grep: util\\.cleanRegex",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.083736,
+    "turns": 3,
+    "durationMs": 22350,
+    "tokens": {
+      "input": 28,
+      "output": 1206,
+      "cacheCreation": 34390,
+      "cacheRead": 88980
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts",
+      "Grep: cleanRegex"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0813296,
+    "turns": 3,
+    "durationMs": 17695,
+    "tokens": {
+      "input": 28,
+      "output": 781,
+      "cacheCreation": 34249,
+      "cacheRead": 88986
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts",
+      "Grep: util\\.cleanRegex"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0810021,
+    "turns": 3,
+    "durationMs": 17022,
+    "tokens": {
+      "input": 28,
+      "output": 724,
+      "cacheCreation": 34228,
+      "cacheRead": 88981
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts",
+      "Grep: util\\.cleanRegex"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "ts-zod-cleanregex-users",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.09102800000000001,
+    "turns": 4,
+    "durationMs": 20236,
+    "tokens": {
+      "input": 36,
+      "output": 1078,
+      "cacheCreation": 35847,
+      "cacheRead": 139080
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts",
+      "Grep: util\\.cleanRegex",
+      "Read: <copy>\\packages\\zod\\src\\v4\\core\\schemas.ts"
+    ],
+    "answer": "$ZodUnion\n$ZodOptional\n$ZodNullable\n$ZodTemplateLiteral"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0518166,
+    "turns": 7,
+    "durationMs": 18607,
+    "tokens": {
+      "input": 36,
+      "output": 1521,
+      "cacheCreation": 17369,
+      "cacheRead": 94376
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: to_native_string",
+      "Read: src/requests/auth.py",
+      "Read: src/requests/cookies.py",
+      "Read: src/requests/models.py",
+      "Read: src/requests/sessions.py",
+      "Read: src/requests/models.py"
+    ],
+    "answer": "Now I have all the information I need. Based on the file contents:\n\n- **auth.py**: `_basic_auth_str` is a module-level function\n- **cookies.py**: `get_full_url` is in the `MockRequest` class\n- **models.py**: All three methods are in the `PreparedRequest` class\n- **sessions.py**: Both methods are in the `SessionRedirectMixin` class\n\nHere's the answer:\n\n```\n_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects\n```"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0530196,
+    "turns": 6,
+    "durationMs": 14251,
+    "tokens": {
+      "input": 28,
+      "output": 1142,
+      "cacheCreation": 20465,
+      "cacheRead": 63516
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: to_native_string",
+      "Read: src/requests/auth.py",
+      "Read: src/requests/cookies.py",
+      "Read: src/requests/models.py",
+      "Read: src/requests/sessions.py"
+    ],
+    "answer": "_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0645107,
+    "turns": 6,
+    "durationMs": 23674,
+    "tokens": {
+      "input": 52,
+      "output": 1563,
+      "cacheCreation": 20808,
+      "cacheRead": 150277
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: to_native_string",
+      "Read: src/requests/auth.py",
+      "Read: src/requests/cookies.py",
+      "Read: src/requests/models.py",
+      "Read: src/requests/sessions.py"
+    ],
+    "answer": "Based on the code analysis, here are the functions and methods under `src/requests` that call `to_native_string`:\n\n```\n_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects\n```"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0705829,
+    "turns": 7,
+    "durationMs": 22154,
+    "tokens": {
+      "input": 36,
+      "output": 1474,
+      "cacheCreation": 26660,
+      "cacheRead": 98569
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: to_native_string",
+      "Read: src/requests/auth.py",
+      "Read: src/requests/cookies.py",
+      "Read: src/requests/models.py",
+      "Read: src/requests/sessions.py",
+      "Read: src/requests/models.py"
+    ],
+    "answer": "_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.056244100000000005,
+    "turns": 6,
+    "durationMs": 18713,
+    "tokens": {
+      "input": 28,
+      "output": 1492,
+      "cacheCreation": 21217,
+      "cacheRead": 63221
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: to_native_string\\(",
+      "Read: src/requests/auth.py",
+      "Read: src/requests/cookies.py",
+      "Read: src/requests/models.py",
+      "Read: src/requests/sessions.py"
+    ],
+    "answer": "_basic_auth_str\nMockRequest.get_full_url\nPreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.026097999999999996,
+    "turns": 3,
+    "durationMs": 10846,
+    "tokens": {
+      "input": 28,
+      "output": 455,
+      "cacheCreation": 8761,
+      "cacheRead": 62730
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples",
+      "Read: src\\requests\\utils.py"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0206841,
+    "turns": 2,
+    "durationMs": 6635,
+    "tokens": {
+      "input": 20,
+      "output": 276,
+      "cacheCreation": 7686,
+      "cacheRead": 39121
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0205412,
+    "turns": 2,
+    "durationMs": 6754,
+    "tokens": {
+      "input": 20,
+      "output": 249,
+      "cacheCreation": 7682,
+      "cacheRead": 39122
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.025997899999999997,
+    "turns": 3,
+    "durationMs": 9200,
+    "tokens": {
+      "input": 28,
+      "output": 435,
+      "cacheCreation": 8761,
+      "cacheRead": 62729
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples",
+      "Read: src/requests/utils.py"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-two-tuples",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0259645,
+    "turns": 3,
+    "durationMs": 11010,
+    "tokens": {
+      "input": 28,
+      "output": 432,
+      "cacheCreation": 8752,
+      "cacheRead": 62725
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: cannot encode objects that are not 2-tuples",
+      "Read: src/requests/utils.py"
+    ],
+    "answer": "from_key_val_list\nto_key_val_list"
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0352349,
+    "turns": 5,
+    "durationMs": 17610,
+    "tokens": {
+      "input": 46,
+      "output": 839,
+      "cacheCreation": 9845,
+      "cacheRead": 113039
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Bash: find . -type f -name \"*.py\" | head -20",
+      "Grep: redirect",
+      "Read: ./src/requests/sessions.py",
+      "Grep: DEFAULT_REDIRECT_LIMIT"
+    ],
+    "answer": "**SessionRedirectMixin.resolve_redirects()** (line 216) enforces the limit by checking `if len(resp.history) >= self.max_redirects:`. Default limit is **30**. Exception raised: **TooManyRedirects** (\"Exceeded {max_redirects} redirects.\")."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0385573,
+    "turns": 6,
+    "durationMs": 20300,
+    "tokens": {
+      "input": 52,
+      "output": 1045,
+      "cacheCreation": 9752,
+      "cacheRead": 137763
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: redirect.*limit|max.*redirect|exceeded.*redirect",
+      "Grep: TooManyRedirects|max_redirects|redirect_count",
+      "Read: src\\requests\\sessions.py",
+      "Read: src\\requests\\sessions.py",
+      "Read: src\\requests\\sessions.py"
+    ],
+    "answer": "**SessionRedirectMixin.resolve_redirects()** enforces the maximum redirect limit at line 216 in `src/requests/sessions.py`. The default limit is **30** (DEFAULT_REDIRECT_LIMIT). When exceeded, **TooManyRedirects** exception is raised with the message \"Exceeded {max_redirects} redirects.\""
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.032986299999999996,
+    "turns": 5,
+    "durationMs": 16058,
+    "tokens": {
+      "input": 38,
+      "output": 1018,
+      "cacheCreation": 9557,
+      "cacheRead": 87443
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: redirect|Redirect",
+      "Grep: TooManyRedirects|max.*redirect|redirect.*limit",
+      "Read: <copy>\\src\\requests\\sessions.py",
+      "Grep: DEFAULT_REDIRECT_LIMIT"
+    ],
+    "answer": "The maximum number of redirects is enforced in **`SessionRedirectMixin.resolve_redirects()`** method (src/requests/sessions.py, lines 216–218). The default limit is **30** (`DEFAULT_REDIRECT_LIMIT` in src/requests/models.py). The exception raised is **`TooManyRedirects`** (src/requests/exceptions.py:106)."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0341092,
+    "turns": 5,
+    "durationMs": 16288,
+    "tokens": {
+      "input": 46,
+      "output": 1023,
+      "cacheCreation": 8916,
+      "cacheRead": 111162
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: redirect.*limit|max.*redirect",
+      "Grep: redirect.*limit|max.*redirect",
+      "Read: src/requests/sessions.py",
+      "Grep: DEFAULT_REDIRECT_LIMIT"
+    ],
+    "answer": "The maximum number of redirects is enforced in **`SessionRedirectMixin.resolve_redirects()`** method (src/requests/sessions.py:216). The default limit is **30** (defined as `DEFAULT_REDIRECT_LIMIT` in src/requests/models.py:103). When exceeded, **`TooManyRedirects`** exception is raised with the message \"Exceeded {max_redirects} redirects.\" The check occurs when `len(resp.history) >= self.max_redirects` is true."
+  },
+  {
+    "case": "py-requests-redirect-limit",
+    "arm": "with",
+    "rep": 5,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.0461205,
+    "turns": 5,
+    "durationMs": 15458,
+    "tokens": {
+      "input": 46,
+      "output": 967,
+      "cacheCreation": 14496,
+      "cacheRead": 122475
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001",
+    "tools": [
+      "Grep: redirect",
+      "Grep: max.*redirect|redirect.*max|TooManyRedirects",
+      "Read: <copy>\\src\\requests\\sessions.py",
+      "Grep: DEFAULT_REDIRECT_LIMIT"
+    ],
+    "answer": "**Class & Method:** `SessionRedirectMixin.resolve_redirects()` (line 216–218 in `src/requests/sessions.py`)\n\n**Check:** `if len(resp.history) >= self.max_redirects:`\n\n**Default limit:** 30 (defined as `DEFAULT_REDIRECT_LIMIT` in `src/requests/models.py:103`)\n\n**Exception raised:** `TooManyRedirects` (defined in `src/requests/exceptions.py:106`)"
+  }
+]

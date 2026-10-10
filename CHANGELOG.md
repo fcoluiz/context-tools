@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.7.3] — 2026-10-10
+
 ### Added
 
 - **Qualified searches no longer hide the calls inside the class.** Before a Grep (or `rg`/`grep`)

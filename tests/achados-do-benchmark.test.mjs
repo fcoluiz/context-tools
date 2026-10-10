@@ -16,7 +16,7 @@ import { linhasPorArquivo } from '../scripts/grep-context.mjs';
 import { sessionTestLine, testDetails } from '../scripts/verify.mjs';
 import { documentationSessionContext } from '../scripts/lib/documentation.mjs';
 import { buildContextPack } from '../scripts/context-pack.mjs';
-import { parseStream, claudeArgs, anonimizar } from '../scripts/benchmark-outcome.mjs';
+import { parseStream, claudeArgs, anonimizar, runError, medidaValida } from '../scripts/benchmark-outcome.mjs';
 import { makeT } from '../scripts/lib/i18n.mjs';
 
 const S = (nome) => localPath(`../scripts/${nome}`);
@@ -204,6 +204,12 @@ test('benchmark: stream-json dá o resultado e a lista de ferramentas consultada
     anonimizar(`Read: ${dir}\\src\\a.cs | C:/Users/fulano/AppData/Local/Temp/ct-outcome-x-AbC/b.cs | /c/Users/fulano/tmp | "C:\\\\Users\\\\fulano\\\\x"`, dir, home),
     'Read: <copy>\\src\\a.cs | <copy>/b.cs | <home>/tmp | "<home>\\\\x"',
   );
+  // Limite de uso: is_error com subtype "success", custo zero e o aviso como resposta. Não é medida.
+  const limite = { is_error: true, subtype: 'success', api_error_status: 429, total_cost_usd: 0, usage: { input_tokens: 0, output_tokens: 0 }, result: "You've hit your session limit · resets 1:40pm" };
+  assert.equal(runError(limite), 'no-model-call');
+  assert.equal(runError({ ...limite, api_error_status: undefined }), 'no-model-call', 'pelo texto também');
+  assert.equal(medidaValida({ tokens: { input: 0, output: 0 }, answer: "You've hit your session limit" }), false);
+  assert.equal(medidaValida({ tokens: { input: 10, output: 5 }, answer: 'x', error: null }), true);
   const args = claudeArgs('with');
   assert.equal(args[args.indexOf('--output-format') + 1], 'stream-json');
   assert.ok(args.includes('--verbose'), 'stream-json no modo -p exige --verbose');

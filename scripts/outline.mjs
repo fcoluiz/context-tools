@@ -29,6 +29,34 @@ const KEYWORDS = new Set([
   'constructor?.', 'super', 'this',
 ]);
 
+// Declaração ou chamada? Junta as linhas até fechar o parêntese da lista de parâmetros (até 15) e
+// olha o que vem DEPOIS dele:
+//   `) {` / `): Tipo {` / `) {}`            → declaração (método, construtor, getter)
+//   `): Tipo;`                               → assinatura TS sem corpo (sobrecarga, interface)
+//   `;`, nada, `)`, `.algo`, `??`…          → chamada
+// O `=>` só conta como chamada quando abre o corpo de um callback (`foo(x, () => {`); dentro da
+// lista, `(fn: () => T)` é tipo de parâmetro de uma declaração.
+function ehDeclaracaoDeMetodo(lines, i) {
+  const primeira = String(lines[i] || '').replace(/\r$/, '');
+  const inicio = primeira.indexOf('(');
+  if (inicio < 0) return false;
+  let prof = 0;
+  for (let j = i; j < Math.min(lines.length, i + 15); j++) {
+    const l = String(lines[j]).replace(/\r$/, '');
+    for (let k = j === i ? inicio : 0; k < l.length; k++) {
+      if (l[k] === '(') prof++;
+      else if (l[k] === ')' && --prof === 0) {
+        const resto = l.slice(k + 1).replace(/\/\/.*$/, '').trim();
+        if (/^(?::\s*[^=;{]+?)?\s*\{/.test(resto)) return true;
+        return /^:\s*[^=;{]+;$/.test(resto);
+      }
+    }
+    // Callback aberto antes de a lista fechar: é uma chamada passando função.
+    if (/=>\s*\{\s*$|\bfunction\s*\([^)]*\)\s*\{\s*$/.test(l)) return false;
+  }
+  return false;
+}
+
 export function symbolsForCode(lines) {
   const out = [];
   // A regra de "método indentado" só vale em arquivo com classe. Sem isso, em componente
@@ -168,6 +196,12 @@ export function symbolsForCode(lines) {
     if (m) {
       const name = m[5];
       if (KEYWORDS.has(name)) return;
+      // Declaração, não chamada: o corpo abre com `{` depois da lista de parâmetros (na mesma
+      // linha ou, numa assinatura quebrada, na linha em que ela fecha). Sem isto, toda chamada
+      // indentada num arquivo com classe — `debug('tilde', comp)` no node-semver — virava
+      // "método", e outline, refs e o contexto do Grep davam `debug()` como o símbolo que
+      // contém as linhas seguintes da função de verdade.
+      if (!ehDeclaracaoDeMetodo(lines, i)) return;
       const prefix = [m[2], m[3], m[4]].filter(Boolean).join(' ');
       out.push({ line: n, name: `${prefix ? prefix + ' ' : ''}${name}()`, depth: 1 });
     }

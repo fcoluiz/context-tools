@@ -22,6 +22,54 @@ const linhaDe = (syms, nome) => {
   return s.line;
 };
 
+test('JS/TS: chamada indentada num arquivo com classe não vira método; declarações continuam', () => {
+  // node-semver, classes/range.js: `debug('tilde', comp, …)` dentro de `const replaceTilde = (…) => {`
+  // saía como método `debug()`, e o contexto do Grep dizia que as linhas seguintes estavam em
+  // `debug()`. Medido por diff de conjunto: semver −31 (todos `debug()`), zod −81 (todas
+  // chamadas), nenhum símbolo novo.
+  const s = symbolsForCode(linhas(`
+class Range {
+  constructor(range, options) {
+    this.set = []
+  }
+  parseRange(range) {
+    debug('hyphen replace', range)
+    return range
+  }
+  static get version() { return 1 }
+}
+const replaceTilde = (comp, options) => {
+  return comp.replace(r, (_, M) => {
+    debug('tilde', comp, _, M)
+    deferProp(target, key, () => {
+    })
+  })
+}
+export class Doc {
+  constructor(public value: string) {}
+  write(fn: ModeWriter): void;
+  superRefine(refinement: (arg: Output) => void): Effects<this>;
+  indented(fn: (doc: Doc) => void) {
+  }
+  static mergeObjectSync(
+    status: Status,
+    pairs: {
+      key: string;
+    }[]
+  ): Result {
+  }
+}
+`));
+  const nomes = s.map((x) => x.name);
+  for (const chamada of ['debug()', 'deferProp()']) assert.ok(!nomes.includes(chamada), `${chamada} é chamada: ${nomes.join(' | ')}`);
+  assert.equal(linhaDe(s, 'constructor()'), 2);
+  assert.equal(linhaDe(s, 'parseRange()'), 5);
+  assert.equal(linhaDe(s, 'static get version()'), 9);
+  assert.equal(linhaDe(s, 'replaceTilde()'), 11);
+  for (const decl of ['write()', 'superRefine()', 'indented()', 'static mergeObjectSync()']) assert.ok(nomes.includes(decl), `${decl} é declaração: ${nomes.join(' | ')}`);
+  assert.equal(nomes.filter((n) => n === 'constructor()').length, 2, 'constructor(x) {} com corpo vazio na mesma linha');
+});
+
 test('JS: caso de teste de topo vira símbolo; aninhado, não', () => {
   // Motivo medido: `comIntervalos` fecha um símbolo na linha anterior ao próximo de mesma
   // profundidade, e chamada `test(…)` não era símbolo nenhum. `tests/hooks-e2e.test.mjs` tinha

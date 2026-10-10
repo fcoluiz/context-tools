@@ -8,7 +8,18 @@ reconstructed from git history.
 
 ## [Unreleased]
 
-## [2.7.3] — 2026-10-10
+### Fixed
+
+- **A call is no longer a method in JS/TS files that have a class.** Any indented `name(` was
+  taken as a method declaration, so `debug('tilde', comp)` inside `const replaceTilde = (…) => {`
+  (node-semver) became a "method" `debug()` — and outline, `refs` and the Grep context reported the
+  following lines as being in `debug()` instead of `replaceTilde`. A method now needs its
+  declaration shape after the parameter list closes: `) {`, `): Type {`, `) {}`, or a bodiless TS
+  signature `): Type;` (overloads, interfaces), across lines when the signature wraps; a callback
+  opened inside the parentheses (`foo(x, () => {`) is a call. Measured by set diff of every
+  symbol: node-semver −31 (all `debug()`), zod −81 (all calls), this repository −5 (test fixture
+  text), nothing added.
+ — 2026-10-10
 
 ### Added
 

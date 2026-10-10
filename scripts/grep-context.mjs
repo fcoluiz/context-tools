@@ -65,12 +65,15 @@ export function linhasPorArquivo(saida, arquivoUnico = null) {
   return porArquivo;
 }
 
-/** Junta linhas seguidas do mesmo símbolo: `356-359 JsonReader.Push() (337-362)`. */
+/**
+ * Junta linhas seguidas do mesmo símbolo: `356-359 JsonReader.Push() (337-362)`. "Mesmo" é nome E
+ * intervalo: sobrecargas têm o mesmo nome, e juntá-las punha a linha de uma no intervalo da outra.
+ */
 function agrupar(usos) {
   const grupos = [];
   for (const u of usos.sort((a, b) => a.line - b.line)) {
     const ultimo = grupos[grupos.length - 1];
-    if (ultimo && ultimo.in === u.in) { ultimo.to = u.line; continue; }
+    if (ultimo && ultimo.in === u.in && ultimo.range === u.range) { ultimo.to = u.line; continue; }
     grupos.push({ from: u.line, to: u.line, in: u.in, range: u.range });
   }
   return grupos;

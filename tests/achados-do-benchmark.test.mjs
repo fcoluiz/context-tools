@@ -87,6 +87,24 @@ test('grep-context: cada linha do Grep ganha o símbolo que a contém, com o int
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('grep-context: sobrecargas com o mesmo nome não se fundem num intervalo só', () => {
+  const dir = projeto({
+    'src/Dist.cs': [
+      'public class Dist', '{',
+      '    public int Lev(string a, string b)', '    {', '        if (a == null) throw new System.Exception("nulo");', '        return 0;', '    }',
+      '    public int Lev(string a, string b, int max)', '    {', '        if (a == null) throw new System.Exception("nulo");', '        return 0;', '    }',
+      '}', '',
+    ].join('\n'),
+  });
+  try {
+    const saida = hook('grep-context.mjs', dir, {
+      tool_name: 'Grep', cwd: dir, tool_input: { pattern: 'nulo', path: 'src/Dist.cs' },
+      tool_response: { content: '5: x\n10: x' },
+    });
+    assert.match(saida, /5 Dist\.Lev\(\) \(3-7\); 10 Dist\.Lev\(\) \(8-12\)/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('grep-context: cala sem número de linha, fora do projeto, em outro comando e com entrada lixo', () => {
   const dir = projeto({ 'src/Leitor.cs': LEITOR });
   const fora = projeto({ 'Outro.cs': LEITOR });

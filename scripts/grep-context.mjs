@@ -12,15 +12,21 @@
 //   Silêncio é o padrão: sem número de linha, sem parser para a extensão ou sem símbolo que
 //   contenha alguma linha, não diz nada.
 //   Só arquivos dentro do projeto.
+//   Corte nunca é silencioso. Na rodada 2 do benchmark, a lista parava em 8 arquivos sem avisar, e
+//   o agente tratou como completa uma lista sem os 4 chamadores de um dos arquivos cortados.
 
 import { readFileSync } from 'node:fs';
 import { extname, isAbsolute, relative, resolve } from 'node:path';
 import { resolveRoot, safe, loadConfig, isMain, lerTexto, sanitizeModelText } from './lib/roots.mjs';
 import { writeHookOutput } from './lib/hook-output.mjs';
+import { isTestFile } from './lib/verification.mjs';
 
-const MAX_ARQUIVOS = 8;
+const MAX_ARQUIVOS_LIDOS = 20;     // arquivos anotados; os demais são nomeados como não anotados
+const MAX_ARQUIVOS_VISTOS = 200;   // limite de memória para saídas enormes
 const MAX_LINHAS_POR_ARQUIVO = 40;
-const MAX_BLOCO = 1200;
+const MAX_BLOCO = 2000;
+const MAX_ASSINATURA = 140;
+const MAX_OMITIDOS_NOMEADOS = 8;
 
 // `caminho:linha:texto` (grep -n, rg, Grep com vários arquivos; `-` em vez de `:` nas linhas de
 // contexto) ou `linha:texto` quando a busca foi num arquivo só. O caminho termina numa extensão
@@ -41,6 +47,11 @@ function ehBuscaNoBash(comando) {
   return /(?:^|[;&|]\s*)(?:rg|grep)\s/.test(comando);
 }
 
+/** Teste pelo nome do arquivo ou da pasta — inclusive o projeto `.Tests` de uma solução .NET. */
+function ehTeste(arquivo) {
+  return isTestFile(arquivo) || /(?:^|[\\/])[^\\/]+\.Tests?[\\/]/i.test(arquivo);
+}
+
 /** Pares arquivo → linhas, na ordem em que apareceram. */
 export function linhasPorArquivo(saida, arquivoUnico = null) {
   const porArquivo = new Map();
@@ -56,7 +67,7 @@ export function linhasPorArquivo(saida, arquivoUnico = null) {
     }
     if (!arquivo || !n) continue;
     if (!porArquivo.has(arquivo)) {
-      if (porArquivo.size >= MAX_ARQUIVOS) continue;
+      if (porArquivo.size >= MAX_ARQUIVOS_VISTOS) continue;
       porArquivo.set(arquivo, []);
     }
     const lista = porArquivo.get(arquivo);
@@ -74,9 +85,33 @@ function agrupar(usos) {
   for (const u of usos.sort((a, b) => a.line - b.line)) {
     const ultimo = grupos[grupos.length - 1];
     if (ultimo && ultimo.in === u.in && ultimo.range === u.range) { ultimo.to = u.line; continue; }
-    grupos.push({ from: u.line, to: u.line, in: u.in, range: u.range });
+    grupos.push({ from: u.line, to: u.line, in: u.in, range: u.range, sig: u.sig });
   }
   return grupos;
+}
+
+/** A linha da declaração, sem recuo nem `{`: diz os parâmetros sem abrir o arquivo. */
+function assinatura(todas, inicio) {
+  const texto = String(todas[inicio - 1] || '').replace(/\s+/g, ' ').replace(/\s*\{\s*$/, '').trim();
+  return texto.length > MAX_ASSINATURA ? `${texto.slice(0, MAX_ASSINATURA - 1)}…` : texto;
+}
+
+function montar(t, blocos, omitidos, comAssinatura) {
+  const linhas = [t('grepctx.header')];
+  const fora = [...omitidos];
+  let tamanho = linhas[0].length;
+  for (const b of blocos) {
+    const texto = `${b.rel}: ${b.grupos.map((g) => (comAssinatura && g.sig ? `${g.parte} \`${g.sig}\`` : g.parte)).join('; ')}`;
+    // Reserva espaço para a linha dos não anotados: ela nunca pode ser o que fica de fora.
+    if (tamanho + texto.length + 1 > MAX_BLOCO - 300) { fora.push(b.rel); continue; }
+    linhas.push(texto);
+    tamanho += texto.length + 1;
+  }
+  if (fora.length) {
+    const nomes = fora.slice(0, MAX_OMITIDOS_NOMEADOS).join(', ') + (fora.length > MAX_OMITIDOS_NOMEADOS ? ', …' : '');
+    linhas.push(t('grepctx.omitted', { n: fora.length, list: nomes }));
+  }
+  return { texto: linhas.join('\n'), cabe: !fora.length || fora.length === omitidos.length };
 }
 
 export async function executarGrepContext(entrada) {
@@ -103,31 +138,44 @@ export async function executarGrepContext(entrada) {
   const { makeT, detectLang } = await import('./lib/i18n.mjs');
   const t = makeT(detectLang(loadConfig(root)));
 
+  // Código de produção antes de teste: se algo tiver de ficar de fora, que seja o teste.
+  const candidatos = [...porArquivo]
+    .filter(([arquivo]) => parserForExt(extname(arquivo)))
+    .map(([arquivo, linhas]) => {
+      const abs = isAbsolute(arquivo) ? arquivo : resolve(cwd, arquivo);
+      return { abs, rel: relative(root, abs), linhas };
+    })
+    .filter((c) => c.rel && !c.rel.startsWith('..') && !isAbsolute(c.rel))
+    .map((c) => ({ ...c, rel: sanitizeModelText(c.rel.replace(/\\/g, '/'), 200) }))
+    .sort((a, b) => Number(ehTeste(a.rel)) - Number(ehTeste(b.rel)));
+
   const blocos = [];
-  for (const [arquivo, linhas] of porArquivo) {
-    const parser = parserForExt(extname(arquivo));
-    if (!parser) continue;
-    const abs = isAbsolute(arquivo) ? arquivo : resolve(cwd, arquivo);
-    const rel = relative(root, abs);
-    if (!rel || rel.startsWith('..') || isAbsolute(rel)) continue;
-    const texto = lerTexto(abs);
+  const omitidos = candidatos.slice(MAX_ARQUIVOS_LIDOS).map((c) => c.rel);
+  for (const c of candidatos.slice(0, MAX_ARQUIVOS_LIDOS)) {
+    const texto = lerTexto(c.abs);
     if (texto === null) continue;
     const todas = texto.split('\n');
-    const intervalos = comIntervalos(parser(todas), todas.length);
-    const usos = linhas.filter((n) => n <= todas.length).map((line) => {
-      const dentro = simboloDaLinha(abs, todas, intervalos, line);
-      return { line, in: dentro?.name ?? null, range: dentro ? `${dentro.start}-${dentro.end}` : null };
+    const intervalos = comIntervalos(parserForExt(extname(c.abs))(todas), todas.length);
+    const usos = c.linhas.filter((n) => n <= todas.length).map((line) => {
+      const dentro = simboloDaLinha(c.abs, todas, intervalos, line);
+      return {
+        line, in: dentro?.name ?? null,
+        range: dentro ? `${dentro.start}-${dentro.end}` : null,
+        sig: dentro ? sanitizeModelText(assinatura(todas, dentro.start), MAX_ASSINATURA + 2) : '',
+      };
     });
     if (!usos.some((u) => u.in)) continue;
-    const partes = agrupar(usos).map((g) => {
+    const grupos = agrupar(usos).map((g) => {
       const onde = g.from === g.to ? `${g.from}` : `${g.from}-${g.to}`;
-      return g.in ? `${onde} ${sanitizeModelText(g.in, 120)} (${g.range})` : `${onde} ${t('grepctx.topLevel')}`;
+      return { parte: g.in ? `${onde} ${sanitizeModelText(g.in, 120)} (${g.range})` : `${onde} ${t('grepctx.topLevel')}`, sig: g.in ? g.sig : '' };
     });
-    blocos.push(`${sanitizeModelText(rel.replace(/\\/g, '/'), 200)}: ${partes.join('; ')}`);
+    blocos.push({ rel: c.rel, grupos });
   }
   if (!blocos.length) return '';
-  const corpo = [t('grepctx.header'), ...blocos].join('\n').slice(0, MAX_BLOCO);
-  return JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: corpo } });
+  // Com assinatura quando cabe tudo; senão, sem ela — perder o parâmetro custa menos que perder o arquivo.
+  let { texto, cabe } = montar(t, blocos, omitidos, true);
+  if (!cabe) texto = montar(t, blocos, omitidos, false).texto;
+  return JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: texto } });
 }
 
 async function main() {

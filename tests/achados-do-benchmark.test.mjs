@@ -101,7 +101,26 @@ test('grep-context: sobrecargas com o mesmo nome não se fundem num intervalo s�
       tool_name: 'Grep', cwd: dir, tool_input: { pattern: 'nulo', path: 'src/Dist.cs' },
       tool_response: { content: '5: x\n10: x' },
     });
-    assert.match(saida, /5 Dist\.Lev\(\) \(3-7\); 10 Dist\.Lev\(\) \(8-12\)/);
+    assert.match(saida, /5 Dist\.Lev\(\) \(3-7\) `public int Lev\(string a, string b\)`; 10 Dist\.Lev\(\) \(8-12\) `public int Lev\(string a, string b, int max\)`/,
+      'cada sobrecarga com o próprio intervalo e a própria assinatura');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('grep-context: corte nunca é silencioso, e teste fica para o fim', () => {
+  // Rodada 2 do benchmark: a lista parava em 8 arquivos sem avisar, e o agente tratou como completa
+  // uma resposta sem os chamadores dos arquivos cortados.
+  const arquivos = {};
+  for (let i = 1; i <= 24; i++) arquivos[`src/M${String(i).padStart(2, '0')}.cs`] = `public class M${i}\n{\n    public void Chama()\n    {\n        Alvo();\n    }\n}\n`;
+  arquivos['Lib.Tests/MTests.cs'] = 'public class MTests\n{\n    public void Testa()\n    {\n        Alvo();\n    }\n}\n';
+  const dir = projeto(arquivos);
+  try {
+    // O teste aparece PRIMEIRO na saída do Grep; mesmo assim vai para o fim.
+    const content = ['Lib.Tests/MTests.cs:5:        Alvo();', ...Object.keys(arquivos).filter((f) => f.startsWith('src/')).map((f) => `${f}:5:        Alvo();`)].join('\n');
+    const saida = hook('grep-context.mjs', dir, { tool_name: 'Grep', cwd: dir, tool_input: { pattern: 'Alvo' }, tool_response: { mode: 'content', content } });
+    assert.match(saida, /src\/M01\.cs: 5 M1\.Chama\(\) \(3-6\)/);
+    assert.match(saida, /⚠️ 5 more file\(s\) with matches NOT annotated above \(limit reached\) — this list is not complete: .*Lib\.Tests\/MTests\.cs/,
+      '25 arquivos, 20 anotados: os 5 restantes são nomeados, e o teste está entre eles');
+    assert.ok(saida.length <= 2000, `orçamento: ${saida.length}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 

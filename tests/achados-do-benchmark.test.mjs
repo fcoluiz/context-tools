@@ -157,7 +157,8 @@ test('pre-tool: busca qualificada avisa das chamadas internas sem o prefixo', ()
   try {
     const pre = (pattern) => hook('pre-tool.mjs', dir, { hook_event_name: 'PreToolUse', tool_name: 'Grep', tool_input: { pattern } });
     const aviso = pre('Datas\\.Garante');
-    assert.match(aviso, /1 call\(s\) to `Garante` inside the file that defines it are written WITHOUT the prefix/);
+    assert.match(aviso, /These 1 place\(s\) also call `Datas\.Garante` — from inside the file that defines it, without the prefix — and will NOT appear in this search; count them as callers too/,
+      'diz que são chamadores também: sem isso, o Haiku via o aviso e mesmo assim os deixava de fora');
     assert.match(aviso, /src\/Datas\.cs:10 Datas\.Le\(\)/, 'a chamada interna, com o método que a contém');
     assert.doesNotMatch(aviso, /:9 /, 'comentário não é chamada');
     assert.equal(pre('Datas\\.Texto'), '', '`v.ToString()` é outro objeto; Texto não tem chamada interna');

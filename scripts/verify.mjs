@@ -108,12 +108,56 @@ function stopReport(root, cfg, t) {
   return files.length;
 }
 
+/**
+ * Uma linha para o início da sessão: como rodar os testes deste projeto. Medido no benchmark de
+ * resultado: numa correção, os agentes gastavam de 3 a 8 turnos descobrindo isso (`node --test
+ * tests/`, `cat package.json`, rodar de novo filtrando a saída) — informação que o plugin já tinha,
+ * mas só dava no Stop. Sem comando detectável, cala: chutar seria pior que nada.
+ */
+export function sessionTestLine(root, cfg, t) {
+  if (cfg?.verify?.enabled === false) return '';
+  const command = detectTestCommand(root, cfg);
+  if (!command) return '';
+  const { script, single } = testDetails(root, command);
+  return t('ver.session', { cmd: command, script, single });
+}
+
+/** O que `npm test` roda de fato e, quando o runner diz, como rodar um arquivo só. */
+export function testDetails(root, command) {
+  const pkg = safe(() => JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')), null);
+  const script = /^(npm|pnpm|yarn|bun) test$/.test(command) && typeof pkg?.scripts?.test === 'string' ? pkg.scripts.test.trim().slice(0, 120) : '';
+  let single = '';
+  if (script) {
+    if (/\bvitest\b/.test(script)) single = 'npx vitest run <file>';
+    else if (/\bjest\b/.test(script)) single = 'npx jest <file>';
+    else if (/\bmocha\b/.test(script)) single = 'npx mocha <file>';
+    else if (/\bnode\b.*--test\b/.test(script)) single = 'node --test <file>';
+    else {
+      // Runner próprio (`node tests/run.mjs`): se os testes usam node:test, cada arquivo roda sozinho.
+      const amostra = listTestFiles(root).find((f) => /\.(m?js|cjs|ts)$/.test(f));
+      if (amostra && /['"]node:test['"]/.test(safe(() => readFileSync(resolve(root, amostra), 'utf8'), ''))) single = 'node --test <file>';
+    }
+  } else if (command === 'pytest') single = 'pytest <file>::<test>';
+  else if (command.startsWith('go test')) single = 'go test ./<package> -run <Test>';
+  else if (command === 'cargo test') single = 'cargo test <name>';
+  else if (command === 'dotnet test') single = 'dotnet test --filter <Name>';
+  else if (command === 'mvn test') single = 'mvn test -Dtest=<Class>';
+  else if (/gradle/.test(command)) single = `${command} --tests <Class>`;
+  else if (/phpunit|composer test/.test(command)) single = 'vendor/bin/phpunit <file>';
+  return { script, single };
+}
+
 function main() {
   const args = process.argv.slice(2);
   const root = resolveRoot(args);
   const cfg = loadConfig(root);
   const t = makeT(detectLang(cfg));
   if (args.includes('--stop-report')) return { mode: 'stop-report', warned: stopReport(root, cfg, t) || 0 };
+  if (args.includes('--session-start')) {
+    const line = sessionTestLine(root, cfg, t);
+    if (line) writeHookOutput(root, { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: line } });
+    return { mode: 'session-start', emitted: line ? 1 : 0 };
+  }
   const files = args.filter((a) => !a.startsWith('--')).map((f) => relative(root, resolve(f)).split(sep).join('/'));
   if (!files.length) { console.log(t('ver.usage')); return { mode: 'usage' }; }
   const report = verificationReport(root, files, cfg);

@@ -70,7 +70,7 @@ export function plan(cases, arms = ['without', 'with'], reps = 1) {
 
 export function claudeArgs(arm, { perRunCost, model } = {}) {
   const args = [
-    '-p', '--output-format', 'json', '--setting-sources', 'project', '--strict-mcp-config',
+    '-p', '--output-format', 'stream-json', '--verbose', '--setting-sources', 'project', '--strict-mcp-config',
     '--no-session-persistence', '--permission-mode', 'acceptEdits', '--allowedTools', ...ALLOWED_TOOLS,
   ];
   if (perRunCost) args.push('--max-budget-usd', String(perRunCost));
@@ -123,6 +123,29 @@ export function runError(json, r = {}) {
   return null;
 }
 
+/**
+ * Saída `stream-json`: o evento `result` traz custo, turnos e resposta; as mensagens do assistente
+ * trazem cada chamada de ferramenta. Sem saber o que o agente consultou, uma resposta errada não
+ * separa "não usou a ferramenta" de "usou e leu errado".
+ */
+export function parseStream(stdout) {
+  let json = null;
+  const tools = [];
+  for (const line of String(stdout || '').split('\n')) {
+    let ev;
+    try { ev = JSON.parse(line); } catch { continue; }
+    if (ev.type === 'result') json = ev;
+    if (ev.type !== 'assistant') continue;
+    for (const c of ev.message?.content || []) {
+      if (c.type !== 'tool_use') continue;
+      const i = c.input || {};
+      const alvo = i.command ?? i.pattern ?? i.file_path ?? i.skill ?? i.path ?? '';
+      tools.push(`${c.name}${alvo ? `: ${String(alvo).replace(/\s+/g, ' ').slice(0, 160)}` : ''}`);
+    }
+  }
+  return { json, tools };
+}
+
 function executar(item, opts) {
   const dir = prepararCopia(item.case);
   const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !ENV_DESCARTADO.test(k)));
@@ -130,8 +153,8 @@ function executar(item, opts) {
   const r = run(opts.claude || 'claude', claudeArgs(item.arm, opts), {
     cwd: dir, env, input: item.case.prompt, timeout: 20 * 60 * 1000, maxBuffer: 64 << 20,
   });
-  let json = null;
-  try { json = JSON.parse(r.stdout.trim().split('\n').filter(Boolean).pop()); } catch { /* resposta não-JSON: registrada como erro */ }
+  const { json, tools } = parseStream(r.stdout);
+  if (opts.traceFile) writeFileSync(opts.traceFile, r.stdout);
   const resposta = json?.result || '';
   const check = conferir(item.case.check, dir, resposta);
   const changed = spawnSync('git', ['diff', '--name-only', 'HEAD'], { cwd: dir, encoding: 'utf8' }).stdout.split('\n').filter(Boolean);
@@ -148,6 +171,7 @@ function executar(item, opts) {
     },
     filesChanged: changed.filter((f) => !/^(ai-context|\.claude|\.codex)\//.test(f)).length,
     error: runError(json, r),
+    tools,
     answer: resposta.slice(0, 2000),
   };
   if (!opts.keep) rmSync(dir, { recursive: true, force: true });
@@ -225,7 +249,8 @@ async function main() {
   for (const item of itens) {
     if (gasto >= maxCost) { console.log(`total cap reached ($${gasto.toFixed(2)}); ${itens.length - results.length} run(s) not started`); break; }
     process.stdout.write(`▶ ${item.case.id} · ${item.arm} · rep ${item.rep} … `);
-    const r = executar(item, { perRunCost, model, keep: args.includes('--keep') });
+    const traceFile = join(outDir, `${item.case.id}.${item.arm}.${item.rep}.jsonl`);
+    const r = executar(item, { perRunCost, model, keep: args.includes('--keep'), traceFile });
     if (r.error === 'no-model-call') {
       console.log(`no model call — ${r.answer.slice(0, 120) || 'empty answer'}. Stopping: nothing here would be a measurement.`);
       return 2;

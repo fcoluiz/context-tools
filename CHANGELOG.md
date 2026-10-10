@@ -8,6 +8,39 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+What the first outcome benchmark showed, fixed
+([report](docs/benchmarks/outcome-pilot-2026-10-09.pt-BR.md)): 22 runs, with the plugin 10/11 solved
+and without it 11/11. In the traces, the agent never called the skill or `ct.mjs` — everything the
+plugin delivered came through hooks — so the fixes are in the hooks.
+
+### Added
+
+- **Where each Grep match falls.** A `PostToolUse` hook (`grep-context.mjs`) follows a Grep, or a
+  `grep`/`rg` command, that returned line numbers, and names the function, method or class each line
+  falls in, with its range: `JsonReader.cs: 356-359 JsonReader.Push() (337-362)`. Grep shows
+  `356: if (_maxDepth …` without the method around it, and in read-only questions the agent often
+  answers after one Grep: the one failure of the benchmark named `SetToken` for a check that lives
+  in `Push`. Reads only the files that matched (no index), at most 1,200 characters, silent without
+  line numbers or a parser for the file.
+- **The test command at session start.** `verify.mjs --session-start` adds one line (~30 tokens)
+  with the project's test command, what `npm test` actually runs, and how to run one test file when
+  the runner tells (`node --test <file>`, `npx vitest run <file>`, `pytest <file>::<test>`, …). In
+  the benchmark's fix case, agents spent 3 to 8 turns finding this out. Silent when no command is
+  detectable or `verify.enabled` is false.
+- **The outcome benchmark records what the agent did.** `benchmark-outcome.mjs` now reads the CLI's
+  `stream-json` output, stores each run's transcript next to `results.json`, and lists the tools each
+  run called — without it, a wrong answer could not tell "did not look" from "looked and misread".
+
+### Changed
+
+- **No "read the index" for an empty index.** While `ai-context/` holds only its index, the
+  `SessionStart` note says there is nothing to read yet instead of asking the agent to read it
+  before exploring.
+- **Evidence pack order.** Definitions come production code first, then tests (including a .NET
+  `*.Tests` project), and exact names before partial ones. In index order, `MaxDepth` put test
+  methods and a similarly named constant among the properties — the constant the benchmark's wrong
+  answer named as the source of the default.
+
 ## [2.7.0] — 2026-10-09
 
 Find, remember, verify: who uses a symbol and what is at stake before changing it, a first-minute

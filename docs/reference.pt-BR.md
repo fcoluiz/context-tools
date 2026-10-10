@@ -841,11 +841,13 @@ registrado.
 | evento | o que faz | custo |
 |---|---|---|
 | `PreToolUse` (Grep / Bash) | responde antes do Grep do Claude, de um `grep`/`rg` digitado no Bash do Claude (filtro `if` do hook: sem custo nos outros comandos) ou de um `rg`/`grep` do Codex quando o padrão é um símbolo; anota os arquivos indicados para o `health.mjs` dizer se o agente os usou (Claude) | só quando responde |
+| `PostToolUse` (Grep / Bash) | depois de um Grep, ou de um `grep`/`rg`, que devolveu número de linha: diz em qual função, método ou classe cai cada linha encontrada, com o intervalo dela, a partir do outline dos arquivos que apareceram (sem índice). O Grep mostra `356: if (_maxDepth …` sem o método em volta; no benchmark de resultado, um agente respondeu só com isso e nomeou o método errado | só quando algum arquivo encontrado tem parser; no máximo 1.200 caracteres |
 | `UserPromptSubmit` (Codex) | confere cada arquivo citado contra o fingerprint próprio no mapa; só injeta contexto se estiver defasado, sem cobertura ou sem verificação possível | sem chamada a modelo; um processo local por prompt |
 | `Stop` | Claude avisa quando a sessão fica cara e grava o handoff; Codex apenas registra métricas | **uma vez por sessão** |
 | `Stop` | entrega o prompt de retomada, assim que o bloco volátil é preenchido | uma vez por sessão |
 | `SessionStart` | lista mapas de contexto e marca os defasados; mostra aviso visível quando há ação necessária | ~175 tokens |
-| `SessionStart` | garante a estrutura padrão do `ai-context`, aponta o índice e avisa a primeira configuração | só quando a documentação está habilitada |
+| `SessionStart` | garante a estrutura padrão do `ai-context`, aponta o índice e avisa a primeira configuração; enquanto o índice for o único documento, diz que ainda não há o que ler em vez de mandar lê-lo | só quando a documentação está habilitada |
+| `SessionStart` | uma linha com o comando de teste do projeto, o que o `npm test` roda de fato e como rodar um arquivo de teste só, quando o runner diz. No benchmark de resultado, os agentes gastavam de 3 a 8 turnos de uma correção descobrindo isso | ~30 tokens; calado quando não há comando detectável ou `verify.enabled` é falso |
 | `SessionStart` | diz se a última divisão de sessão ganhou, empatou ou perdeu | só quando houve divisão |
 | `SessionStart` | avisa o usuário (não o agente) que há versão nova, com o comando de atualização; lê um cache e o renova com um `git ls-remote --tags` destacado quando tem mais de 24 h | só quando há versão nova; de novo após 7 dias sem atualizar |
 | `Stop` | Codex revisa somente as fontes alteradas nesta sessão que estão ligadas a mapas/documentos; fontes antigas do mesmo mapa continuam no relatório global | só para mudanças relevantes da sessão; mesma revisão em cooldown por 24h |

@@ -13,6 +13,7 @@ Measurements taken while developing context-tools. The reports are written in Po
 | [controlled-2026-08-07](controlled-2026-08-07.pt-BR.md) | Controlled benchmark: a closed gold set of 25 definitions in 10 cases; precision/recall/F1 and output size for each strategy. |
 | [adaptive-routing-2026-08-07](adaptive-routing-2026-08-07.pt-BR.md) | Is `context-pack` worth calling every time, or only when results are ambiguous? |
 | [large-delphi-workspace-2026-08-07](large-delphi-workspace-2026-08-07.pt-BR.md) | Index and diagnostics on a 1,878-file Delphi workspace without git. |
+| [outcome-pilot-2026-10-09](outcome-pilot-2026-10-09.pt-BR.md) | First outcome runs: does a real agent solve the same task with and without the plugin? 22 runs on public code; what the traces showed and what changed because of it. |
 
 ## Outcome benchmark: does the task get solved, and at what cost?
 
@@ -40,6 +41,10 @@ node scripts/benchmark-outcome.mjs --cases=docs/benchmarks/outcome/cases.pilot.j
 large third-party codebases (Newtonsoft.Json, C#; commons-lang, Java) and one bug fix in this
 repository at the 2.6.0 tag. One repetition per arm is a pilot, not a statistic: it shows whether the
 harness works and where the differences are worth a larger run.
+
+Each run's transcript (`<case>.<arm>.<rep>.jsonl`) is saved next to `results.json`, and each result
+lists the tools the agent called — a wrong answer then says whether the agent looked and misread, or
+never looked.
 
 ## Reproducing the controlled benchmark
 

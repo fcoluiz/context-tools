@@ -42,9 +42,22 @@ const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function simboloQueContem(intervalos, linha) {
   let melhor = null;
   for (const [inicio, nome, fim] of intervalos) {
-    if (inicio <= linha && linha <= fim && (!melhor || inicio >= melhor[0])) melhor = [inicio, nome];
+    if (inicio <= linha && linha <= fim && (!melhor || inicio >= melhor[0])) melhor = [inicio, nome, fim];
   }
-  return melhor ? melhor[1] : null;
+  return melhor;
+}
+
+/**
+ * `{ name, start, end }` do símbolo que contém a linha (1-based) de `abs`, ou null no topo do arquivo.
+ * Nas linguagens em que o fim do símbolo é estimado pelo próximo símbolo (não por chave), uma linha
+ * sem recuo depois do último símbolo seria atribuída a ele — o `export { … }` do fim de um arquivo JS
+ * aparecia "dentro" da última função. Sem recuo, ali, é topo do arquivo.
+ */
+export function simboloDaLinha(abs, linhas, intervalos, line) {
+  const dentro = simboloQueContem(intervalos, line);
+  if (!dentro) return null;
+  const topo = FIM_ESTIMADO.test(abs) && !/^\s/.test(linhas[line - 1] || '') && !intervalos.some(([inicio]) => inicio === line);
+  return topo ? null : { name: dentro[1], start: dentro[0], end: dentro[2] };
 }
 
 /**
@@ -103,18 +116,10 @@ export function findReferences(root, nome, opts = {}) {
     if (!usos.length) continue;
     const parser = parserForExt(extname(abs));
     const intervalos = parser ? comIntervalos(parser(linhas), linhas.length) : [];
-    // Nas linguagens em que o fim do símbolo é estimado pelo próximo símbolo (não por chave), uma
-    // linha sem recuo depois do último símbolo seria atribuída a ele — o `export { … }` do fim de
-    // um arquivo JS aparecia "dentro" da última função. Sem recuo, ali, é topo do arquivo.
-    const fimEstimado = FIM_ESTIMADO.test(abs);
     references.push({
       file: rel,
       form: FORMULARIO.test(abs),
-      uses: usos.map((line) => {
-        const dentro = simboloQueContem(intervalos, line);
-        const topo = fimEstimado && dentro && !/^\s/.test(linhas[line - 1]) && !intervalos.some(([inicio]) => inicio === line);
-        return { line, in: topo ? null : dentro };
-      }),
+      uses: usos.map((line) => ({ line, in: simboloDaLinha(abs, linhas, intervalos, line)?.name ?? null })),
     });
     total += usos.length;
   }

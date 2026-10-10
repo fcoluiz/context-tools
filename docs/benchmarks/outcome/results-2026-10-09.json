@@ -1,0 +1,569 @@
+{
+  "date": "2026-10-09",
+  "plugin": "context-tools 2.7.0",
+  "cli": "Claude Code 2.1.227",
+  "runs": [
+    {
+      "round": "pilot",
+      "case": "qa-newtonsoft-maxdepth",
+      "arm": "without",
+      "rep": 1,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.10679030000000002,
+      "turns": 4,
+      "durationMs": 16048,
+      "tokens": {
+        "input": 8,
+        "output": 695,
+        "cacheCreation": 10219,
+        "cacheRead": 114591
+      },
+      "filesChanged": 0,
+      "error": null,
+      "answer": "Enforced in `JsonReader.UpdateScopeWithFinishedValue`/`SetStateBasedOnCurrent`'s helper method `Push` or more precisely the private method at JsonReader.cs:355-359 (checked via `_maxDepth` each time depth increases) — specifically method `Push(JsonContainerType value)` in `Src/Newtonsoft.Json/JsonReader.cs`. Default is set in the constructor at line 332: `_maxDepth = 64`. Exceeding it throws `JsonReaderException` (JsonReader.cs:359)."
+    },
+    {
+      "round": "pilot",
+      "case": "qa-newtonsoft-maxdepth",
+      "arm": "with",
+      "rep": 1,
+      "ok": false,
+      "check": "missing: \\bPush\\b",
+      "costUsd": 0.09859649999999999,
+      "turns": 2,
+      "durationMs": 11814,
+      "tokens": {
+        "input": 4,
+        "output": 372,
+        "cacheCreation": 12859,
+        "cacheRead": 52835
+      },
+      "filesChanged": 0,
+      "error": null,
+      "answer": "The depth check is enforced in `JsonReader.SetToken` (`Src/Newtonsoft.Json/JsonReader.cs:356-359`), inside class `JsonReader`. On `JsonReader` itself the default `MaxDepth` is `null` (unlimited); the 64-deep default comes from `JsonSerializerSettings.DefaultMaxDepth` (`JsonSerializerSettings.cs:70`), used when a `JsonSerializer` sets up the reader. When exceeded, it throws `JsonReaderException`."
+    },
+    {
+      "round": "pilot",
+      "case": "qa-commons-lang-abbreviate",
+      "arm": "without",
+      "rep": 1,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.1308566,
+      "turns": 6,
+      "durationMs": 16307,
+      "tokens": {
+        "input": 10,
+        "output": 1026,
+        "cacheCreation": 11751,
+        "cacheRead": 147552
+      },
+      "filesChanged": 0,
+      "error": null,
+      "answer": "With the default marker \"...\" (length 3) and offset 0 (which skips the offset-specific check at line 389/396), the minimum accepted maxWidth is **4**.\n\n- Computed as `minAbbrevWidth = abbrevMarkerLength + 1` = 3 + 1 = 4 (StringUtils.java:372).\n- If `maxWidth < minAbbrevWidth`, it throws `IllegalArgumentException` with message \"Minimum abbreviation width is 4\" (line 375-377)."
+    },
+    {
+      "round": "pilot",
+      "case": "qa-commons-lang-abbreviate",
+      "arm": "with",
+      "rep": 1,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.1192263,
+      "turns": 5,
+      "durationMs": 18664,
+      "tokens": {
+        "input": 8,
+        "output": 764,
+        "cacheCreation": 12148,
+        "cacheRead": 116181
+      },
+      "filesChanged": 0,
+      "error": null,
+      "answer": "With default marker `\"...\"` (length 3), the no-offset minimum is `minAbbrevWidth = abbrevMarkerLength + 1 = 4` (StringUtils.java:372). Below that (maxWidth < 4), it throws `IllegalArgumentException` with message \"Minimum abbreviation width is 4\" (line 375-377)."
+    },
+    {
+      "round": "pilot",
+      "case": "fix-qualified-lookup",
+      "arm": "without",
+      "rep": 1,
+      "ok": true,
+      "check": "exit 0",
+      "costUsd": 0.4297924,
+      "turns": 13,
+      "durationMs": 174684,
+      "tokens": {
+        "input": 24,
+        "output": 2843,
+        "cacheCreation": 36927,
+        "cacheRead": 549398
+      },
+      "filesChanged": 1,
+      "error": null,
+      "answer": "Good, my fix is restored. That `.gitignore` test failure is unrelated to this change (pre-existing missing file issue in this checkout) — I've confirmed the fix is intact and no longer need to re-verify against baseline since the failure is clearly about a missing `.claude/.gitignore` file, not symbol lookup logic.\n\n## Summary\n\n**Cause:** In `scripts/symbols.mjs`, Pascal methods are indexed under their bare name only (`procedure TPedido.Confirmar` → indexed as `Confirmar`, via `bareName`'s `QUALIFICADOR_RE` stripping). The query side (`reportOne`) was supposed to mirror that stripping — the comment directly above even says so — but the code just did `const queryNua = query;` with no stripping. So a qualified query like `TPedido.Confirmar` was matched as a regex against `Confirmar`, which never matches.\n\n**Fix** (`scripts/symbols.mjs:510`):\n```js\nconst queryNua = query.replace(QUALIFICADOR_RE, '');\n```\n\nVerified with the existing test suite — `reportOne: busca qualificada (Classe.Metodo) acha o mesmo símbolo que a busca nua` now passes. The two failing tests (`hooks-e2e.test.mjs`) are unrelated pre-existing failures caused by a missing `.claude/.gitignore` file in this checkout."
+    },
+    {
+      "round": "pilot",
+      "case": "fix-qualified-lookup",
+      "arm": "with",
+      "rep": 1,
+      "ok": true,
+      "check": "exit 0",
+      "costUsd": 0.5244261,
+      "turns": 17,
+      "durationMs": 292193,
+      "tokens": {
+        "input": 34,
+        "output": 3424,
+        "cacheCreation": 37619,
+        "cacheRead": 824167
+      },
+      "filesChanged": 1,
+      "error": null,
+      "answer": "Confirmed: without the fix there were 6 pre-existing failures (the `.codex/hooks.json`-related environment issue plus the qualified-lookup bug), and with the fix there are 5 — exactly the pre-existing unrelated failures, with the qualified-lookup test now passing.\n\n## Summary\n\n**Cause:** In `scripts/symbols.mjs:510`, `reportOne()` builds `queryNua` — the version of the query used for matching — but it was just `const queryNua = query;`, never stripping the `Classe.` prefix. The index stores Pascal methods by bare name only (`bareName()` strips `TPedido.` via `QUALIFICADOR_RE`), so a qualified query like `TPedido.Confirmar` never matched the indexed `Confirmar`, even though the comment directly above the line already described this exact requirement.\n\n**Fix:** `scripts/symbols.mjs:510`\n```js\nconst queryNua = query.replace(QUALIFICADOR_RE, '');\n```\n\nVerified with the existing (unmodified) test suite — `reportOne: busca qualificada (Classe.Metodo) acha o mesmo símbolo que a busca nua` in `tests/recall-e-cache.test.mjs` now passes, and no other tests regressed (5 failures remain, all pre-existing and due to a missing `.codex/hooks.json` in this environment, unrelated to this change)."
+    },
+    {
+      "round": "traced-qa",
+      "case": "qa-newtonsoft-maxdepth",
+      "arm": "without",
+      "rep": 1,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.11599519999999999,
+      "turns": 4,
+      "durationMs": 14820,
+      "tokens": {
+        "input": 8,
+        "output": 647,
+        "cacheCreation": 11702,
+        "cacheRead": 118014
+      },
+      "filesChanged": 0,
+      "error": null,
+      "tools": [
+        "Grep: MaxDepth",
+        "Read: <copy>\\Src\\Newtonsoft.Json\\JsonReader.cs",
+        "Read: <copy>\\Src\\Newtonsoft.Json\\JsonReader.cs"
+      ],
+      "answer": "Enforced in `Src/Newtonsoft.Json/JsonReader.cs`, class `JsonReader`, private method `Push(JsonContainerType value)` (line 356-359).\n\nDefault max depth: **64** (set in the `JsonReader` constructor, `_maxDepth = 64`).\n\nException thrown when exceeded: `JsonReaderException`."
+    },
+    {
+      "round": "traced-qa",
+      "case": "qa-newtonsoft-maxdepth",
+      "arm": "with",
+      "rep": 1,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.11048189999999998,
+      "turns": 4,
+      "durationMs": 17348,
+      "tokens": {
+        "input": 6,
+        "output": 607,
+        "cacheCreation": 12589,
+        "cacheRead": 86083
+      },
+      "filesChanged": 0,
+      "error": null,
+      "tools": [
+        "Grep: MaxDepth",
+        "Read: Src/Newtonsoft.Json/JsonReader.cs",
+        "Read: Src/Newtonsoft.Json/JsonSerializerSettings.cs"
+      ],
+      "answer": "Enforced in `JsonReader.Push(JsonContainerType value)` (`Src/Newtonsoft.Json/JsonReader.cs:356-359`), which checks `Depth + 1 > _maxDepth` on each nested container push. The reader's own default is unbounded (`MaxDepth` null unless set); the serializer-level default `JsonSerializerSettings.DefaultMaxDepth` is 64. When exceeded, it throws `JsonReaderException`."
+    },
+    {
+      "round": "traced-qa",
+      "case": "qa-newtonsoft-maxdepth",
+      "arm": "without",
+      "rep": 2,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.1226093,
+      "turns": 2,
+      "durationMs": 20522,
+      "tokens": {
+        "input": 4,
+        "output": 446,
+        "cacheCreation": 16586,
+        "cacheRead": 52471
+      },
+      "filesChanged": 0,
+      "error": null,
+      "tools": [
+        "Grep: MaxDepth"
+      ],
+      "answer": "Enforced in `JsonReader.cs:356-359`, inside the `SetToken`-related depth-tracking method (`JsonReader.UpdateScopeWithFinishedObject`/`Push`-adjacent check that runs via `Read`'s token handling), which checks `Depth + 1 > _maxDepth`. Default `MaxDepth` is 64 (`JsonSerializerSettings.DefaultMaxDepth`, `JsonSerializerSettings.cs:70`); `JsonReader` itself defaults to `null` (unlimited) unless set via `JsonSerializer`/`JsonSerializerSettings`. Exceeding it throws `JsonReaderException` (`JsonReader.cs:359`)."
+    },
+    {
+      "round": "traced-qa",
+      "case": "qa-newtonsoft-maxdepth",
+      "arm": "with",
+      "rep": 2,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.0974109,
+      "turns": 3,
+      "durationMs": 13559,
+      "tokens": {
+        "input": 6,
+        "output": 527,
+        "cacheCreation": 10692,
+        "cacheRead": 84453
+      },
+      "filesChanged": 0,
+      "error": null,
+      "tools": [
+        "Grep: MaxDepth|_maxDepth|CurrentDepth",
+        "Read: <copy>\\Src\\Newtonsoft.Json\\JsonReader.cs"
+      ],
+      "answer": "Enforced in `Newtonsoft.Json.JsonReader`, method `Push(JsonContainerType value)` (`Src/Newtonsoft.Json/JsonReader.cs:356-360`). Default `MaxDepth` is 64 (set in the constructor, line 332). When exceeded, it throws `JsonReaderException` (via `JsonReaderException.Create`)."
+    },
+    {
+      "round": "traced-qa",
+      "case": "qa-newtonsoft-maxdepth",
+      "arm": "without",
+      "rep": 3,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.10425779999999998,
+      "turns": 3,
+      "durationMs": 11952,
+      "tokens": {
+        "input": 6,
+        "output": 523,
+        "cacheCreation": 11690,
+        "cacheRead": 85316
+      },
+      "filesChanged": 0,
+      "error": null,
+      "tools": [
+        "Grep: MaxDepth|_maxDepth|maximum depth|JsonReaderException",
+        "Read: <copy>\\Src\\Newtonsoft.Json\\JsonReader.cs"
+      ],
+      "answer": "The max depth check lives in `JsonReader.Push(JsonContainerType)` (`Src/Newtonsoft.Json/JsonReader.cs:356-360`), which runs each time a new container (object/array) is pushed onto the depth stack.\n\n- Default: `_maxDepth = 64`, set in the constructor (`JsonReader.cs:332`).\n- Exceeding it throws a `JsonReaderException` (via `JsonReaderException.Create`)."
+    },
+    {
+      "round": "traced-qa",
+      "case": "qa-newtonsoft-maxdepth",
+      "arm": "with",
+      "rep": 3,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.0797325,
+      "turns": 2,
+      "durationMs": 7699,
+      "tokens": {
+        "input": 4,
+        "output": 310,
+        "cacheCreation": 9870,
+        "cacheRead": 52835
+      },
+      "filesChanged": 0,
+      "error": null,
+      "tools": [
+        "Grep: MaxDepth|_maxDepth|maximum.*depth"
+      ],
+      "answer": "The maximum depth check is enforced in `JsonReader.Push(JsonContainerType)` (Src/Newtonsoft.Json/JsonReader.cs:356-359), guarded by the `MaxDepth` property (lines 229-243). The default is set in the constructor (line 332): `_maxDepth = 64`. When exceeded, it throws `JsonReaderException` (line 359)."
+    },
+    {
+      "round": "traced-qa",
+      "case": "qa-commons-lang-abbreviate",
+      "arm": "without",
+      "rep": 1,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.1354448,
+      "turns": 5,
+      "durationMs": 15159,
+      "tokens": {
+        "input": 10,
+        "output": 687,
+        "cacheCreation": 13299,
+        "cacheRead": 148836
+      },
+      "filesChanged": 0,
+      "error": null,
+      "tools": [
+        "Grep: public static String abbreviate\\(.*String str, int maxWidth\\)",
+        "Grep: public static String abbreviate",
+        "Grep: abbreviate",
+        "Read: src/main/java/org/apache/commons/lang3/StringUtils.java"
+      ],
+      "answer": "With the default `\"...\"` marker (length 3), the smallest accepted `maxWidth` is **4**.\n\n- Computed as `minAbbrevWidth = abbrevMarkerLength + 1 = 3 + 1 = 4` (line 372).\n- For `maxWidth < 4`, an `IllegalArgumentException` is thrown (line 375-377), e.g. `\"Minimum abbreviation width is 4\"`."
+    },
+    {
+      "round": "traced-qa",
+      "case": "qa-commons-lang-abbreviate",
+      "arm": "with",
+      "rep": 1,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.12101790000000001,
+      "turns": 4,
+      "durationMs": 21139,
+      "tokens": {
+        "input": 8,
+        "output": 686,
+        "cacheCreation": 12574,
+        "cacheRead": 117533
+      },
+      "filesChanged": 0,
+      "error": null,
+      "tools": [
+        "Grep: public static String abbreviate\\(final String str, final int maxWidth\\)",
+        "Grep: abbreviate",
+        "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java"
+      ],
+      "answer": "With default marker `\"...\"` (length 3), `minAbbrevWidth = abbrevMarkerLength + 1 = 4` (StringUtils.java:372,375-376). So the smallest `maxWidth` accepted without an offset is **4**.\n\nBelow that (maxWidth < 4), it throws `IllegalArgumentException` with message `\"Minimum abbreviation width is 4\"` (line 376)."
+    },
+    {
+      "round": "traced-qa",
+      "case": "qa-commons-lang-abbreviate",
+      "arm": "without",
+      "rep": 2,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.1371868,
+      "turns": 5,
+      "durationMs": 14161,
+      "tokens": {
+        "input": 10,
+        "output": 782,
+        "cacheCreation": 13349,
+        "cacheRead": 148926
+      },
+      "filesChanged": 0,
+      "error": null,
+      "tools": [
+        "Grep: public static String abbreviate\\(final String str, final int maxWidth\\)",
+        "Grep: abbreviate",
+        "Grep: abbreviate",
+        "Read: src/main/java/org/apache/commons/lang3/StringUtils.java"
+      ],
+      "answer": "The smallest `maxWidth` accepted is **4**.\n\n- With the default marker `\"...\"` (length 3), `abbreviate(str, maxWidth)` calls the 4-arg overload with `offset = 0` (`StringUtils.java:248`).\n- The minimum is `minAbbrevWidth = abbrevMarkerLength + 1 = 3 + 1 = 4` (`StringUtils.java:372`).\n- If `maxWidth < minAbbrevWidth` (i.e. ≤ 3), it throws `IllegalArgumentException` with message \"Minimum abbreviation width is 4\" (`StringUtils.java:375-376`)."
+    },
+    {
+      "round": "traced-qa",
+      "case": "qa-commons-lang-abbreviate",
+      "arm": "with",
+      "rep": 2,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.14734709999999998,
+      "turns": 5,
+      "durationMs": 23479,
+      "tokens": {
+        "input": 10,
+        "output": 805,
+        "cacheCreation": 14961,
+        "cacheRead": 151587
+      },
+      "filesChanged": 0,
+      "error": null,
+      "tools": [
+        "Grep: public static String abbreviate\\(final String str, final int maxWidth\\)",
+        "Grep: public static String abbreviate",
+        "Grep: abbreviate",
+        "Read: src/main/java/org/apache/commons/lang3/StringUtils.java"
+      ],
+      "answer": "With offset=0 (the no-offset path), the check at line 375 (`maxWidth < minAbbrevWidth`) applies, not the offset one.\n\nWith the default marker `\"...\"` (length 3): `minAbbrevWidth = abbrevMarkerLength + 1 = 4`.\nSo the smallest accepted `maxWidth` is **4**; any `maxWidth` below 4 (e.g. 3) throws `IllegalArgumentException` with message `\"Minimum abbreviation width is 4\"` (StringUtils.java:372-376)."
+    },
+    {
+      "round": "traced-qa",
+      "case": "qa-commons-lang-abbreviate",
+      "arm": "without",
+      "rep": 3,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.13974749999999997,
+      "turns": 6,
+      "durationMs": 15548,
+      "tokens": {
+        "input": 10,
+        "output": 866,
+        "cacheCreation": 13535,
+        "cacheRead": 149525
+      },
+      "filesChanged": 0,
+      "error": null,
+      "tools": [
+        "Grep: public static String abbreviate\\(final String str, final int maxWidth\\)",
+        "Grep: abbreviate\\(final String str, String abbrevMarker, int offset, int maxWidth\\)",
+        "Grep: static String abbreviate",
+        "Grep: abbreviate",
+        "Read: src/main/java/org/apache/commons/lang3/StringUtils.java"
+      ],
+      "answer": "With the default `\"...\"` marker (length 3), the smallest accepted `maxWidth` without an offset is **4**.\n\n- Computed as `minAbbrevWidth = abbrevMarkerLength + 1 = 3 + 1 = 4` (line 372).\n- Checked at line 375: `if (maxWidth < minAbbrevWidth)`.\n- Below that (e.g. maxWidth = 3), it throws `IllegalArgumentException` with message `\"Minimum abbreviation width is 4\"` (line 376)."
+    },
+    {
+      "round": "traced-qa",
+      "case": "qa-commons-lang-abbreviate",
+      "arm": "with",
+      "rep": 3,
+      "ok": true,
+      "check": "answer matched",
+      "costUsd": 0.1306464,
+      "turns": 4,
+      "durationMs": 19551,
+      "tokens": {
+        "input": 8,
+        "output": 739,
+        "cacheCreation": 14017,
+        "cacheRead": 118118
+      },
+      "filesChanged": 0,
+      "error": null,
+      "tools": [
+        "Grep: public static String abbreviate\\(final String str, final int maxWidth\\)",
+        "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java",
+        "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java"
+      ],
+      "answer": "With the default marker `\"...\"` (length 3) and offset 0, the smallest `maxWidth` accepted is **4**.\n\n- Computed at StringUtils.java:372 as `minAbbrevWidth = abbrevMarkerLength + 1` → `3 + 1 = 4`.\n- Checked at line 375: if `maxWidth < minAbbrevWidth`, it throws `IllegalArgumentException` (line 376) with message `\"Minimum abbreviation width is 4\"`."
+    },
+    {
+      "round": "traced-fix",
+      "case": "fix-qualified-lookup",
+      "arm": "without",
+      "rep": 1,
+      "ok": true,
+      "check": "exit 0",
+      "costUsd": 0.41868429999999995,
+      "turns": 12,
+      "durationMs": 281828,
+      "tokens": {
+        "input": 24,
+        "output": 2574,
+        "cacheCreation": 35342,
+        "cacheRead": 557521
+      },
+      "filesChanged": 1,
+      "error": null,
+      "tools": [
+        "Bash: find scripts -iname \"symbols*\" 2>/dev/null; ls scripts 2>/dev/null",
+        "Read: <copy>\\scripts\\symbols.mjs",
+        "Bash: grep -rn \"QUALIFICADOR_RE\\|queryNua\" --include=\"*.mjs\" --include=\"*.test.*\" -r . 2>/dev/null | grep -v node_modules",
+        "Read: <copy>\\tests\\recall-e-cache.test.mjs",
+        "Edit: <copy>\\scripts\\symbols.mjs",
+        "Bash: cd \"<copy>\" && node --test tests/recall-e-cache.test.mjs 2>&1 | tail -60",
+        "Bash: cd \"<copy>\" && node --test tests/ 2>&1 | tail -30",
+        "Bash: cd \"<copy>\" && grep -A2 '\"test\"' package.json",
+        "Bash: cd \"<copy>\" && npm test 2>&1 | tail -40",
+        "Bash: cd \"<copy>\" && npm test 2>&1 | grep -E \"^ℹ tests|^ℹ pass|^ℹ fail|^✖\"",
+        "Bash: cd \"<copy>\" && git stash && npm test 2>&1 | grep -E \"^ℹ tests|^ℹ pass|^ℹ fail\" ; git stash po"
+      ],
+      "answer": "Confirmed: before the fix there were 6 pre-existing failures (the `.codex` ones plus the qualified-lookup bug), and after the fix only the 5 unrelated `.codex`-missing-file failures remain, which are pre-existing environment issues unrelated to this change.\n\n**Root cause:** `scripts/symbols.mjs` indexes Pascal methods by their bare name (`bareName()` strips the `Classe.` qualifier via `QUALIFICADOR_RE` before storing `TPedido.Confirmar` as `Confirmar`). But the query side in `reportOne()` never did the matching strip — `queryNua` was just set to the raw query, so searching for `TPedido.Confirmar` built a regex for the literal qualified string, which never matched the indexed bare name `Confirmar`.\n\n**Fix** (`scripts/symbols.mjs:510`): strip the same qualifier from the query before matching:\n```js\nconst queryNua = query.replace(QUALIFICADOR_RE, '');\n```\n\nThe existing (unmodified) test `reportOne: busca qualificada (Classe.Metodo) acha o mesmo símbolo que a busca nua` now passes, and the full suite has no new failures."
+    },
+    {
+      "round": "traced-fix",
+      "case": "fix-qualified-lookup",
+      "arm": "with",
+      "rep": 1,
+      "ok": true,
+      "check": "exit 0",
+      "costUsd": 0.44503620000000005,
+      "turns": 13,
+      "durationMs": 271362,
+      "tokens": {
+        "input": 26,
+        "output": 2833,
+        "cacheCreation": 36403,
+        "cacheRead": 613484
+      },
+      "filesChanged": 1,
+      "error": null,
+      "tools": [
+        "Glob: scripts/symbols.mjs",
+        "Read: <copy>\\scripts\\symbols.mjs",
+        "Edit: <copy>\\scripts\\symbols.mjs",
+        "Grep: queryNua|QUALIFICADOR_RE|TPedido",
+        "Read: <copy>\\tests\\recall-e-cache.test.mjs",
+        "Bash: cd scripts 2>/dev/null; cd .. ; node --test tests/recall-e-cache.test.mjs 2>&1 | tail -60",
+        "Bash: node --test tests/recall-e-cache.test.mjs 2>&1 | tail -80",
+        "Bash: node --test tests/ 2>&1 | tail -40",
+        "Bash: cat package.json | grep -A3 '\"test\"'",
+        "Bash: node tests/run.mjs 2>&1 | tail -60",
+        "Bash: node tests/run.mjs 2>&1 | grep -E \"^ℹ tests|^ℹ pass|^ℹ fail|✖\" ",
+        "Bash: git stash && node tests/run.mjs 2>&1 | grep -E \"^ℹ tests|^ℹ pass|^ℹ fail\"; git stash pop"
+      ],
+      "answer": "Confirmed: 6 failures before the fix (including the qualified-lookup test), 5 unrelated environment failures after — the fix resolved exactly the one test it was meant to, with no regressions.\n\n## Summary\n\n**Cause:** In `scripts/symbols.mjs`, `reportOne()` builds `queryNua` — the version of the query used for regex matching — but it was just `const queryNua = query;`, never applying `QUALIFICADOR_RE` to strip a `Classe.` prefix. Since the index only stores the bare method name (e.g. `Confirmar`, via `bareName()`), a qualified query like `TPedido.Confirmar` could never match it.\n\n**Fix** (scripts/symbols.mjs:510):\n```js\nconst queryNua = query.replace(QUALIFICADOR_RE, '');\n```\n\nThis is exactly the behavior the existing test `reportOne: busca qualificada (Classe.Metodo) acha o mesmo símbolo que a busca nua` in `tests/recall-e-cache.test.mjs` already asserted — it was failing before the fix and passes now. The other 5 pre-existing test failures are unrelated environment issues (missing `.codex/hooks.json`, `.claude/.gitignore` in this throwaway checkout) and occur identically with or without this change."
+    },
+    {
+      "round": "traced-fix",
+      "case": "fix-qualified-lookup",
+      "arm": "without",
+      "rep": 2,
+      "ok": true,
+      "check": "exit 0",
+      "costUsd": 0.6121225,
+      "turns": 21,
+      "durationMs": 333347,
+      "tokens": {
+        "input": 42,
+        "output": 4236,
+        "cacheCreation": 37407,
+        "cacheRead": 1077735
+      },
+      "filesChanged": 1,
+      "error": null,
+      "tools": [
+        "Bash: ls scripts/ 2>/dev/null; wc -l scripts/symbols.mjs 2>/dev/null",
+        "Read: <copy>\\scripts\\symbols.mjs",
+        "Grep: queryNua|QUALIFICADOR_RE|TPedido",
+        "Read: <copy>\\tests\\recall-e-cache.test.mjs",
+        "Bash: cd \"<copy>\" && node --test tests/recall-e-cache.test.mjs 2>&1 | grep -A 15 \"busca qualificada",
+        "Edit: <copy>\\scripts\\symbols.mjs",
+        "Bash: cd \"<copy>\" && node --test 2>&1 | tail -30",
+        "Bash: cd \"<copy>\" && node --test 2>&1 | grep -E \"^# (pass|fail|tests)\"",
+        "Bash: cd \"<copy>\" && node --test 2>&1 | grep -E \"^# \"",
+        "Bash: cd \"<copy>\" && node --test > <tmp>/testout.txt 2>&1; grep -E \"^# (pass|fail|tests|cancelled)\" ",
+        "Bash: cd \"<copy>\" && node --test > \"$TEMP/testout.txt\" 2>&1; echo done",
+        "Bash: cd \"<copy>\" && node --test > out.log 2>&1 echo done",
+        "Bash: node --test \"<copy>\" > \"<copy>",
+        "Grep: ^# (pass|fail|tests|cancelled)",
+        "Read: <copy>\\out.log",
+        "Bash: node --test > out.log 2>&1 echo done",
+        "Grep: ^# (pass|fail|tests|cancelled)|busca qualificada",
+        "Grep: ℹ (pass|fail|tests|cancelled)",
+        "Grep: ^✖",
+        "Bash: rm \"<copy>\\out.log\""
+      ],
+      "answer": "## Cause\n\nIn `scripts/symbols.mjs`, `reportOne()` builds a regex from `queryNua` to match against indexed symbol names. Because Pascal methods are indexed by their *bare* method name (`bareName()` strips the `Classe.` qualifier via `QUALIFICADOR_RE`, so `procedure TPedido.Confirmar` is indexed as `Confirmar`), a qualified query must undergo the same strip before being used as the search pattern — the code's own comment (symbols.mjs:506-510) says exactly this. But the line below it just did:\n\n```js\nconst queryNua = query;   // no stripping happened\n```\n\nSo searching `TPedido.Confirmar` built the regex `/TPedido.Confirmar/i` and tested it against the indexed name `Confirmar`, which never matches — hence \"no definition\", while the bare `Confirmar` query worked fine.\n\n## Fix\n\n```js\nconst queryNua = query.replace(QUALIFICADOR_RE, '');\n```\n\nThis was a one-line fix (symbols.mjs:510). There was already a test (`tests/recall-e-cache.test.mjs:175`) covering exactly this scenario — it was failing before the fix and passes now. Full test suite: 352 pass / 5 fail, with the 5 failures pre-existing and unrelated (missing `.codex/hooks.json` in this checkout)."
+    },
+    {
+      "round": "traced-fix",
+      "case": "fix-qualified-lookup",
+      "arm": "with",
+      "rep": 2,
+      "ok": true,
+      "check": "exit 0",
+      "costUsd": 0.45641699999999996,
+      "turns": 13,
+      "durationMs": 258597,
+      "tokens": {
+        "input": 26,
+        "output": 2788,
+        "cacheCreation": 37482,
+        "cacheRead": 632090
+      },
+      "filesChanged": 1,
+      "error": null,
+      "tools": [
+        "Bash: find . -iname \"symbols.mjs\" -not -path \"*/node_modules/*\"",
+        "Read: <copy>\\scripts\\symbols.mjs",
+        "Bash: grep -rn \"queryNua\\|QUALIFICADOR_RE\\|bareName\" --include=*.mjs -r . | grep -v node_modules",
+        "Read: <copy>\\tests\\recall-e-cache.test.mjs",
+        "Edit: <copy>\\scripts\\symbols.mjs",
+        "Bash: cd \"<copy>\" && node --test tests/recall-e-cache.test.mjs 2>&1 | tail -40",
+        "Bash: cd \"<copy>\" && node --test tests/ 2>&1 | tail -20",
+        "Bash: cd \"<copy>\" && node --test tests/ 2>&1 | head -30",
+        "Bash: cd \"<copy>\" && cat package.json | grep -i test",
+        "Bash: cd \"<copy>\" && node tests/run.mjs 2>&1 | tail -40",
+        "Bash: cd \"<copy>\" && node tests/run.mjs 2>&1 | grep -E \"^ℹ tests|^ℹ pass|^ℹ fail\"",
+        "Bash: cd \"<copy>\" && git stash && node tests/run.mjs 2>&1 | grep -E \"^ℹ tests|^ℹ pass|^ℹ fail\"; git"
+      ],
+      "answer": "Confirmed: 6 pre-existing failures (missing `.codex/hooks.json` in this temp checkout) drop to 5 with my fix — the one test my change resolves is the qualified-lookup test. No regressions.\n\n## Root cause\n\n`scripts/symbols.mjs` indexes Pascal methods by their bare name only (`bareName()` strips the `Classe.` prefix via `QUALIFICADOR_RE`, so `procedure TPedido.Confirmar` is indexed as `Confirmar`). But in `reportOne()` (the query side), `queryNua` was just set to `query` verbatim — it never applied the same stripping. So searching `TPedido.Confirmar` built a regex from the full qualified string, which could never match the bare `Confirmar` key in the index, while searching `Confirmar` worked fine.\n\n## Fix\n\n`scripts/symbols.mjs:510`, one line:\n\n```js\nconst queryNua = query.replace(QUALIFICADOR_RE, '');\n```\n\nThis mirrors the comment immediately above it (which already said this was necessary) and matches the exact intent documented in `tests/recall-e-cache.test.mjs:175`'s test case. Full suite: 352/357 pass, same 5 pre-existing unrelated failures (missing `.codex/hooks.json` in this checkout) as before the fix — no regressions, no test changes."
+    }
+  ]
+}

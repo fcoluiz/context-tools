@@ -19,6 +19,10 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/claude-md-hint.mjs\""
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/verify.mjs\" --session-start"
           }
         ]
       }
@@ -72,6 +76,32 @@
             "type": "command",
             "if": "Bash(rg *)",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-tool.mjs\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/grep-context.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(grep *)",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/grep-context.mjs\""
+          },
+          {
+            "type": "command",
+            "if": "Bash(rg *)",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/grep-context.mjs\""
           }
         ]
       }

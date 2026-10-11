@@ -1,0 +1,28 @@
+{
+  "cases": [
+    {
+      "id": "fix-yaml-merge-keys",
+      "git": "https://github.com/nodeca/js-yaml.git",
+      "ref": "2cef47bebf60da141b78b085f3dea3b5733dcc12",
+      "setup": [["node", "{casesDir}/held-out-bugs.mjs", "inject", "yaml-merge-keys"]],
+      "prompt": "A user reports: merge keys stopped working. yaml.load('base: &b {a: 1, b: 2}\\nx:\\n  <<: *b\\n  c: 3\\n').x returns { c: 3 } instead of { a: 1, b: 2, c: 3 }. Find the cause in this repository and fix it with a minimal change. Do not change the tests.",
+      "check": { "command": ["node", "{casesDir}/held-out-bugs.mjs", "check", "yaml-merge-keys"] }
+    },
+    {
+      "id": "fix-yaml-block-chomping",
+      "git": "https://github.com/nodeca/js-yaml.git",
+      "ref": "2cef47bebf60da141b78b085f3dea3b5733dcc12",
+      "setup": [["node", "{casesDir}/held-out-bugs.mjs", "inject", "yaml-block-chomping"]],
+      "prompt": "A user reports: a literal block with the strip indicator keeps its trailing newlines. yaml.load('s: |-\\n  text\\n\\n').s returns 'text\\n\\n' instead of 'text'. Find the cause in this repository and fix it with a minimal change. Do not change the tests.",
+      "check": { "command": ["node", "{casesDir}/held-out-bugs.mjs", "check", "yaml-block-chomping"] }
+    },
+    {
+      "id": "fix-commander-long-equals",
+      "git": "https://github.com/tj/commander.js.git",
+      "ref": "ba6d13ddb4243e5913367734f8c159089ffe7834",
+      "setup": [["node", "{casesDir}/held-out-bugs.mjs", "inject", "commander-long-equals"]],
+      "prompt": "A user reports: with program.option('--port <n>'), parsing ['--port=8080'] gives opts().port === '=8080' instead of '8080' (['--port', '8080'] works). Find the cause in this repository and fix it with a minimal change. Do not change the tests.",
+      "check": { "command": ["node", "{casesDir}/held-out-bugs.mjs", "check", "commander-long-equals"] }
+    }
+  ]
+}

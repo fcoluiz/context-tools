@@ -181,16 +181,21 @@ correção é conferida executando o código). Quatro ou cinco execuções por b
 | 4 | Haiku 4.5 | 11 | 48/55 ¹ | **53/55** | −18% |
 | 5 — **casos novos** | Sonnet 5 | 3 correções + 1 pergunta (JavaScript) | 16/16 | 16/16 | −23% |
 | 5 — **casos novos** | Haiku 4.5 | 3 correções + 1 pergunta (JavaScript) | 16/16 | 16/16 | **+19%** |
+| 6 — **independente** ² | Sonnet 5 | 3 correções, 2 repositórios novos (JavaScript) | 12/12 | 12/12 | −36% |
+| 6 — **independente** ² | Haiku 4.5 | 3 correções, 2 repositórios novos (JavaScript) | 12/12 | 12/12 | −34% |
 
 ¹ A rodada 4 mediu só o braço com o plugin (2.7.3); o braço sem ele é o da rodada 3.
+² Casos escritos antes de o plugin rodar nesses repositórios (js-yaml, commander.js), com o plugin
+como publicado depois da rodada 5; os dois braços medidos.
 
 - **Nunca resolveu menos.** Em todas as rodadas o plugin resolveu pelo menos tanto quanto o agente
   sozinho.
-- **Mais barato em 6 das 7 linhas; não no Haiku corrigindo bug.** A diferença é maior em perguntas de
-  "quem usa X" e de "onde exatamente". Nas correções da rodada 5 todos resolveram tudo: o Sonnet saiu
-  23% mais barato com o plugin, o Haiku 19% mais caro — com uma variação entre execuções (14 a 42
-  turnos no mesmo caso) que quatro repetições não resolvem. Em correção de bug com sintoma claro, o
-  plugin não é uma vantagem medida para o Haiku.
+- **Mais barato em 8 das 9 linhas.** A diferença é maior em perguntas de "quem usa X" e de "onde
+  exatamente". A exceção é a rodada 5, Haiku corrigindo bug: 19% mais caro. O registro do que os hooks
+  injetavam mostrou o porquê (um pacote de evidências cheio de ruído, turnos gastos em testes que não
+  rodavam); os dois foram corrigidos, e a rodada 6 — bugs novos em dois repositórios que o plugin
+  nunca tinha visto — mediu o Haiku 34% mais barato e o Sonnet 36% mais barato em correção, com todas
+  as tarefas resolvidas nos dois braços. A linha da rodada 5 fica como foi medida.
 - **De onde vem o ganho de acerto:** o Grep devolve linhas sem o método em volta, e o agente que
   responde só com isso nomeia o método ou a classe errada. Um hook diz em qual símbolo cai cada linha
   encontrada, e avisa quando uma busca qualificada (`Classe\.metodo`) vai perder as chamadas feitas

@@ -3,7 +3,7 @@
 // setup-targets.mjs (o adapter) e setup-engine.mjs (o motor que combina as duas coisas).
 
 import { existsSync, readdirSync, statSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -100,7 +100,7 @@ export function detectProjectRoot(start = process.cwd(), explicit = null) {
   return resolve(start);
 }
 
-export function run(command, args, options = {}) {
+function spawnSpec(command, args) {
   const batch = process.platform === 'win32' && WINDOWS_BATCH.has(command);
   const file = batch ? (process.env.ComSpec || 'cmd.exe') : command;
   // `cmd /s /c "<linha>"` com os argumentos verbatim: sem isso o Node re-escapa as aspas de
@@ -109,6 +109,35 @@ export function run(command, args, options = {}) {
   const commandArgs = batch
     ? ['/d', '/s', '/c', `"${[command, ...args].map(quoteCmd).join(' ')}"`]
     : args;
+  return { file, commandArgs, batch };
+}
+
+/**
+ * `run` sem bloquear: o benchmark de resultado roda várias sessões de agente ao mesmo tempo.
+ * Aceita `input`, `cwd`, `env`, `timeout` e `maxBuffer` como o `run`.
+ */
+export function runAsync(command, args, { input: entrada, timeout = 0, maxBuffer = 64 << 20, ...options } = {}) {
+  const { file, commandArgs, batch } = spawnSpec(command, args);
+  return new Promise((done) => {
+    let stdout = '';
+    let stderr = '';
+    let error = null;
+    const child = spawn(file, commandArgs, { windowsHide: true, windowsVerbatimArguments: batch, ...options });
+    const timer = timeout ? setTimeout(() => { error = new Error('timeout'); child.kill(); }, timeout) : null;
+    child.stdout.setEncoding('utf8').on('data', (d) => { if (stdout.length < maxBuffer) stdout += d; });
+    child.stderr.setEncoding('utf8').on('data', (d) => { if (stderr.length < maxBuffer) stderr += d; });
+    child.on('error', (e) => { error = e; });
+    child.on('close', (code) => {
+      if (timer) clearTimeout(timer);
+      done({ status: code ?? 1, stdout, stderr, error });
+    });
+    child.stdin.on('error', () => {});
+    child.stdin.end(entrada ?? '');
+  });
+}
+
+export function run(command, args, options = {}) {
+  const { file, commandArgs, batch } = spawnSpec(command, args);
   const result = spawnSync(file, commandArgs, {
     encoding: 'utf8',
     windowsHide: true,

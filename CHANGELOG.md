@@ -10,6 +10,15 @@ reconstructed from git history.
 
 ### Added
 
+- **Outcome harness: parallel runs and a local mirror.** `--parallel=N` runs N independent runs at
+  once — same cost, a fraction of the time (4 runs in 27 s, mirror included) — with results kept in
+  the plan's order. A remote repository is mirrored once and each run clones from the mirror at the
+  same commit, instead of cloning from GitHub every time (10–20 s of each ~70 s run).
+- **Outcome harness: an injected bug no longer shows in git history.** The bug was committed as
+  "benchmark baseline" on top of the upstream history, so `git log -p` showed the exact line that
+  broke; in the independent validation, Haiku found it that way in 8 of 20 runs (both arms). A case
+  with `setup` now starts from a single snapshot commit, with no origin to compare against;
+  `"history": "keep"` keeps the old behavior.
 - **Install or update with one short command.** `npx -y github:fcoluiz/context-tools` installs or
   updates context-tools for every agent on the machine, for the user, without questions — the same
   as `context-tools-setup-all --global --yes`, which still works. Flags add to it: `--target=…`,

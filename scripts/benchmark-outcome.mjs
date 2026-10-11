@@ -15,19 +15,20 @@
 //
 // Uso:
 //   benchmark-outcome.mjs --cases=<arquivo.json> [--arms=without,with] [--reps=1] [--max-cost=10]
-//                         [--per-run-cost=2] [--model=<modelo>] [--out=<pasta>] [--dry-run]
+//                         [--per-run-cost=2] [--model=<modelo>] [--parallel=N] [--out=<pasta>] [--dry-run]
 //
 // Arquivo de casos: { "cases": [ { "id", "repo" (pasta local) ou "git" (URL), "ref"?, "prompt", "remove"?: [caminhos],
 //   "setup"?: [[comando, ...args], …], "check": { "command": [cmd, ...args] } | { "answer": [regex, …] } } ] }
 // `repo` relativo ao arquivo de casos. Casos com dados privados ficam em `*.local.json` (ignorado pelo git).
 
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMain } from './lib/roots.mjs';
-import { run } from './lib/setup-shared.mjs';
+import { run, runAsync } from './lib/setup-shared.mjs';
 
 const PLUGIN_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ALLOWED_TOOLS = ['Read', 'Edit', 'Write', 'Grep', 'Glob', 'Bash(node:*)', 'Bash(git:*)', 'Bash(rg:*)', 'Bash(grep:*)', 'Bash(ls:*)', 'Bash(cat:*)', 'Bash(find:*)', 'Bash(npm test:*)'];
@@ -79,11 +80,36 @@ export function claudeArgs(arm, { perRunCost, model } = {}) {
   return args;
 }
 
-function prepararCopia(c) {
+/**
+ * Um espelho local por repositório remoto, criado uma vez e reaproveitado entre execuções e rodadas:
+ * clonar do GitHub a cada execução custava 10–20 s de cada ~70. A cópia do agente sai do espelho
+ * (clone local), no mesmo commit — o que é medido não muda.
+ */
+export function mirrorPath(url, base = join(tmpdir(), 'ct-outcome-mirrors')) {
+  return join(base, createHash('sha1').update(url).digest('hex').slice(0, 12));
+}
+
+function prepararEspelho(c) {
+  const path = mirrorPath(c.git);
+  const temRef = () => !c.ref || spawnSync('git', ['-C', path, 'cat-file', '-e', `${c.ref}^{commit}`]).status === 0;
+  if (existsSync(join(path, 'HEAD'))) {
+    if (temRef()) return path;
+    spawnSync('git', ['-C', path, 'fetch', '--quiet', 'origin', '+refs/*:refs/*'], { encoding: 'utf8', timeout: 600000 });
+    if (temRef()) return path;
+    rmSync(path, { recursive: true, force: true });
+  }
+  mkdirSync(dirname(path), { recursive: true });
+  const r = spawnSync('git', ['clone', '--quiet', '--mirror', c.git, path], { encoding: 'utf8', timeout: 900000 });
+  if (r.status !== 0) throw new Error(`mirror failed for ${c.git}: ${r.stderr}`);
+  return path;
+}
+
+export function prepararCopia(c, mirrors = {}) {
   const dir = mkdtempSync(join(tmpdir(), `ct-outcome-${c.id}-`));
   const git = (...a) => spawnSync('git', ['-c', 'user.name=bench', '-c', 'user.email=bench@localhost', ...a], { cwd: dir, encoding: 'utf8' });
-  const clone = c.repo
-    ? spawnSync('git', ['clone', '--quiet', '--no-hardlinks', c.repo, dir], { encoding: 'utf8' })
+  const origem = c.repo || mirrors[c.git];
+  const clone = origem
+    ? spawnSync('git', ['clone', '--quiet', '--no-hardlinks', origem, dir], { encoding: 'utf8', timeout: 600000 })
     : spawnSync('git', ['clone', '--quiet', '--filter=blob:none', c.git, dir], { encoding: 'utf8', timeout: 600000 });
   if (clone.status !== 0) throw new Error(`clone failed: ${clone.stderr}`);
   if (c.ref && git('checkout', '--quiet', c.ref).status !== 0) throw new Error(`ref not found: ${c.ref}`);
@@ -93,6 +119,14 @@ function prepararCopia(c) {
   for (const [cmd, ...a] of c.setup || []) {
     const r = spawnSync(cmd, a, { cwd: dir, encoding: 'utf8', shell: false });
     if (r.status !== 0) throw new Error(`setup failed (${cmd} ${a.join(' ')}): ${r.stderr || r.stdout}`);
+  }
+  // Um bug injetado commitado por cima do histórico aparece inteiro em `git log -p`: na validação
+  // independente, o Haiku achou o bug assim em 8 de 20 execuções (nos dois braços). Um bug de
+  // verdade não vem com o diff que o criou. Com `setup`, a cópia começa num commit único, sem
+  // histórico — nem ramos ou tags de origem que permitam comparar. `"history": "keep"` mantém.
+  if (c.setup?.length && c.history !== 'keep') {
+    rmSync(join(dir, '.git'), { recursive: true, force: true });
+    git('init', '--quiet');
   }
   git('add', '-A');
   git('commit', '--quiet', '--allow-empty', '-m', 'benchmark baseline');
@@ -179,13 +213,13 @@ export function anonimizar(texto, dir, home = homedir()) {
   return s;
 }
 
-function executar(item, opts) {
-  const dir = prepararCopia(item.case);
+async function executar(item, opts) {
+  const dir = prepararCopia(item.case, opts.mirrors);
   const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !ENV_DESCARTADO.test(k)));
   // Fora da cópia: o agente não vê o arquivo, e o `git diff` da conferência não o conta.
   if (opts.hookLogFile) env.CONTEXT_TOOLS_HOOK_LOG = opts.hookLogFile;
   const started = Date.now();
-  const r = run(opts.claude || 'claude', claudeArgs(item.arm, opts), {
+  const r = await runAsync(opts.claude || 'claude', claudeArgs(item.arm, opts), {
     cwd: dir, env, input: item.case.prompt, timeout: 20 * 60 * 1000, maxBuffer: 64 << 20,
   });
   const { json, tools } = parseStream(r.stdout);
@@ -278,7 +312,7 @@ export function markdownReport(results, meta = {}) {
 async function main() {
   const args = process.argv.slice(2);
   const file = arg(args, '--cases');
-  if (!file) { console.log('usage: benchmark-outcome.mjs --cases=<file.json> [--arms=without,with] [--reps=1] [--max-cost=10] [--per-run-cost=2] [--model=<m>] [--out=<dir>] [--resume] [--dry-run]'); return 2; }
+  if (!file) { console.log('usage: benchmark-outcome.mjs --cases=<file.json> [--arms=without,with] [--reps=1] [--max-cost=10] [--per-run-cost=2] [--model=<m>] [--parallel=1] [--out=<dir>] [--resume] [--dry-run]'); return 2; }
   const cases = loadCases(file);
   const arms = (arg(args, '--arms', 'without,with')).split(',').map((s) => s.trim()).filter(Boolean);
   if (arms.some((a) => a !== 'with' && a !== 'without')) throw new Error('arms must be with and/or without');
@@ -309,24 +343,48 @@ async function main() {
   const feitas = new Set(anteriores.map((r) => `${r.case}|${r.arm}|${r.rep}`));
   if (anteriores.length) console.log(`resume: ${anteriores.length} valid run(s) kept`);
   const results = [...anteriores];
+  // Execuções independentes (cópia e sessão próprias) rodam em paralelo: o mesmo custo, uma fração
+  // do tempo. O teto total vale para o que COMEÇA: as que já estão rodando podem passá-lo em até
+  // (parallel − 1) × per-run-cost.
+  const parallel = Math.max(1, Number(arg(args, '--parallel', '1')) || 1);
+  const ordem = new Map(itens.map((i, n) => [`${i.case.id}|${i.arm}|${i.rep}`, n]));
+  const chave = (r) => `${r.case}|${r.arm}|${r.rep}`;
+  const fila = itens.filter((i) => !feitas.has(`${i.case.id}|${i.arm}|${i.rep}`));
+  // Os espelhos saem antes dos workers: duas execuções nunca criam o mesmo ao mesmo tempo.
+  const mirrors = {};
+  for (const url of new Set(fila.map((i) => i.case.git).filter(Boolean))) mirrors[url] = prepararEspelho({ git: url, ref: fila.find((i) => i.case.git === url).case.ref });
   let gasto = 0;
-  for (const item of itens) {
-    if (feitas.has(`${item.case.id}|${item.arm}|${item.rep}`)) continue;
-    if (gasto >= maxCost) { console.log(`total cap reached ($${gasto.toFixed(2)}); ${itens.length - results.length} run(s) not started`); break; }
-    process.stdout.write(`▶ ${item.case.id} · ${item.arm} · rep ${item.rep} … `);
-    const traceFile = join(outDir, `${item.case.id}.${item.arm}.${item.rep}.jsonl`);
-    const hookLogFile = join(outDir, `${item.case.id}.${item.arm}.${item.rep}.hooks.jsonl`);
-    rmSync(hookLogFile, { force: true });
-    const r = executar(item, { perRunCost, model, keep: args.includes('--keep'), traceFile, hookLogFile });
-    if (r.error === 'no-model-call') {
-      console.log(`no model call — ${r.answer.slice(0, 120) || 'empty answer'}. Stopping: nothing here would be a measurement.`);
-      return 2;
+  let parar = null;
+  let naoIniciadas = 0;
+  // Na ordem do plano, não na de chegada: o relatório e o results.json não mudam com --parallel.
+  const ordenar = () => results.sort((a, b) => (ordem.get(chave(a)) ?? 0) - (ordem.get(chave(b)) ?? 0));
+  const gravar = () => writeFileSync(join(outDir, 'results.json'), JSON.stringify(ordenar(), null, 2));
+  const worker = async () => {
+    while (fila.length) {
+      if (parar) return;
+      if (gasto >= maxCost) { naoIniciadas = fila.length; fila.length = 0; return; }
+      const item = fila.shift();
+      const rotulo = `${item.case.id} · ${item.arm} · rep ${item.rep}`;
+      if (parallel === 1) process.stdout.write(`▶ ${rotulo} … `);
+      const traceFile = join(outDir, `${item.case.id}.${item.arm}.${item.rep}.jsonl`);
+      const hookLogFile = join(outDir, `${item.case.id}.${item.arm}.${item.rep}.hooks.jsonl`);
+      rmSync(hookLogFile, { force: true });
+      const r = await executar(item, { perRunCost, model, keep: args.includes('--keep'), traceFile, hookLogFile, mirrors, claude: arg(args, '--claude', 'claude') });
+      const prefixo = parallel === 1 ? '' : `▶ ${rotulo} … `;
+      if (r.error === 'no-model-call') {
+        parar = parar || `${prefixo}no model call — ${r.answer.slice(0, 120) || 'empty answer'}. Stopping: nothing here would be a measurement.`;
+        return;
+      }
+      gasto += r.costUsd;
+      results.push(r);
+      console.log(`${prefixo}${r.ok ? 'solved' : 'NOT solved'} · $${r.costUsd.toFixed(2)} · ${r.turns ?? '?'} turns${r.error ? ` · ${r.error}` : ''}`);
+      gravar();
     }
-    gasto += r.costUsd;
-    results.push(r);
-    console.log(`${r.ok ? 'solved' : 'NOT solved'} · $${r.costUsd.toFixed(2)} · ${r.turns ?? '?'} turns${r.error ? ` · ${r.error}` : ''}`);
-    writeFileSync(join(outDir, 'results.json'), JSON.stringify(results, null, 2));
-  }
+  };
+  await Promise.all(Array.from({ length: Math.min(parallel, fila.length || 1) }, worker));
+  if (parar) { console.log(parar); return 2; }
+  ordenar();
+  if (naoIniciadas) console.log(`total cap reached ($${gasto.toFixed(2)}); ${naoIniciadas} run(s) not started`);
   const cli = run(arg(args, '--claude', 'claude'), ['--version']).stdout.trim();
   writeFileSync(join(outDir, 'report.md'), `${markdownReport(results, { model, cli })}\n`);
   console.log(`\n${markdownReport(results, { model, cli })}\n\nresults: ${outDir}`);

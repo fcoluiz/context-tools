@@ -1,0 +1,361 @@
+{
+  "vars": {
+    "L": "<tools folder: bin/ (uv, jq), tbin/ (serena, token-savior), cbm/, fakehome-*/, arms/cbm-plugin>",
+    "RO": "<clone of Bande-a-Bonnot/Boucle-framework>/tools/read-once",
+    "COS": "<clone of sravan27/context-os>",
+    "PY": "<Python 3.12 folder with a python3 executable>"
+  },
+  "arms": {
+    "read-once": {
+      "env": {
+        "PATH": "{L}/bin{pathsep}{PATH}"
+      },
+      "settings": {
+        "hooks": {
+          "PreToolUse": [
+            {
+              "matcher": "Read",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "HOME='{run}' bash '{RO}/hook.sh'"
+                }
+              ]
+            }
+          ],
+          "PostCompact": [
+            {
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "HOME='{run}' bash '{RO}/compact.sh'"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "serena": {
+      "env": {
+        "MCP_TIMEOUT": "120000",
+        "PATH": "{L}/bin{pathsep}{PATH}"
+      },
+      "mcpConfig": {
+        "mcpServers": {
+          "serena": {
+            "command": "{L}/tbin/serena.exe",
+            "args": [
+              "start-mcp-server",
+              "--context",
+              "claude-code",
+              "--project",
+              "{copy}"
+            ],
+            "env": {
+              "USERPROFILE": "{L}/fakehome-serena",
+              "SERENA_USAGE_REPORTING": "false"
+            }
+          }
+        }
+      },
+      "settings": {
+        "hooks": {
+          "PreToolUse": [
+            {
+              "matcher": "",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "USERPROFILE='{L}/fakehome-serena' SERENA_USAGE_REPORTING=false '{L}/tbin/serena-hooks.exe' remind --client=claude-code"
+                }
+              ]
+            }
+          ],
+          "SessionStart": [
+            {
+              "matcher": "",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "USERPROFILE='{L}/fakehome-serena' SERENA_USAGE_REPORTING=false '{L}/tbin/serena-hooks.exe' activate --client=claude-code"
+                }
+              ]
+            }
+          ],
+          "SessionEnd": [
+            {
+              "matcher": "",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "USERPROFILE='{L}/fakehome-serena' SERENA_USAGE_REPORTING=false '{L}/tbin/serena-hooks.exe' cleanup --client=claude-code"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "allowedTools": [
+        "mcp__serena"
+      ],
+      "ignoreChanged": "^[.]serena/"
+    },
+    "codebase-memory": {
+      "env": {
+        "CBM_CACHE_DIR": "{L}/cbm-cache"
+      },
+      "pluginDir": "{L}/arms/cbm-plugin",
+      "mcpConfig": {
+        "mcpServers": {
+          "codebase-memory-mcp": {
+            "command": "{L}/cbm/codebase-memory-mcp.exe",
+            "args": [],
+            "env": {
+              "CBM_CACHE_DIR": "{L}/cbm-cache",
+              "LOCALAPPDATA": "{L}/fakehome-cbm/AppData/Local",
+              "USERPROFILE": "{L}/fakehome-cbm"
+            }
+          }
+        }
+      },
+      "settings": {
+        "hooks": {
+          "PreToolUse": [
+            {
+              "matcher": "Grep|Glob|Bash",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "LOCALAPPDATA='{L}/fakehome-cbm/AppData/Local' USERPROFILE='{L}/fakehome-cbm' '{L}/cbm/codebase-memory-mcp.exe' hook-augment",
+                  "timeout": 15
+                }
+              ]
+            }
+          ],
+          "PostToolUse": [
+            {
+              "matcher": "Read",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "LOCALAPPDATA='{L}/fakehome-cbm/AppData/Local' USERPROFILE='{L}/fakehome-cbm' '{L}/cbm/codebase-memory-mcp.exe' hook-augment",
+                  "timeout": 15
+                }
+              ]
+            }
+          ],
+          "SessionStart": [
+            {
+              "matcher": "startup",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "LOCALAPPDATA='{L}/fakehome-cbm/AppData/Local' USERPROFILE='{L}/fakehome-cbm' '{L}/cbm/codebase-memory-mcp.exe' hook-augment",
+                  "timeout": 15
+                }
+              ]
+            },
+            {
+              "matcher": "resume",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "LOCALAPPDATA='{L}/fakehome-cbm/AppData/Local' USERPROFILE='{L}/fakehome-cbm' '{L}/cbm/codebase-memory-mcp.exe' hook-augment",
+                  "timeout": 15
+                }
+              ]
+            },
+            {
+              "matcher": "clear",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "LOCALAPPDATA='{L}/fakehome-cbm/AppData/Local' USERPROFILE='{L}/fakehome-cbm' '{L}/cbm/codebase-memory-mcp.exe' hook-augment",
+                  "timeout": 15
+                }
+              ]
+            },
+            {
+              "matcher": "compact",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "LOCALAPPDATA='{L}/fakehome-cbm/AppData/Local' USERPROFILE='{L}/fakehome-cbm' '{L}/cbm/codebase-memory-mcp.exe' hook-augment",
+                  "timeout": 15
+                }
+              ]
+            }
+          ],
+          "SubagentStart": [
+            {
+              "matcher": "*",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "LOCALAPPDATA='{L}/fakehome-cbm/AppData/Local' USERPROFILE='{L}/fakehome-cbm' '{L}/cbm/codebase-memory-mcp.exe' hook-augment",
+                  "timeout": 15
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "allowedTools": [
+        "mcp__codebase-memory-mcp",
+        "Agent"
+      ]
+    },
+    "token-savior": {
+      "env": {
+        "TOKEN_SAVIOR_DATA_DIR": "{run}/ts-data",
+        "TOKEN_SAVIOR_STATS_DIR": "{run}/ts-stats",
+        "TOKEN_SAVIOR_PYTHON": "{L}/uvt/token-savior-recall/Scripts/python.exe",
+        "TS_BASH_COMPACT": "1",
+        "TS_BASH_REWRITE": "1",
+        "TOKEN_SAVIOR_PROFILE": "optimized",
+        "TOKEN_SAVIOR_CLIENT": "claude-code"
+      },
+      "mcpConfig": {
+        "mcpServers": {
+          "token-savior": {
+            "command": "{L}/tbin/token-savior.exe",
+            "args": [],
+            "env": {
+              "WORKSPACE_ROOTS": "{copy}"
+            }
+          }
+        }
+      },
+      "settings": {
+        "hooks": {
+          "PostToolUse": [
+            {
+              "matcher": "Bash|WebFetch|Read|Grep|mcp__playwright__.*|mcp__token-savior[\\w-]*__(search_codebase|get_function_source|get_class_source)",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "{L}/uvt/token-savior-recall/Scripts/python.exe -m token_savior.hooks.tool_capture_hook",
+                  "timeout": 5000
+                }
+              ]
+            },
+            {
+              "matcher": "Bash|WebFetch",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "bash {L}/uvt/token-savior-recall/Lib/site-packages/token_savior/hooks/memory-posttooluse.sh",
+                  "timeout": 3000
+                }
+              ]
+            }
+          ],
+          "PreToolUse": [
+            {
+              "matcher": "Bash",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "{L}/uvt/token-savior-recall/Scripts/python.exe -m token_savior.hooks.bash_rewriter_hook",
+                  "timeout": 2000
+                }
+              ]
+            },
+            {
+              "matcher": "mcp__token-savior[\\w-]*__get_function_source|mcp__token-savior[\\w-]*__get_class_source|mcp__token-savior[\\w-]*__get_edit_context|mcp__token-savior[\\w-]*__find_symbol|mcp__token-savior[\\w-]*__get_file_dependencies|mcp__token-savior[\\w-]*__replace_symbol_source|mcp__token-savior[\\w-]*__insert_near_symbol|mcp__token-savior[\\w-]*__apply_symbol_change_and_validate|mcp__token-savior[\\w-]*__apply_symbol_change_validate_with_rollback|Bash|Edit|Write|MultiEdit|NotebookEdit",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "bash {L}/uvt/token-savior-recall/Lib/site-packages/token_savior/hooks/memory-pretooluse.sh",
+                  "timeout": 2000
+                }
+              ]
+            },
+            {
+              "matcher": "Read|Bash|Edit|Write|NotebookEdit|mcp__token-savior[\\w-]*__(replace_symbol_source|insert_near_symbol|add_field_to_model|move_symbol|get_edit_context|get_full_context|get_function_source|get_class_source|ts_execute)",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "{L}/uvt/token-savior-recall/Scripts/python.exe -m token_savior.hooks.ts_discipline_guard",
+                  "timeout": 2000
+                }
+              ]
+            }
+          ],
+          "SessionStart": [
+            {
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "bash {L}/uvt/token-savior-recall/Lib/site-packages/token_savior/hooks/memory-session-start.sh",
+                  "timeout": 3000
+                }
+              ]
+            }
+          ],
+          "UserPromptSubmit": [
+            {
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "bash {L}/uvt/token-savior-recall/Lib/site-packages/token_savior/hooks/memory-userprompt.sh",
+                  "timeout": 1000
+                }
+              ]
+            }
+          ],
+          "PreCompact": [
+            {
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "bash {L}/uvt/token-savior-recall/Lib/site-packages/token_savior/hooks/memory-precompact.sh",
+                  "timeout": 5000
+                }
+              ]
+            }
+          ],
+          "Stop": [
+            {
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "bash {L}/uvt/token-savior-recall/Lib/site-packages/token_savior/hooks/memory-session-stop.sh stop",
+                  "timeout": 120000
+                }
+              ]
+            }
+          ],
+          "SessionEnd": [
+            {
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "bash {L}/uvt/token-savior-recall/Lib/site-packages/token_savior/hooks/memory-session-stop.sh end",
+                  "timeout": 120000
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "allowedTools": [
+        "mcp__token-savior"
+      ]
+    },
+    "context-os": {
+      "env": {
+        "PATH": "{PY}{pathsep}{PATH}"
+      },
+      "prepare": [
+        [
+          "bash",
+          "{COS}/setup.sh"
+        ]
+      ],
+      "settingSources": "project,local",
+      "ignoreChanged": "^(CLAUDE[.]md|[.]claudeignore|[.]gitignore|[.]context-os/|[.]claude/)"
+    }
+  }
+}

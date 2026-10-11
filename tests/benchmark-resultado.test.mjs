@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { localPath } from './paths.mjs';
-import { loadCases, plan, claudeArgs, conferir, runError, summarize, markdownReport } from '../scripts/benchmark-outcome.mjs';
+import { loadCases, plan, claudeArgs, conferir, runError, summarize, markdownReport, loadArms, substituir, hookContextChars, parseStream } from '../scripts/benchmark-outcome.mjs';
 
 test('casos: caminho relativo ao arquivo, {casesDir} nos comandos, campos obrigatórios', () => {
   const dir = mkdtempSync(join(tmpdir(), 'ct-bench-'));
@@ -35,6 +35,44 @@ test('braços: só o "with" carrega o plugin; os dois ignoram configuração do 
   const itens = plan([{ id: 'x' }, { id: 'y' }], ['without', 'with'], 2);
   assert.deepEqual(itens.map((i) => `${i.case.id}${i.rep}`), ['x1', 'x1', 'x2', 'x2', 'y1', 'y1', 'y2', 'y2']);
   assert.deepEqual(itens.map((i) => i.arm), ['without', 'with', 'without', 'with', 'without', 'with', 'without', 'with'], 'braços alternados');
+});
+
+test('braços de outras ferramentas: arquivo, variáveis, settings/MCP/plugin e o isolamento mantido', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ct-bench-'));
+  try {
+    const file = join(dir, 'arms.json');
+    writeFileSync(file, JSON.stringify({ vars: { T: '/opt/t' }, arms: { outra: {
+      pluginDir: '{T}/plugin', allowedTools: ['mcp__outra'], settingSources: 'project,local',
+      env: { PATH: '{T}/bin{pathsep}{PATH}' }, mcpConfig: { mcpServers: { outra: { command: '{T}/srv', args: ['--root', '{copy}'] } } },
+    } } }));
+    const defs = loadArms(file);
+    assert.ok(defs.arms.without && defs.arms.with && defs.arms['context-tools'], 'embutidos continuam');
+    assert.deepEqual(defs.arms['context-tools'], defs.arms.with);
+    const spec = substituir(defs.arms.outra, { ...defs.vars, copy: '/tmp/c', PATH: '/bin', pathsep: ':' });
+    assert.equal(spec.env.PATH, '/opt/t/bin:/bin');
+    assert.deepEqual(spec.mcpConfig.mcpServers.outra.args, ['--root', '/tmp/c']);
+    assert.equal(substituir('{nao_existe}', {}), '{nao_existe}', 'variável desconhecida fica como está');
+    const a = claudeArgs(spec, { perRunCost: 1 }, { settings: '/r/settings.json', mcp: '/r/mcp.json' });
+    assert.ok(a.includes('--strict-mcp-config') && a.includes('--include-hook-events'));
+    assert.equal(a[a.indexOf('--setting-sources') + 1], 'project,local');
+    assert.equal(a[a.indexOf('--plugin-dir') + 1], '/opt/t/plugin');
+    assert.equal(a[a.indexOf('--settings') + 1], '/r/settings.json');
+    assert.equal(a[a.indexOf('--mcp-config') + 1], '/r/mcp.json');
+    assert.ok(a.includes('mcp__outra') && a.includes('Read'), 'ferramentas MCP somam às comuns');
+    assert.equal(claudeArgs('without')[claudeArgs('without').indexOf('--setting-sources') + 1], 'project');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('o que os hooks de qualquer ferramenta injetaram, lido dos eventos do stream', () => {
+  const ev = (hook_event, stdout, extra = {}) => ({ type: 'system', subtype: 'hook_response', hook_name: `${hook_event}:x`, hook_event, stdout, exit_code: 0, ...extra });
+  assert.equal(hookContextChars(ev('PreToolUse', JSON.stringify({ hookSpecificOutput: { additionalContext: 'abcd' } }))), 4);
+  assert.equal(hookContextChars(ev('PreToolUse', JSON.stringify({ hookSpecificOutput: { permissionDecision: 'allow', permissionDecisionReason: 'xy' } }))), 2);
+  assert.equal(hookContextChars(ev('PreToolUse', 'texto cru')), 0, 'stdout cru de PreToolUse não chega ao modelo');
+  assert.equal(hookContextChars(ev('SessionStart', 'texto cru')), 9);
+  assert.equal(hookContextChars(ev('PreToolUse', '', { exit_code: 2, stderr: 'bloqueado' })), 9);
+  assert.equal(hookContextChars(ev('PostToolUse', JSON.stringify({ systemMessage: 'só para o usuário' }))), 0);
+  const { injected } = parseStream([ev('SessionStart', 'abc'), ev('PreToolUse', ''), ev('SessionStart', 'de')].map((e) => JSON.stringify(e)).join('\n'));
+  assert.deepEqual(injected, { emitted: 2, contextChars: 5, byHook: { 'SessionStart:x': { emitted: 2, contextChars: 5 } } });
 });
 
 test('conferência por resposta e rejeição de execução sem chamada ao modelo', () => {

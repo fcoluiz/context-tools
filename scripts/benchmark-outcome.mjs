@@ -6,7 +6,10 @@
 // roda numa cópia limpa do repositório-alvo, nos dois braços:
 //   - without: `claude -p` só com as configurações do PROJETO (nenhum plugin, hook ou servidor MCP
 //              do usuário entra) — o agente como ele é;
-//   - with:    o mesmo, mais `--plugin-dir <este repositório>` — skill e hooks do context-tools.
+//   - with:    o mesmo, mais `--plugin-dir <este repositório>` — skill e hooks do context-tools
+//              (`context-tools` é o mesmo braço com outro nome);
+//   - outros:  ferramentas de terceiros com o mesmo propósito, declaradas em `--arms-file` (ver
+//              `loadArms`): plugin, settings com hooks, servidor MCP, variáveis de ambiente.
 // O resultado é conferido por um comando (testes) ou por expressões sobre a resposta final.
 //
 // Custo real: cada execução é uma sessão de agente paga. Há teto por execução (--per-run-cost, que vai
@@ -14,8 +17,8 @@
 // `--dry-run` mostra o plano sem chamar nada.
 //
 // Uso:
-//   benchmark-outcome.mjs --cases=<arquivo.json> [--arms=without,with] [--reps=1] [--max-cost=10]
-//                         [--per-run-cost=2] [--model=<modelo>] [--parallel=N] [--out=<pasta>] [--dry-run]
+//   benchmark-outcome.mjs --cases=<arquivo.json> [--arms=without,with] [--arms-file=<arquivo.json>] [--reps=1]
+//                         [--max-cost=10] [--per-run-cost=2] [--model=<modelo>] [--parallel=N] [--out=<pasta>] [--dry-run]
 //
 // Arquivo de casos: { "cases": [ { "id", "repo" (pasta local) ou "git" (URL), "ref"?, "prompt", "remove"?: [caminhos],
 //   "setup"?: [[comando, ...args], …], "check": { "command": [cmd, ...args] } | { "answer": [regex, …] } } ] }
@@ -25,7 +28,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { homedir, tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { delimiter, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMain } from './lib/roots.mjs';
 import { run, runAsync } from './lib/setup-shared.mjs';
@@ -69,14 +72,47 @@ export function plan(cases, arms = ['without', 'with'], reps = 1) {
   return out;
 }
 
-export function claudeArgs(arm, { perRunCost, model } = {}) {
+const BRACOS_EMBUTIDOS = { without: {}, with: { pluginDir: PLUGIN_DIR }, 'context-tools': { pluginDir: PLUGIN_DIR } };
+
+/**
+ * Braços de outras ferramentas: `{ "vars": { nome: valor }, "arms": { nome: espec } }`. A espec
+ * reproduz o que o instalador da ferramenta faria, sem tocar na configuração do usuário:
+ *   pluginDir: pasta ou lista (`--plugin-dir`) · settings: objeto (`--settings`, hooks) ·
+ *   mcpConfig: objeto `{ mcpServers }` (`--mcp-config`) · env: variáveis da sessão ·
+ *   allowedTools: ferramentas além das comuns (as MCP da ferramenta) · prepare: comandos
+ *   `[[cmd, ...args]]` rodados na cópia antes do agente (o instalador por projeto da ferramenta) ·
+ *   settingSources: em vez de `project` (um instalador que grava hooks em `settings.local.json` pede
+ *   `project,local`; a cópia é nova, então só há o que ele gravou) · ignoreChanged: regex de
+ *   arquivos que a ferramenta cria ou muda na cópia e não contam como alteração do agente.
+ * Em qualquer texto, `{var}` vem de `vars`, e por execução: `{copy}` (a cópia), `{run}` (pasta da
+ * execução, fora da cópia), `{PATH}` e `{pathsep}`. Caminhos locais ficam em `*.local.json`.
+ */
+export function loadArms(file) {
+  const data = file ? JSON.parse(readFileSync(file, 'utf8')) : {};
+  return { vars: data.vars || {}, arms: { ...BRACOS_EMBUTIDOS, ...(data.arms || {}) } };
+}
+
+export function substituir(valor, vars) {
+  if (typeof valor === 'string') return valor.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
+  if (Array.isArray(valor)) return valor.map((v) => substituir(v, vars));
+  if (valor && typeof valor === 'object') return Object.fromEntries(Object.entries(valor).map(([k, v]) => [k, substituir(v, vars)]));
+  return valor;
+}
+
+/** `arm`: nome de braço embutido ou espec já resolvida; `files`: settings/MCP gravados para a execução. */
+export function claudeArgs(arm, { perRunCost, model } = {}, files = {}) {
+  const spec = typeof arm === 'string' ? (BRACOS_EMBUTIDOS[arm] || {}) : (arm || {});
+  // `--include-hook-events` só acrescenta eventos à saída: dá para medir o que os hooks de qualquer
+  // ferramenta puseram no contexto, não só os do context-tools.
   const args = [
-    '-p', '--output-format', 'stream-json', '--verbose', '--setting-sources', 'project', '--strict-mcp-config',
-    '--no-session-persistence', '--permission-mode', 'acceptEdits', '--allowedTools', ...ALLOWED_TOOLS,
+    '-p', '--output-format', 'stream-json', '--verbose', '--include-hook-events', '--setting-sources', spec.settingSources || 'project', '--strict-mcp-config',
+    '--no-session-persistence', '--permission-mode', 'acceptEdits', '--allowedTools', ...ALLOWED_TOOLS, ...(spec.allowedTools || []),
   ];
   if (perRunCost) args.push('--max-budget-usd', String(perRunCost));
   if (model) args.push('--model', model);
-  if (arm === 'with') args.push('--plugin-dir', PLUGIN_DIR);
+  for (const p of [spec.pluginDir || []].flat()) args.push('--plugin-dir', p);
+  if (files.settings) args.push('--settings', files.settings);
+  if (files.mcp) args.push('--mcp-config', files.mcp);
   return args;
 }
 
@@ -168,10 +204,19 @@ export function runError(json, r = {}) {
 export function parseStream(stdout) {
   let json = null;
   const tools = [];
+  const injected = { emitted: 0, contextChars: 0, byHook: {} };
   for (const line of String(stdout || '').split('\n')) {
     let ev;
     try { ev = JSON.parse(line); } catch { continue; }
     if (ev.type === 'result') json = ev;
+    if (ev.type === 'system' && ev.subtype === 'hook_response') {
+      const n = hookContextChars(ev);
+      if (n > 0) {
+        const h = (injected.byHook[ev.hook_name || ev.hook_event || '?'] ||= { emitted: 0, contextChars: 0 });
+        injected.emitted++; h.emitted++;
+        injected.contextChars += n; h.contextChars += n;
+      }
+    }
     if (ev.type !== 'assistant') continue;
     for (const c of ev.message?.content || []) {
       if (c.type !== 'tool_use') continue;
@@ -180,7 +225,25 @@ export function parseStream(stdout) {
       tools.push(`${c.name}${alvo ? `: ${String(alvo).replace(/\s+/g, ' ').slice(0, 160)}` : ''}`);
     }
   }
-  return { json, tools };
+  return { json, tools, injected };
+}
+
+/**
+ * Quanto de uma resposta de hook chega ao modelo: `additionalContext`, o motivo de um bloqueio
+ * (`permissionDecisionReason`, `reason`), o stderr de um exit 2, e o stdout cru de SessionStart e
+ * UserPromptSubmit (nos outros eventos, stdout que não é JSON não vai para o contexto).
+ */
+export function hookContextChars(ev) {
+  if (ev.exit_code === 2) return String(ev.stderr || '').trim().length;
+  const out = String(ev.stdout ?? ev.output ?? '').trim();
+  if (!out) return 0;
+  let j = null;
+  try { j = JSON.parse(out); } catch { /* texto cru */ }
+  if (j && typeof j === 'object') {
+    const h = j.hookSpecificOutput || {};
+    return [h.additionalContext, h.permissionDecisionReason, j.reason].reduce((a, s) => a + (s ? String(s).length : 0), 0);
+  }
+  return /^(SessionStart|UserPromptSubmit)$/.test(ev.hook_event || '') ? out.length : 0;
 }
 
 /** Uma execução registrada conta como medida: o modelo foi chamado e não houve limite de uso. */
@@ -218,15 +281,30 @@ async function executar(item, opts) {
   const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !ENV_DESCARTADO.test(k)));
   // Fora da cópia: o agente não vê o arquivo, e o `git diff` da conferência não o conta.
   if (opts.hookLogFile) env.CONTEXT_TOOLS_HOOK_LOG = opts.hookLogFile;
+  const runDir = mkdtempSync(join(tmpdir(), 'ct-arm-'));
+  const pathKey = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') || 'PATH';
+  const defs = opts.armDefs || loadArms();
+  // Barras normais: valem no Windows e dentro do bash que roda os hooks.
+  const barra = (p) => p.replace(/\\/g, '/');
+  const spec = substituir(defs.arms[item.arm] || {}, { ...defs.vars, copy: barra(dir), run: barra(runDir), PATH: env[pathKey] || '', pathsep: delimiter });
+  for (const [k, v] of Object.entries(spec.env || {})) env[k.toUpperCase() === 'PATH' ? pathKey : k] = v;
+  for (const [cmd, ...a] of spec.prepare || []) {
+    const p = spawnSync(cmd, a, { cwd: dir, env, encoding: 'utf8', timeout: 600000 });
+    if (p.status !== 0) throw new Error(`arm ${item.arm}: prepare failed (${cmd} ${a.join(' ')}): ${String(p.stderr || p.stdout || p.error).slice(0, 400)}`);
+  }
+  const files = {};
+  if (spec.settings) writeFileSync(files.settings = join(runDir, 'settings.json'), JSON.stringify(spec.settings, null, 2));
+  if (spec.mcpConfig) writeFileSync(files.mcp = join(runDir, 'mcp.json'), JSON.stringify(spec.mcpConfig, null, 2));
   const started = Date.now();
-  const r = await runAsync(opts.claude || 'claude', claudeArgs(item.arm, opts), {
+  const r = await runAsync(opts.claude || 'claude', claudeArgs(spec, opts, files), {
     cwd: dir, env, input: item.case.prompt, timeout: 20 * 60 * 1000, maxBuffer: 64 << 20,
   });
-  const { json, tools } = parseStream(r.stdout);
+  const { json, tools, injected } = parseStream(r.stdout);
   if (opts.traceFile) writeFileSync(opts.traceFile, r.stdout);
   const resposta = json?.result || '';
   const check = conferir(item.case.check, dir, resposta);
-  const changed = spawnSync('git', ['diff', '--name-only', 'HEAD'], { cwd: dir, encoding: 'utf8' }).stdout.split('\n').filter(Boolean);
+  const changed = spawnSync('git', ['diff', '--name-only', 'HEAD'], { cwd: dir, encoding: 'utf8' }).stdout.split('\n').filter(Boolean)
+    .filter((f) => !spec.ignoreChanged || !new RegExp(spec.ignoreChanged).test(f));
   const u = json?.usage || {};
   const out = {
     case: item.case.id, arm: item.arm, rep: item.rep,
@@ -239,13 +317,17 @@ async function executar(item, opts) {
       cacheCreation: u.cache_creation_input_tokens ?? null, cacheRead: u.cache_read_input_tokens ?? null,
     },
     hooks: opts.hookLogFile ? summarizeHookLog(safeRead(opts.hookLogFile)) : null,
+    injected,
     filesChanged: changed.filter((f) => !/^(ai-context|\.claude|\.codex)\//.test(f)).length,
     error: runError(json, r),
     model: json?.modelUsage ? Object.keys(json.modelUsage).join(',') : (opts.model || null),
     tools: tools.map((t) => anonimizar(t, dir)),
     answer: anonimizar(resposta.slice(0, 2000), dir),
   };
-  if (!opts.keep) rmSync(dir, { recursive: true, force: true });
+  if (!opts.keep) {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(runDir, { recursive: true, force: true });
+  }
   return out;
 }
 
@@ -290,6 +372,7 @@ export function summarize(results) {
       medianDurationS: mediana(rs.map((r) => r.durationMs / 1000)),
       medianContextTokens: mediana(rs.map((r) => (r.tokens.input || 0) + (r.tokens.cacheCreation || 0) + (r.tokens.cacheRead || 0))),
       medianHookChars: mediana(rs.filter((r) => r.hooks).map((r) => r.hooks.contextChars)),
+      medianInjectedChars: mediana(rs.filter((r) => r.injected).map((r) => r.injected.contextChars)),
     };
   }
   return resumo;
@@ -300,11 +383,11 @@ export function markdownReport(results, meta = {}) {
   const linhas = [
     `# Outcome benchmark — ${meta.date || new Date().toISOString().slice(0, 10)}`, '',
     `Model: ${meta.model || 'CLI default'} · CLI: ${meta.cli || 'claude'} · runs: ${results.length}`, '',
-    '| arm | solved | total cost | median cost | median turns | median duration | median context tokens |',
-    '|---|---:|---:|---:|---:|---:|---:|',
-    ...Object.entries(resumo).map(([arm, s]) => `| ${arm} | ${s.solved}/${s.runs} | $${s.totalCostUsd.toFixed(2)} | $${(s.medianCostUsd ?? 0).toFixed(2)} | ${s.medianTurns ?? '—'} | ${s.medianDurationS == null ? '—' : `${Math.round(s.medianDurationS)} s`} | ${s.medianContextTokens ?? '—'} |`),
+    '| arm | solved | total cost | median cost | median turns | median duration | median context tokens | median hook chars |',
+    '|---|---:|---:|---:|---:|---:|---:|---:|',
+    ...Object.entries(resumo).map(([arm, s]) => `| ${arm} | ${s.solved}/${s.runs} | $${s.totalCostUsd.toFixed(2)} | $${(s.medianCostUsd ?? 0).toFixed(2)} | ${s.medianTurns ?? '—'} | ${s.medianDurationS == null ? '—' : `${Math.round(s.medianDurationS)} s`} | ${s.medianContextTokens ?? '—'} | ${s.medianInjectedChars ?? '—'} |`),
     '', '| case | arm | solved | cost | turns | hook outputs (chars) | files changed | check |', '|---|---|---|---:|---:|---:|---:|---|',
-    ...results.map((r) => `| ${r.case} | ${r.arm} | ${r.ok ? 'yes' : 'no'} | $${r.costUsd.toFixed(2)} | ${r.turns ?? '—'} | ${r.hooks ? `${r.hooks.emitted} (${r.hooks.contextChars})` : '—'} | ${r.filesChanged} | ${String(r.error || r.check).replace(/\|/g, '\\|')} |`),
+    ...results.map((r) => `| ${r.case} | ${r.arm} | ${r.ok ? 'yes' : 'no'} | $${r.costUsd.toFixed(2)} | ${r.turns ?? '—'} | ${r.injected ? `${r.injected.emitted} (${r.injected.contextChars})` : r.hooks ? `${r.hooks.emitted} (${r.hooks.contextChars})` : '—'} | ${r.filesChanged} | ${String(r.error || r.check).replace(/\|/g, '\\|')} |`),
   ];
   return linhas.join('\n');
 }
@@ -312,10 +395,12 @@ export function markdownReport(results, meta = {}) {
 async function main() {
   const args = process.argv.slice(2);
   const file = arg(args, '--cases');
-  if (!file) { console.log('usage: benchmark-outcome.mjs --cases=<file.json> [--arms=without,with] [--reps=1] [--max-cost=10] [--per-run-cost=2] [--model=<m>] [--parallel=1] [--out=<dir>] [--resume] [--dry-run]'); return 2; }
+  if (!file) { console.log('usage: benchmark-outcome.mjs --cases=<file.json> [--arms=without,with] [--arms-file=<file.json>] [--reps=1] [--max-cost=10] [--per-run-cost=2] [--model=<m>] [--parallel=1] [--out=<dir>] [--resume] [--dry-run]'); return 2; }
   const cases = loadCases(file);
   const arms = (arg(args, '--arms', 'without,with')).split(',').map((s) => s.trim()).filter(Boolean);
-  if (arms.some((a) => a !== 'with' && a !== 'without')) throw new Error('arms must be with and/or without');
+  const armDefs = loadArms(arg(args, '--arms-file'));
+  const desconhecidos = arms.filter((a) => !armDefs.arms[a]);
+  if (desconhecidos.length) throw new Error(`unknown arm(s): ${desconhecidos.join(', ')}; known: ${Object.keys(armDefs.arms).join(', ')} (others come from --arms-file)`);
   const reps = Math.max(1, Number(arg(args, '--reps', '1')) || 1);
   const maxCost = Number(arg(args, '--max-cost', '10'));
   const perRunCost = Number(arg(args, '--per-run-cost', '2'));
@@ -324,7 +409,7 @@ async function main() {
   console.log(`plan: ${cases.length} case(s) × ${reps} rep(s) × ${arms.join('/')} = ${itens.length} run(s); per-run cap $${perRunCost}, total cap $${maxCost}`);
   if (args.includes('--dry-run')) {
     for (const i of itens) console.log(`  ${i.case.id} · ${i.arm} · rep ${i.rep}`);
-    console.log(`claude ${claudeArgs('with', { perRunCost, model }).join(' ')}`);
+    for (const a of arms) console.log(`${a}: claude ${claudeArgs(substituir(armDefs.arms[a], armDefs.vars), { perRunCost, model }, { settings: armDefs.arms[a].settings && '<run>/settings.json', mcp: armDefs.arms[a].mcpConfig && '<run>/mcp.json' }).join(' ')}`);
     return 0;
   }
   // Sem login, cada execução "termina" em segundos com custo zero e a tarefa não resolvida — um
@@ -369,7 +454,7 @@ async function main() {
       const traceFile = join(outDir, `${item.case.id}.${item.arm}.${item.rep}.jsonl`);
       const hookLogFile = join(outDir, `${item.case.id}.${item.arm}.${item.rep}.hooks.jsonl`);
       rmSync(hookLogFile, { force: true });
-      const r = await executar(item, { perRunCost, model, keep: args.includes('--keep'), traceFile, hookLogFile, mirrors, claude: arg(args, '--claude', 'claude') });
+      const r = await executar(item, { armDefs, perRunCost, model, keep: args.includes('--keep'), traceFile, hookLogFile, mirrors, claude: arg(args, '--claude', 'claude') });
       const prefixo = parallel === 1 ? '' : `▶ ${rotulo} … `;
       if (r.error === 'no-model-call') {
         parar = parar || `${prefixo}no model call — ${r.answer.slice(0, 120) || 'empty answer'}. Stopping: nothing here would be a measurement.`;

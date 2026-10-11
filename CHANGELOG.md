@@ -10,6 +10,12 @@ reconstructed from git history.
 
 ### Added
 
+- **Install or update with one short command.** `npx -y github:fcoluiz/context-tools` installs or
+  updates context-tools for every agent on the machine, for the user, without questions — the same
+  as `context-tools-setup-all --global --yes`, which still works. Flags add to it: `--target=…`,
+  `--mcp`, `--dry-run`; `--project <dir>` sets up one project instead. The session-start notice
+  of a newer release now shows this command. The MCP server stays off by default: in every measured
+  round the value came from the hooks, and its tool definitions cost ~500 tokens per request.
 - **Outcome round 5b: where Haiku's extra cost came from.** The with-plugin arm of round 5's bug
   fixes, rerun twice with the hook log: the evidence pack before a Grep was the largest injection
   (3,200 characters, mostly noise), and the dependency note cut `npm test`/`npm install` attempts
@@ -22,6 +28,10 @@ reconstructed from git history.
 
 ### Fixed
 
+- **The installer runs when npm calls it through a symlink.** On Linux and macOS, an npm bin is a
+  symlink, and so is a package npm links from a local folder; the installers compared `argv[1]` with
+  their own path without resolving it, and exited without doing anything. They now use the same
+  real-path check as the other scripts.
 - **The evidence pack before a Grep no longer fills its budget with noise.** When a searched name
   has an exact definition, the `PreToolUse` pack now lists the real definitions, one line for the
   files that only import the name (`const compare = require('./compare')`, `import … from`), and one

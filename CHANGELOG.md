@@ -27,8 +27,11 @@ reconstructed from git history.
   fixes, rerun twice with the hook log: the evidence pack before a Grep was the largest injection
   (3,200 characters, mostly noise), and the dependency note cut `npm test`/`npm install` attempts
   from 38 to 23. With both changes the arm cost $1.48 against $1.66 without the plugin, but the drop
-  came from cases where the pack barely fired — variance, recorded as such; the README row stays
+  came from cases where the pack barely fired — variance, recorded as such; the README row stays.
+  A rerun of round 4's reading questions on Haiku with these changes solved 53/55, as before
   ([report](docs/benchmarks/outcome-round5b-2026-10-11.pt-BR.md)).
+- **Outcome harness: a path the agent made up is still anonymized.** Any path ending in the
+  temporary copy's unique name becomes `<copy>`, even in a spelling that does not exist on disk.
 
 ### Fixed
 

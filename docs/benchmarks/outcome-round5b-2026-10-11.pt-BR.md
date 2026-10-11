@@ -69,4 +69,28 @@ Nas execuções, o PreToolUse de `max-satisfying` foi de 3.200 · 1.311 · 3.200
   da rodada 5 no README continua como medida; esta rodada explica de onde vinha o custo, não o
   substitui.
 
-Custo desta rodada: $3.25 (5b + 5c).
+## Conferência de regressão nas perguntas de leitura (rodada 4b)
+
+O pacote enxuto tirou informação do contexto (linhas textuais, local das definições parciais) e o
+PreToolUse passou a calar quando só há nomes de teste parecidos. O risco estava nas perguntas de
+leitura, onde o plugin mais rendia. Repetido o braço com o plugin da
+[rodada 4](outcome-round4-2026-10-10.pt-BR.md) no Haiku 4.5 — 11 casos × 5, mesmos commits —, com
+as duas mudanças:
+
+| | rodada 4 (2.7.3) | rodada 4b (este PR) |
+|---|---:|---:|
+| resolvidos | 53/55 | **53/55** |
+| custo total | $3.86 | $3.47 |
+
+Por caso, 9 dos 11 repetiram o resultado. `ts-zod-escaperegex-users` foi de 4/5 para 5/5;
+`py-requests-redirect-limit` foi de 5/5 para 4/5, com a mesma resposta errada que a rodada 3 já
+registrava (`Session.resolve_redirects`, sem `SessionRedirectMixin`). A falha que restou em
+`EnsureDateTime` é a mesma da rodada 4 (as chamadas internas ficaram de fora). Nenhuma mudança de
+acerto aponta para o pacote; o custo menor está dentro da variação. Dados:
+[`results-2026-10-11-round4b-haiku.json`](outcome/results-2026-10-11-round4b-haiku.json).
+
+Nesta rodada, um agente escreveu o caminho da cópia temporária numa grafia que não existe
+(`/d/<usuário>/AppData/…`), que o anonimizador não cobria; o harness agora troca por `<copy>`
+qualquer caminho que termine no nome único da cópia, e os dados publicados foram corrigidos assim.
+
+Custo destas rodadas: $3.25 (5b + 5c) e $3.47 (4b).

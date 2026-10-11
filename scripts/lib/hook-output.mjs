@@ -7,9 +7,9 @@
 // diferentes que dizem a mesma coisa são, para o agente, a mesma mensagem. A janela é curta
 // de propósito — um SessionStart legítimo depois de /compact ou /clear volta a ser emitido.
 
-import { closeSync, mkdirSync, openSync, readdirSync, statSync, unlinkSync, utimesSync } from 'node:fs';
+import { appendFileSync, closeSync, mkdirSync, openSync, readdirSync, statSync, unlinkSync, utimesSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { loadConfig, safe, scriptCommand, statePath } from './roots.mjs';
 
 export const HOOK_DEDUPE_WINDOW_MS = 90 * 1000;
@@ -89,7 +89,21 @@ export function writeHookOutput(root, payload, opts = {}) {
   const json = parsed ? JSON.stringify(parsed) : payload;
   const event = parsed?.hookSpecificOutput?.hookEventName || 'unknown';
   const text = parsed?.hookSpecificOutput?.additionalContext || parsed?.systemMessage || '';
-  if (text && !claimHookEmission(root, event, text, opts)) return false;
+  const emit = !text || claimHookEmission(root, event, text, opts);
+  if (process.env.CONTEXT_TOOLS_HOOK_LOG) logHookOutput(process.env.CONTEXT_TOOLS_HOOK_LOG, event, parsed, emit);
+  if (!emit) return false;
   process.stdout.write(json);
   return true;
+}
+
+/**
+ * Com `CONTEXT_TOOLS_HOOK_LOG=<arquivo>`, cada saída vira uma linha JSONL. O `stream-json` do
+ * `claude -p` não mostra o que PreToolUse/PostToolUse injetam; o benchmark de resultado lê este
+ * arquivo para saber quanto cada hook pôs no contexto de cada execução. Falha de disco não cala o hook.
+ */
+function logHookOutput(file, event, parsed, emitted) {
+  const context = parsed?.hookSpecificOutput?.additionalContext || '';
+  const system = parsed?.systemMessage || '';
+  const entry = { t: Date.now(), event, script: basename(process.argv[1] || ''), emitted, contextChars: context.length, systemChars: system.length, context, system };
+  safe(() => appendFileSync(file, `${JSON.stringify(entry)}\n`), null);
 }

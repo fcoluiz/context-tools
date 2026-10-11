@@ -177,6 +177,8 @@ export function anonimizar(texto, dir, home = homedir()) {
 function executar(item, opts) {
   const dir = prepararCopia(item.case);
   const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !ENV_DESCARTADO.test(k)));
+  // Fora da cópia: o agente não vê o arquivo, e o `git diff` da conferência não o conta.
+  if (opts.hookLogFile) env.CONTEXT_TOOLS_HOOK_LOG = opts.hookLogFile;
   const started = Date.now();
   const r = run(opts.claude || 'claude', claudeArgs(item.arm, opts), {
     cwd: dir, env, input: item.case.prompt, timeout: 20 * 60 * 1000, maxBuffer: 64 << 20,
@@ -197,6 +199,7 @@ function executar(item, opts) {
       input: u.input_tokens ?? null, output: u.output_tokens ?? null,
       cacheCreation: u.cache_creation_input_tokens ?? null, cacheRead: u.cache_read_input_tokens ?? null,
     },
+    hooks: opts.hookLogFile ? summarizeHookLog(safeRead(opts.hookLogFile)) : null,
     filesChanged: changed.filter((f) => !/^(ai-context|\.claude|\.codex)\//.test(f)).length,
     error: runError(json, r),
     model: json?.modelUsage ? Object.keys(json.modelUsage).join(',') : (opts.model || null),
@@ -204,6 +207,26 @@ function executar(item, opts) {
     answer: anonimizar(resposta.slice(0, 2000), dir),
   };
   if (!opts.keep) rmSync(dir, { recursive: true, force: true });
+  return out;
+}
+
+const safeRead = (file) => { try { return readFileSync(file, 'utf8'); } catch { return ''; } };
+
+/**
+ * O que os hooks puseram no contexto de uma execução, a partir do log de `CONTEXT_TOOLS_HOOK_LOG`:
+ * quantas saídas e quantos caracteres, no total e por script. Só conta o que foi emitido — uma saída
+ * deduplicada não chega ao agente. O texto fica no log bruto, não em `results.json`.
+ */
+export function summarizeHookLog(text) {
+  const out = { emitted: 0, contextChars: 0, deduped: 0, byScript: {} };
+  for (const line of String(text || '').split('\n')) {
+    let e;
+    try { e = JSON.parse(line); } catch { continue; }
+    if (!e.emitted) { out.deduped++; continue; }
+    const s = (out.byScript[`${e.script || '?'} · ${e.event || '?'}`] ||= { emitted: 0, contextChars: 0 });
+    out.emitted++; s.emitted++;
+    out.contextChars += e.contextChars || 0; s.contextChars += e.contextChars || 0;
+  }
   return out;
 }
 
@@ -227,6 +250,7 @@ export function summarize(results) {
       medianTurns: mediana(rs.map((r) => r.turns)),
       medianDurationS: mediana(rs.map((r) => r.durationMs / 1000)),
       medianContextTokens: mediana(rs.map((r) => (r.tokens.input || 0) + (r.tokens.cacheCreation || 0) + (r.tokens.cacheRead || 0))),
+      medianHookChars: mediana(rs.filter((r) => r.hooks).map((r) => r.hooks.contextChars)),
     };
   }
   return resumo;
@@ -240,8 +264,8 @@ export function markdownReport(results, meta = {}) {
     '| arm | solved | total cost | median cost | median turns | median duration | median context tokens |',
     '|---|---:|---:|---:|---:|---:|---:|',
     ...Object.entries(resumo).map(([arm, s]) => `| ${arm} | ${s.solved}/${s.runs} | $${s.totalCostUsd.toFixed(2)} | $${(s.medianCostUsd ?? 0).toFixed(2)} | ${s.medianTurns ?? '—'} | ${s.medianDurationS == null ? '—' : `${Math.round(s.medianDurationS)} s`} | ${s.medianContextTokens ?? '—'} |`),
-    '', '| case | arm | solved | cost | turns | files changed | check |', '|---|---|---|---:|---:|---:|---|',
-    ...results.map((r) => `| ${r.case} | ${r.arm} | ${r.ok ? 'yes' : 'no'} | $${r.costUsd.toFixed(2)} | ${r.turns ?? '—'} | ${r.filesChanged} | ${String(r.error || r.check).replace(/\|/g, '\\|')} |`),
+    '', '| case | arm | solved | cost | turns | hook outputs (chars) | files changed | check |', '|---|---|---|---:|---:|---:|---:|---|',
+    ...results.map((r) => `| ${r.case} | ${r.arm} | ${r.ok ? 'yes' : 'no'} | $${r.costUsd.toFixed(2)} | ${r.turns ?? '—'} | ${r.hooks ? `${r.hooks.emitted} (${r.hooks.contextChars})` : '—'} | ${r.filesChanged} | ${String(r.error || r.check).replace(/\|/g, '\\|')} |`),
   ];
   return linhas.join('\n');
 }
@@ -286,7 +310,9 @@ async function main() {
     if (gasto >= maxCost) { console.log(`total cap reached ($${gasto.toFixed(2)}); ${itens.length - results.length} run(s) not started`); break; }
     process.stdout.write(`▶ ${item.case.id} · ${item.arm} · rep ${item.rep} … `);
     const traceFile = join(outDir, `${item.case.id}.${item.arm}.${item.rep}.jsonl`);
-    const r = executar(item, { perRunCost, model, keep: args.includes('--keep'), traceFile });
+    const hookLogFile = join(outDir, `${item.case.id}.${item.arm}.${item.rep}.hooks.jsonl`);
+    rmSync(hookLogFile, { force: true });
+    const r = executar(item, { perRunCost, model, keep: args.includes('--keep'), traceFile, hookLogFile });
     if (r.error === 'no-model-call') {
       console.log(`no model call — ${r.answer.slice(0, 120) || 'empty answer'}. Stopping: nothing here would be a measurement.`);
       return 2;

@@ -7,8 +7,8 @@
 //
 // Não executa teste nenhum: só diz qual rodar. Quem decide e executa é o agente.
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, relative, resolve, sep } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { isMain, loadConfig, resolveRoot, runtimeHost, safe, statePath } from './lib/roots.mjs';
 import { writeHookOutput } from './lib/hook-output.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
@@ -119,7 +119,29 @@ export function sessionTestLine(root, cfg, t) {
   const command = detectTestCommand(root, cfg);
   if (!command) return '';
   const { script, single } = testDetails(root, command);
-  return t('ver.session', { cmd: command, script, single });
+  return t('ver.session', { cmd: command, script, single, install: missingDependencies(root, command) });
+}
+
+const INSTALL = { npm: 'npm install', pnpm: 'pnpm install', yarn: 'yarn install', bun: 'bun install' };
+
+/**
+ * O comando de instalação quando o projeto JS declara dependências e nenhuma está instalada; senão ''.
+ * Medido no benchmark de resultado (rodada 5): sem `node_modules`, os agentes gastavam turnos em
+ * `npm test` e `npm install` que não iam rodar — e o aviso dizia "npm test (roda `tap`)" como se fosse.
+ * Na dúvida, cala: `node_modules` em qualquer pasta acima até a raiz do repositório (workspace com
+ * hoisting) ou Yarn PnP bastam. Acima do `.git` não conta: um `node_modules` solto na pasta do usuário
+ * não instala as dependências deste projeto.
+ */
+export function missingDependencies(root, command) {
+  const manager = /^(npm|pnpm|yarn|bun) test$/.exec(command)?.[1];
+  if (!manager) return '';
+  const pkg = safe(() => JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')), null);
+  const declared = ['dependencies', 'devDependencies'].some((k) => pkg?.[k] && Object.keys(pkg[k]).length);
+  if (!declared || existsSync(resolve(root, '.pnp.cjs'))) return '';
+  for (let dir = resolve(root); ; dir = dirname(dir)) {
+    if (existsSync(join(dir, 'node_modules'))) return '';
+    if (existsSync(join(dir, '.git')) || dirname(dir) === dir) return INSTALL[manager];
+  }
 }
 
 /** O que `npm test` roda de fato e, quando o runner diz, como rodar um arquivo só. */

@@ -53,7 +53,9 @@ answer, and `--resume` runs only what is missing from a previous `results.json` 
 
 Each run's transcript (`<case>.<arm>.<rep>.jsonl`) is saved next to `results.json`, and each result
 lists the tools the agent called — a wrong answer then says whether the agent looked and misread, or
-never looked.
+never looked. What the hooks added to the context, which the transcript does not show, is logged
+per run in `<case>.<arm>.<rep>.hooks.jsonl` (via `CONTEXT_TOOLS_HOOK_LOG`), and each result has the
+count and size of the hook outputs (`hooks`).
 
 ## Reproducing the controlled benchmark
 

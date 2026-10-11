@@ -8,6 +8,15 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Outcome round 5: bug fixes on held-out cases.** Three bugs injected into node-semver
+  (`docs/benchmarks/outcome/semver-bugs.mjs`, one exact match required; the fix is checked by
+  running the library) and one question, on Sonnet 5 and Haiku 4.5. Everyone solved everything;
+  Sonnet was 23% cheaper with the plugin, Haiku 19% more expensive — the first row where the plugin
+  costs more, recorded as it is in the README table
+  ([report](docs/benchmarks/outcome-round5-2026-10-11.pt-BR.md)).
+
 ### Fixed
 
 - **A call is no longer a method in JS/TS files that have a class.** Any indented `name(` was

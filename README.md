@@ -168,8 +168,8 @@ TypeScript, C#, Java and PHP projects — with **zero symbols reported at the wr
 ## Does it help? Measured
 
 A real agent (`claude -p`) does the same task on a clean copy of a public repository, once without
-the plugin and once with it, and the answer is checked against a hand-verified ground truth. Five
-runs per arm per case:
+the plugin and once with it, and the answer is checked against a hand-verified ground truth (a fix
+is checked by running the code). Four or five runs per arm per case:
 
 | round | model | cases | without | with | cost with vs. without |
 |---|---|---|---:|---:|---:|
@@ -178,16 +178,22 @@ runs per arm per case:
 | 3 | Haiku 4.5 | 11 | 48/55 | 50/55 | −36% |
 | 4 | Sonnet 5 | the 5 new ones | 21/25 ¹ | **25/25** | −30% |
 | 4 | Haiku 4.5 | 11 | 48/55 ¹ | **53/55** | −18% |
+| 5 — **held out** | Sonnet 5 | 3 bug fixes + 1 question (JavaScript) | 16/16 | 16/16 | −23% |
+| 5 — **held out** | Haiku 4.5 | 3 bug fixes + 1 question (JavaScript) | 16/16 | 16/16 | **+19%** |
 
 ¹ Round 4 measured only the arm with the plugin (2.7.3); the arm without it is round 3's.
 
-- **Never worse, consistently cheaper.** The plugin solved at least as many tasks in every round and
-  cost less in every one; the gap is largest on "who uses X" questions and on the smaller model.
+- **Never fewer tasks solved.** In every round the plugin solved at least as many as the agent alone.
+- **Cheaper in 6 of 7 rows; not on Haiku fixing bugs.** The gap is largest on "who uses X" and "where
+  exactly" questions. On round 5's bug fixes everyone solved everything: Sonnet was 23% cheaper with
+  the plugin, Haiku 19% more expensive — with run-to-run spread (14 to 42 turns on one case) that
+  four runs cannot settle. On bug fixes with a clear symptom, the plugin is not a measured advantage
+  for Haiku.
 - **Where the accuracy gain comes from:** Grep returns lines without the method around them, and an
   agent that answers from that alone names the wrong method or class. A hook says which symbol each
   matched line falls in, and warns when a qualified search (`Class\.method`) will miss the calls made
   from inside the class without the prefix.
-- **What it does not show yet:** five runs per arm, read-heavy questions, public code, one fix task.
+- **What it does not show yet:** few runs per arm, public code, real multi-session work.
 
 Reports, cases and every run's raw data: [docs/benchmarks](docs/benchmarks/).
 

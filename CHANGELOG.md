@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.7.5] — 2026-10-11
+
 ### Added
 
 - **The SessionStart test line says when the tests cannot run yet.** When a JavaScript project

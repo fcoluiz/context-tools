@@ -6,17 +6,17 @@
 //   - o harness não registrava o que o agente consultou.
 
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { localPath } from './paths.mjs';
 import { linhasPorArquivo } from '../scripts/grep-context.mjs';
-import { sessionTestLine, testDetails } from '../scripts/verify.mjs';
+import { missingDependencies, sessionTestLine, testDetails } from '../scripts/verify.mjs';
 import { documentationSessionContext } from '../scripts/lib/documentation.mjs';
 import { buildContextPack } from '../scripts/context-pack.mjs';
-import { parseStream, claudeArgs, anonimizar, runError, medidaValida } from '../scripts/benchmark-outcome.mjs';
+import { parseStream, claudeArgs, anonimizar, runError, medidaValida, summarizeHookLog } from '../scripts/benchmark-outcome.mjs';
 import { makeT } from '../scripts/lib/i18n.mjs';
 
 const S = (nome) => localPath(`../scripts/${nome}`);
@@ -240,4 +240,55 @@ test('benchmark: stream-json dá o resultado e a lista de ferramentas consultada
   const args = claudeArgs('with');
   assert.equal(args[args.indexOf('--output-format') + 1], 'stream-json');
   assert.ok(args.includes('--verbose'), 'stream-json no modo -p exige --verbose');
+});
+
+// Rodada 5: sem `node_modules`, os agentes gastavam turnos em `npm test`/`npm install` que não iam
+// rodar — e o aviso do SessionStart dizia "npm test (runs `tap`)" como se fosse.
+test('verify --session-start: avisa quando as dependências não estão instaladas, e só então', () => {
+  const pkg = (extra = {}) => JSON.stringify({ scripts: { test: 'tap' }, devDependencies: { tap: '^16' }, ...extra });
+  const semDeps = projeto({ '.git/HEAD': 'ref: x\n', 'package.json': pkg() });
+  const instalado = projeto({ '.git/HEAD': 'ref: x\n', 'package.json': pkg(), 'node_modules/tap/package.json': '{}' });
+  const workspace = projeto({ '.git/HEAD': 'ref: x\n', 'node_modules/.keep': '', 'pkgs/a/package.json': pkg() });
+  const pnp = projeto({ '.git/HEAD': 'ref: x\n', 'package.json': pkg(), '.pnp.cjs': '', 'yarn.lock': '' });
+  const nenhuma = projeto({ '.git/HEAD': 'ref: x\n', 'package.json': JSON.stringify({ scripts: { test: 'node --test' } }) });
+  const pnpm = projeto({ '.git/HEAD': 'ref: x\n', 'package.json': pkg(), 'pnpm-lock.yaml': '' });
+  try {
+    assert.equal(missingDependencies(semDeps, 'npm test'), 'npm install');
+    assert.match(sessionTestLine(semDeps, {}, t), /`npm test` \(runs `tap`\)\. Dependencies are NOT installed \(no `node_modules`\): it will fail until `npm install`/);
+    assert.equal(missingDependencies(pnpm, 'pnpm test'), 'pnpm install');
+    assert.equal(missingDependencies(instalado, 'npm test'), '');
+    assert.equal(missingDependencies(join(workspace, 'pkgs', 'a'), 'npm test'), '', 'workspace com hoisting: node_modules acima');
+    assert.equal(missingDependencies(pnp, 'yarn test'), '', 'Yarn PnP não tem node_modules');
+    assert.equal(missingDependencies(nenhuma, 'npm test'), '', 'nada declarado, nada a instalar');
+    assert.equal(missingDependencies(semDeps, 'pytest'), '', 'só JS, por enquanto');
+    assert.doesNotMatch(sessionTestLine(instalado, {}, t), /NOT installed/);
+  } finally {
+    for (const d of [semDeps, instalado, workspace, pnp, nenhuma, pnpm]) rmSync(d, { recursive: true, force: true });
+  }
+});
+
+// O stream-json do `claude -p` não mostra o que os hooks injetam; o harness lê este log.
+test('CONTEXT_TOOLS_HOOK_LOG: cada saída de hook vira uma linha, e o harness resume por script', () => {
+  const dir = projeto({ '.git/HEAD': 'ref: x\n', 'package.json': JSON.stringify({ scripts: { test: 'node --test' } }) });
+  const log = `${dir}.hooks.jsonl`;
+  try {
+    const r = spawnSync(process.execPath, [S('verify.mjs'), '--session-start'], {
+      cwd: dir, input: '{}', encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: dir, CONTEXT_TOOLS_HOOK_DEDUPE: '0', CONTEXT_TOOLS_LANG: 'en', CONTEXT_TOOLS_HOOK_LOG: log },
+    });
+    assert.equal(r.status, 0, r.stderr);
+    const [entry] = readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    assert.equal(entry.script, 'verify.mjs');
+    assert.equal(entry.event, 'SessionStart');
+    assert.equal(entry.emitted, true);
+    assert.equal(entry.contextChars, JSON.parse(r.stdout).hookSpecificOutput.additionalContext.length);
+    const resumo = summarizeHookLog(`${readFileSync(log, 'utf8')}${JSON.stringify({ event: 'PostToolUse', script: 'grep-context.mjs', emitted: false, contextChars: 50 })}\nlixo\n`);
+    assert.equal(resumo.emitted, 1);
+    assert.equal(resumo.deduped, 1, 'deduplicada não chega ao agente: não conta nos caracteres');
+    assert.equal(resumo.contextChars, entry.contextChars);
+    assert.deepEqual(Object.keys(resumo.byScript), ['verify.mjs · SessionStart']);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(log, { force: true });
+  }
 });

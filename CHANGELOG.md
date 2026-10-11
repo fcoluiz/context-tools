@@ -8,7 +8,27 @@ reconstructed from git history.
 
 ## [Unreleased]
 
-## [2.7.3] — 2026-10-10
+### Added
+
+- **Outcome round 5: bug fixes on held-out cases.** Three bugs injected into node-semver
+  (`docs/benchmarks/outcome/semver-bugs.mjs`, one exact match required; the fix is checked by
+  running the library) and one question, on Sonnet 5 and Haiku 4.5. Everyone solved everything;
+  Sonnet was 23% cheaper with the plugin, Haiku 19% more expensive — the first row where the plugin
+  costs more, recorded as it is in the README table
+  ([report](docs/benchmarks/outcome-round5-2026-10-11.pt-BR.md)).
+
+### Fixed
+
+- **A call is no longer a method in JS/TS files that have a class.** Any indented `name(` was
+  taken as a method declaration, so `debug('tilde', comp)` inside `const replaceTilde = (…) => {`
+  (node-semver) became a "method" `debug()` — and outline, `refs` and the Grep context reported the
+  following lines as being in `debug()` instead of `replaceTilde`. A method now needs its
+  declaration shape after the parameter list closes: `) {`, `): Type {`, `) {}`, or a bodiless TS
+  signature `): Type;` (overloads, interfaces), across lines when the signature wraps; a callback
+  opened inside the parentheses (`foo(x, () => {`) is a call. Measured by set diff of every
+  symbol: node-semver −31 (all `debug()`), zod −81 (all calls), this repository −5 (test fixture
+  text), nothing added.
+ — 2026-10-10
 
 ### Added
 

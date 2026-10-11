@@ -170,8 +170,8 @@ Delphi/Pascal, Rust, TypeScript, C#, Java e PHP — com **zero símbolos apontan
 ## Ajuda? O que foi medido
 
 Um agente real (`claude -p`) faz a mesma tarefa numa cópia limpa de um repositório público, uma vez
-sem o plugin e outra com ele, e a resposta é conferida contra um gabarito verificado à mão. Cinco
-execuções por braço em cada caso:
+sem o plugin e outra com ele, e a resposta é conferida contra um gabarito verificado à mão (uma
+correção é conferida executando o código). Quatro ou cinco execuções por braço em cada caso:
 
 | rodada | modelo | casos | sem | com | custo com × sem |
 |---|---|---|---:|---:|---:|
@@ -180,17 +180,24 @@ execuções por braço em cada caso:
 | 3 | Haiku 4.5 | 11 | 48/55 | 50/55 | −36% |
 | 4 | Sonnet 5 | os 5 novos | 21/25 ¹ | **25/25** | −30% |
 | 4 | Haiku 4.5 | 11 | 48/55 ¹ | **53/55** | −18% |
+| 5 — **casos novos** | Sonnet 5 | 3 correções + 1 pergunta (JavaScript) | 16/16 | 16/16 | −23% |
+| 5 — **casos novos** | Haiku 4.5 | 3 correções + 1 pergunta (JavaScript) | 16/16 | 16/16 | **+19%** |
 
 ¹ A rodada 4 mediu só o braço com o plugin (2.7.3); o braço sem ele é o da rodada 3.
 
-- **Nunca pior, sempre mais barato.** O plugin resolveu pelo menos tanto quanto sem ele em todas as
-  rodadas e custou menos em todas; a diferença é maior em perguntas de "quem usa X" e no modelo menor.
+- **Nunca resolveu menos.** Em todas as rodadas o plugin resolveu pelo menos tanto quanto o agente
+  sozinho.
+- **Mais barato em 6 das 7 linhas; não no Haiku corrigindo bug.** A diferença é maior em perguntas de
+  "quem usa X" e de "onde exatamente". Nas correções da rodada 5 todos resolveram tudo: o Sonnet saiu
+  23% mais barato com o plugin, o Haiku 19% mais caro — com uma variação entre execuções (14 a 42
+  turnos no mesmo caso) que quatro repetições não resolvem. Em correção de bug com sintoma claro, o
+  plugin não é uma vantagem medida para o Haiku.
 - **De onde vem o ganho de acerto:** o Grep devolve linhas sem o método em volta, e o agente que
   responde só com isso nomeia o método ou a classe errada. Um hook diz em qual símbolo cai cada linha
   encontrada, e avisa quando uma busca qualificada (`Classe\.metodo`) vai perder as chamadas feitas
   de dentro da classe sem o prefixo.
-- **O que ainda não mostra:** cinco execuções por braço, perguntas de leitura, código público, uma
-  só tarefa de correção.
+- **O que ainda não mostra:** poucas execuções por braço, código público, trabalho real em várias
+  sessões.
 
 Relatórios, casos e os dados brutos de cada execução: [docs/benchmarks](docs/benchmarks/).
 

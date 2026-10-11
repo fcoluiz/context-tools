@@ -1,0 +1,36 @@
+{
+  "description": "Outcome round 5 (held out): three bug fixes and one read-only question in node-semver (JavaScript, no dependencies), none seen while tuning the hooks. Each bug is injected by semver-bugs.mjs (one exact match required) and the fix is checked by running the library, not the tests.",
+  "cases": [
+    {
+      "id": "fix-semver-max-satisfying",
+      "git": "https://github.com/npm/node-semver.git",
+      "ref": "6e05b7637396ac66522cff8731f07cfe0ef49a29",
+      "setup": [["node", "{casesDir}/semver-bugs.mjs", "inject", "max-satisfying"]],
+      "prompt": "A user reports: semver.maxSatisfying(['1.2.3', '1.2.4', '1.3.0'], '^1.2.0') returns '1.2.3' instead of '1.3.0'. Find the cause in this repository and fix it with a minimal change. Do not change the tests.",
+      "check": { "command": ["node", "{casesDir}/semver-bugs.mjs", "check", "max-satisfying"] }
+    },
+    {
+      "id": "fix-semver-caret-zero-minor",
+      "git": "https://github.com/npm/node-semver.git",
+      "ref": "6e05b7637396ac66522cff8731f07cfe0ef49a29",
+      "setup": [["node", "{casesDir}/semver-bugs.mjs", "inject", "caret-zero-minor"]],
+      "prompt": "A user reports: semver.satisfies('0.3.0', '^0.2.3') returns true, but a caret range on a 0.x version must not allow a minor bump (^0.2.3 means >=0.2.3 <0.3.0-0). Find the cause in this repository and fix it with a minimal change. Do not change the tests.",
+      "check": { "command": ["node", "{casesDir}/semver-bugs.mjs", "check", "caret-zero-minor"] }
+    },
+    {
+      "id": "fix-semver-inc-patch-prerelease",
+      "git": "https://github.com/npm/node-semver.git",
+      "ref": "6e05b7637396ac66522cff8731f07cfe0ef49a29",
+      "setup": [["node", "{casesDir}/semver-bugs.mjs", "inject", "inc-patch-prerelease"]],
+      "prompt": "A user reports: semver.inc('1.2.0-5', 'patch') returns '1.2.1', but incrementing the patch of a prerelease should release that patch and return '1.2.0'. Find the cause in this repository and fix it with a minimal change. Do not change the tests.",
+      "check": { "command": ["node", "{casesDir}/semver-bugs.mjs", "check", "inc-patch-prerelease"] }
+    },
+    {
+      "id": "js-semver-isx-users",
+      "git": "https://github.com/npm/node-semver.git",
+      "ref": "6e05b7637396ac66522cff8731f07cfe0ef49a29",
+      "prompt": "Answer from the code in this repository, without modifying any file. In classes/range.js, which functions call isX? Write each function name, one per line, and nothing else.",
+      "check": { "answer": ["\\binvalidXRangeOrder\\b", "\\breplaceTilde\\b", "\\breplaceCaret\\b", "\\breplaceXRange\\b", "\\bhyphenReplace\\b"] }
+    }
+  ]
+}

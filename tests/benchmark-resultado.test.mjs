@@ -55,3 +55,15 @@ test('relatório: resolvidas, custo e turnos por braço', () => {
   assert.equal(s.without.medianTurns, 25);
   assert.match(markdownReport(results, { date: '2026-10-09' }), /\| with \| 2\/2 \| \$1\.40 \|/);
 });
+
+test('paralelo: runAsync entrega stdin, saída e timeout; espelho estável por URL', async () => {
+  const { runAsync } = await import('../scripts/lib/setup-shared.mjs');
+  const { mirrorPath } = await import('../scripts/benchmark-outcome.mjs');
+  const eco = await runAsync(process.execPath, ['-e', 'process.stdin.pipe(process.stdout)'], { input: 'pergunta' });
+  assert.deepEqual([eco.status, eco.stdout], [0, 'pergunta']);
+  const lento = await runAsync(process.execPath, ['-e', 'setTimeout(() => {}, 10000)'], { timeout: 200 });
+  assert.match(String(lento.error?.message), /timeout/);
+  const base = join(tmpdir(), 'x');
+  assert.equal(mirrorPath('https://github.com/a/b.git', base), mirrorPath('https://github.com/a/b.git', base));
+  assert.notEqual(mirrorPath('https://github.com/a/b.git', base), mirrorPath('https://github.com/a/c.git', base));
+});

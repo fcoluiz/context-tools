@@ -10,6 +10,10 @@ reconstructed from git history.
 
 ### Added
 
+- **Outcome harness: parallel runs and a local mirror.** `--parallel=N` runs N independent runs at
+  once — same cost, a fraction of the time (4 runs in 27 s, mirror included) — with results kept in
+  the plan's order. A remote repository is mirrored once and each run clones from the mirror at the
+  same commit, instead of cloning from GitHub every time (10–20 s of each ~70 s run).
 - **Install or update with one short command.** `npx -y github:fcoluiz/context-tools` installs or
   updates context-tools for every agent on the machine, for the user, without questions — the same
   as `context-tools-setup-all --global --yes`, which still works. Flags add to it: `--target=…`,

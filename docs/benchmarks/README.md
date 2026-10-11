@@ -34,6 +34,12 @@ records whether the task was solved, the cost, turns, duration and context token
   per case (`remove`). Variables of a host session are dropped.
 - **Cost control.** `--per-run-cost` goes to the CLI's `--max-budget-usd`; `--max-cost` stops starting
   new runs once reached. `--dry-run` prints the plan and the exact command.
+- **Faster, same measurement.** `--parallel=N` runs N independent runs at once (each has its own
+  copy and session): same cost, a fraction of the time; results keep the plan's order. A remote
+  repository is mirrored once (in the system temp folder) and every run clones from the mirror at the
+  same commit, instead of from GitHub. The total cap applies to runs that start, so runs in flight
+  can pass it by at most (N − 1) × `--per-run-cost`. More parallel runs reach a usage limit sooner;
+  the round then stops and `--resume` runs only what is missing.
 - **No fake results.** It refuses to start when the CLI is not logged in, and stops at the first run
   that made no model call — a zero-cost "answer" that is really an error message is not a measurement.
 

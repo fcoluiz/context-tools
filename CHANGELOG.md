@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.7.6] — 2026-10-11
+
 ### Added
 
 - **Outcome round 6: independent validation.** Three new bugs in two repositories the plugin had

@@ -104,7 +104,7 @@ function prepararEspelho(c) {
   return path;
 }
 
-function prepararCopia(c, mirrors = {}) {
+export function prepararCopia(c, mirrors = {}) {
   const dir = mkdtempSync(join(tmpdir(), `ct-outcome-${c.id}-`));
   const git = (...a) => spawnSync('git', ['-c', 'user.name=bench', '-c', 'user.email=bench@localhost', ...a], { cwd: dir, encoding: 'utf8' });
   const origem = c.repo || mirrors[c.git];
@@ -119,6 +119,14 @@ function prepararCopia(c, mirrors = {}) {
   for (const [cmd, ...a] of c.setup || []) {
     const r = spawnSync(cmd, a, { cwd: dir, encoding: 'utf8', shell: false });
     if (r.status !== 0) throw new Error(`setup failed (${cmd} ${a.join(' ')}): ${r.stderr || r.stdout}`);
+  }
+  // Um bug injetado commitado por cima do histórico aparece inteiro em `git log -p`: na validação
+  // independente, o Haiku achou o bug assim em 8 de 20 execuções (nos dois braços). Um bug de
+  // verdade não vem com o diff que o criou. Com `setup`, a cópia começa num commit único, sem
+  // histórico — nem ramos ou tags de origem que permitam comparar. `"history": "keep"` mantém.
+  if (c.setup?.length && c.history !== 'keep') {
+    rmSync(join(dir, '.git'), { recursive: true, force: true });
+    git('init', '--quiet');
   }
   git('add', '-A');
   git('commit', '--quiet', '--allow-empty', '-m', 'benchmark baseline');

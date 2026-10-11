@@ -30,7 +30,8 @@ reconstructed from git history.
   opened inside the parentheses (`foo(x, () => {`) is a call. Measured by set diff of every
   symbol: node-semver −31 (all `debug()`), zod −81 (all calls), this repository −5 (test fixture
   text), nothing added.
- — 2026-10-10
+
+## [2.7.3] — 2026-10-10
 
 ### Added
 

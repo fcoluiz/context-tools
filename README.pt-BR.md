@@ -236,7 +236,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0          # o branch base é necessário para calcular o diff
-      - uses: fcoluiz/context-tools@v2.7.5
+      - uses: fcoluiz/context-tools@v2.7.6
         with:
           strict: 'false'         # 'true' falha o job em vez de só anotar
 ```

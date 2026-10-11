@@ -62,29 +62,52 @@ plugin e uma cópia standalone instalados juntos.
 
 ## Instalar ou atualizar
 
-Um comando instala o context-tools para **todos os agentes que você tem** (Claude Code e/ou Codex),
-no seu usuário — vale para todos os projetos, não só o atual. Rodar o mesmo comando de novo
-atualiza para a última versão:
+Um comando, sem nada para responder. Ele instala o context-tools para **todos os agentes que você
+tem** (Claude Code e/ou Codex), no seu usuário — vale para todos os projetos, não só o atual. Rode de
+novo para atualizar:
 
 ```bash
-npx --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes
+npx -y github:fcoluiz/context-tools
 ```
 
-No **PowerShell do Windows**, use `npx.cmd` em vez de `npx`. A política de execução padrão bloqueia o
-atalho `npx.ps1` que o npm instala ("a execução de scripts foi desabilitada neste sistema"); o
-`npx.cmd` roda o mesmo programa sem mudar nenhuma configuração de segurança:
+No **PowerShell do Windows**, digite `npx.cmd` em vez de `npx` (a política de execução padrão
+bloqueia o atalho `npx.ps1`; o `npx.cmd` é o mesmo programa e não muda nenhuma configuração de
+segurança).
 
-```powershell
-npx.cmd --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes
-```
+Depois, abra uma sessão nova — é só isso. Os hooks funcionam sozinhos: antes de um Grep dizem onde o
+símbolo está definido, depois dele em qual função cai cada linha, e no início da sessão como rodar os
+testes e quando sair uma versão nova (com este mesmo comando). No Codex, na primeira vez, abra
+`/hooks` e aprove os hooks do context-tools uma vez.
 
 Requer Node.js 18+ e o CLI de pelo menos um agente (`claude` ou `codex`). Ele nunca altera a pasta
-onde é executado e nunca instala o CLI de um agente que você ainda não usa. Depois, abra uma sessão
-nova. No Codex, na primeira vez, abra `/hooks` e aprove os hooks do context-tools uma vez. Daí em
-diante, o início da sessão avisa quando sair uma versão nova, com este mesmo comando.
+onde é executado e nunca instala o CLI de um agente que você ainda não usa.
 
-O plugin traz as ferramentas **e** os hooks. Use `--target=claude` ou `--target=codex` para limitar a
-um agente, e tire o `--global` para preparar só o projeto atual.
+| quer | acrescente ao comando |
+|---|---|
+| só um agente | `--target=claude` ou `--target=codex` |
+| só o projeto atual, não o seu usuário | `--project .` |
+| o servidor MCP também (veja abaixo) | `--mcp` (e `--remove-mcp` para tirar) |
+| ver o que ele faria, sem mudar nada | `--dry-run` |
+
+### Servidor MCP (opcional, desligado por padrão)
+
+Para Claude Code e Codex o plugin basta: em todas as rodadas medidas o ganho veio dos hooks, e os
+agentes nunca precisaram chamar uma ferramenta para isso. O servidor MCP é para **outros clientes
+MCP**, ou para quem prefere chamada de ferramenta tipada: cinco ferramentas só de leitura
+(`find_symbol`, `references`, `impact`, `outline`, `overview`) com as mesmas respostas dos comandos.
+Ele vem desligado porque definição de ferramenta é paga em toda requisição: cerca de 2.000
+caracteres (~500 tokens), teto garantido por teste. Para ligar:
+
+```bash
+npx -y github:fcoluiz/context-tools --mcp
+```
+
+Isso o registra com `claude mcp add` / `codex mcp add` e o mantém atualizado a cada execução.
+Qualquer outro cliente pode iniciá-lo direto:
+
+```json
+{ "mcpServers": { "context-tools": { "command": "node", "args": ["<home>/.context-tools/runtime/scripts/mcp-server.mjs"] } } }
+```
 
 ### Pelo próprio CLI do agente
 
@@ -100,30 +123,6 @@ Codex:
 ```bash
 codex plugin marketplace add fcoluiz/context-tools
 codex plugin add context-tools@context-tools-codex
-```
-
-### Opcional: servidor MCP
-
-O plugin (skill + hooks) é o jeito recomendado de usar o context-tools no Claude Code e no Codex. Há
-também um servidor MCP para **outros clientes MCP** e para quem prefere chamada de ferramenta
-tipada: cinco ferramentas só de leitura (`find_symbol`, `references`, `impact`, `outline`,
-`overview`) que devolvem as mesmas respostas dos comandos, de um processo que fica vivo (sem partida
-do Node a cada chamada).
-
-Ele vem **desligado**, porque definição de ferramenta tem custo: cerca de 2.000 caracteres (~500
-tokens) somados a cada requisição do cliente que as carrega — teto garantido por teste. Ligue pelo
-mesmo instalador:
-
-```bash
-npx --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes --mcp
-```
-
-O instalador copia os scripts para `~/.context-tools/runtime` (um caminho que sobrevive às
-atualizações) e roda `claude mcp add` / `codex mcp add` por você. Rodar o instalador de novo mantém o
-servidor atualizado; `--remove-mcp` remove o registro. Qualquer outro cliente pode iniciá-lo direto:
-
-```json
-{ "mcpServers": { "context-tools": { "command": "node", "args": ["<home>/.context-tools/runtime/scripts/mcp-server.mjs"] } } }
 ```
 
 ### Standalone, sem plugin

@@ -652,8 +652,10 @@ o usuário para um beco sem saída.
 ### Instalar ou atualizar globalmente (recomendado)
 
 ```bash
-npx --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes
+npx -y github:fcoluiz/context-tools
 ```
+
+`context-tools-setup-all --global --yes` (a forma longa) faz o mesmo.
 
 Instala ou atualiza a última versão para todo agente cujo CLI existe na máquina (Claude Code no
 escopo `user`, Codex de forma global), sem tocar em nenhum projeto. Rodar de novo atualiza: no

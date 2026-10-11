@@ -63,7 +63,7 @@ test('avisa quando o cache conhece versão mais nova, sem disparar rede com cach
     assert.match(text, /"updateCheck": false/);
     assert.equal(refreshes, 0);
     assert.match(notice(home({ latest: '2.5.0', checkedAt: NOW }), { env: { PLUGIN_ROOT: '/p' }, lang: 'en' }).text,
-      /is available.*context-tools-setup-all --global --yes/, 'plugin: comando global, em inglês');
+      /is available.*npx(\.cmd)? --yes github:fcoluiz\/context-tools(?! context-tools-setup)/, 'plugin: o comando curto, global por padrão, em inglês');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 

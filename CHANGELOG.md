@@ -8,6 +8,34 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Outcome round 5b: where Haiku's extra cost came from.** The with-plugin arm of round 5's bug
+  fixes, rerun twice with the hook log: the evidence pack before a Grep was the largest injection
+  (3,200 characters, mostly noise), and the dependency note cut `npm test`/`npm install` attempts
+  from 38 to 23. With both changes the arm cost $1.48 against $1.66 without the plugin, but the drop
+  came from cases where the pack barely fired — variance, recorded as such; the README row stays.
+  A rerun of round 4's reading questions on Haiku with these changes solved 53/55, as before
+  ([report](docs/benchmarks/outcome-round5b-2026-10-11.pt-BR.md)).
+- **Outcome harness: a path the agent made up is still anonymized.** Any path ending in the
+  temporary copy's unique name becomes `<copy>`, even in a spelling that does not exist on disk.
+
+### Fixed
+
+- **The evidence pack before a Grep no longer fills its budget with noise.** When a searched name
+  has an exact definition, the `PreToolUse` pack now lists the real definitions, one line for the
+  files that only import the name (`const compare = require('./compare')`, `import … from`), and one
+  line of similar names; the outline of a same-named file and the textual matches — which the Grep
+  returns right after — are left out, and the block is cut at a line end. In a rerun of round 5's
+  bug fixes, the pack for `compare` in node-semver hit the 3,200-character cap with 6 imports
+  counted as exact definitions and 24 partial ones; it is now 609 characters, with the import count
+  complete (12 files). `context-pack.mjs` on the command line is unchanged.
+- **A test name is no longer "the definition" before a Grep.** When nothing is named exactly like
+  the searched term, test cases whose name merely contains it (`E2E: PreToolUse answers …`) are
+  dropped from the `PreToolUse` answer; if nothing else is left, the hook stays quiet and the Grep
+  answers. Test cases no longer get a "same file, similar name" line listing the other tests in the
+  file. `symbols.mjs` on the command line still finds tests; configuration keys still count.
+
 ## [2.7.5] — 2026-10-11
 
 ### Added

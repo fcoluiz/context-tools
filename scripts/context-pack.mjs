@@ -153,6 +153,47 @@ function couplingItems(root, target, cfg) {
     });
 }
 
+// `const x = require('./x')`, `import x from`, `const { x } = await import(...)`: o nome é ligado, não definido.
+const IMPORT_JS = /^\s*(?:import\b|(?:export\s+)?(?:const|let|var)\s+[^=]+=\s*(?:await\s+)?(?:require|import)\s*\()/;
+const JS_EXT = /\.(?:[cm]?[jt]sx?)$/i;
+const MAX_NOMES = 12;
+const MAX_ARQUIVOS_IMPORT = 8;
+
+/**
+ * O pacote do hook PreToolUse, que roda antes de um Grep. No benchmark de resultado (node-semver,
+ * busca por `compare`), ele batia o teto de 3.200 caracteres: 6 das 8 "definições exatas" eram
+ * `const compare = require('./compare')`, e duas dúzias de definições parciais (`compareBuild`,
+ * `rcompare`, testes) ocupavam o resto. Com uma definição exata real em mãos: as importações viram
+ * uma linha, as parciais viram uma linha de nomes. Sem definição exata real, nada muda.
+ */
+function enxugarAntesDoGrep(root, q, defs) {
+  const textos = new Map();
+  const linha = (file, n) => {
+    if (!textos.has(file)) textos.set(file, (lerTexto(join(root, file)) || '').split('\n'));
+    return textos.get(file)[n - 1] || '';
+  };
+  const ehImport = (item) => JS_EXT.test(item.file || '') && IMPORT_JS.test(linha(item.file, item.line));
+  const imports = defs.filter((item) => item.confidence === 'exact' && ehImport(item));
+  const reais = defs.filter((item) => !imports.includes(item));
+  if (!reais.some((item) => item.confidence === 'exact')) return defs;
+  const out = reais.filter((item) => item.confidence === 'exact').slice(0, 8);
+  if (imports.length) {
+    const arquivos = [...new Set(imports.map((item) => item.file))];
+    const resto = arquivos.length > MAX_ARQUIVOS_IMPORT ? ` +${arquivos.length - MAX_ARQUIVOS_IMPORT}` : '';
+    out.push(evidence('import', {
+      text: `${q} is imported, not defined, in ${arquivos.length} file(s): ${arquivos.slice(0, MAX_ARQUIVOS_IMPORT).join(', ')}${resto}`,
+    }, { confidence: 'parsed' }));
+  }
+  const parciais = [...new Set(reais.filter((item) => item.confidence !== 'exact' && !ehImport(item) && !ehArquivoDeTeste(item.file)).map((item) => item.symbol))];
+  if (parciais.length) {
+    const resto = parciais.length > MAX_NOMES ? ` +${parciais.length - MAX_NOMES}` : '';
+    out.push(evidence('similar-name', {
+      text: `other names containing ${q}: ${parciais.slice(0, MAX_NOMES).join(', ')}${resto}`,
+    }, { confidence: 'partial' }));
+  }
+  return out;
+}
+
 export function buildContextPack(root, query, opts = {}) {
   const cfg = loadConfig(root);
   const budget = Math.max(400, Math.min(12000, Number(opts.budget || 2000)));
@@ -168,7 +209,8 @@ export function buildContextPack(root, query, opts = {}) {
   catch { return evidenceEnvelope({ status: 'invalid', query: q, limitations: ['query is not a valid symbol pattern'] }); }
   for (const [name, locs] of index.defs) {
     if (!re.test(name)) continue;
-    for (const loc of locs.slice(0, 8)) {
+    // Antes do Grep, todas: a contagem de importações precisa ser completa; o corte vem depois.
+    for (const loc of opts.beforeGrep ? locs : locs.slice(0, 8)) {
       items.push(evidence('definition', {
         text: `${loc.file}:${loc.line}-${loc.end || loc.line} ${loc.kind}`,
         file: loc.file, line: loc.line, end: loc.end || loc.line, symbol: name,
@@ -180,6 +222,7 @@ export function buildContextPack(root, query, opts = {}) {
   // propriedades — e a resposta errada do benchmark de resultado nomeou justamente essa constante.
   const peso = (item) => (ehArquivoDeTeste(item.file) ? 2 : 0) + (item.confidence === 'exact' ? 0 : 1);
   items.sort((a, b) => peso(a) - peso(b));
+  if (opts.beforeGrep) items.splice(0, items.length, ...enxugarAntesDoGrep(root, q, items));
 
   // A documentação operacional entra antes do outline e das correspondências textuais. Ela
   // orienta a investigação, mas continua marcada como declarada/precisa de confirmação — não é
@@ -192,10 +235,12 @@ export function buildContextPack(root, query, opts = {}) {
     }, { confidence: item.confidence, freshness: item.freshness }));
   }
 
-  const target = findTargetFile(root, q, index.files);
+  // Antes de um Grep, o outline de um arquivo homônimo e as correspondências textuais repetem o que
+  // o próprio Grep vai devolver em seguida: só gastam contexto.
+  const target = opts.beforeGrep ? null : findTargetFile(root, q, index.files);
   if (target) items.push(...outlineItems(target, root));
   items.push(...mapItems(root, q));
-  items.push(...textualItems(root, q, cfg));
+  if (!opts.beforeGrep) items.push(...textualItems(root, q, cfg));
   if (opts.history) {
     items.push(...historyItems(root, q, index.files));
     items.push(...couplingItems(root, target, cfg));

@@ -170,6 +170,11 @@ export function anonimizar(texto, dir, home = homedir()) {
     p.replace(/[^A-Za-z0-9]/g, '-'),
   ])] : []);
   for (const v of variantes(dir).sort((a, b) => b.length - a.length)) s = s.split(v).join('<copy>');
+  // O agente às vezes inventa uma grafia que não existe (`/d/<usuário>/AppData/…/ct-outcome-x-AB12cd`):
+  // o nome da cópia é único, então qualquer caminho que termine nele é a cópia.
+  // Separa por `\` e `/`: `path.basename` no Linux não corta um caminho do Windows.
+  const nomeDaCopia = String(dir || '').split(/[\\/]/).pop();
+  if (nomeDaCopia.length >= 8) s = s.replace(new RegExp(`[^\\s"'\`(),]*${nomeDaCopia.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g'), '<copy>');
   for (const v of variantes(home).sort((a, b) => b.length - a.length)) s = s.split(v).join('<home>');
   return s;
 }

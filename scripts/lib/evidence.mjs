@@ -5,7 +5,7 @@ import { sanitizeModelText } from './roots.mjs';
 
 export const EVIDENCE_KINDS = Object.freeze([
   'definition', 'outline', 'test', 'co-change', 'context-map', 'documentation', 'history',
-  'textual-match', 'provider', 'diagnostic',
+  'textual-match', 'provider', 'diagnostic', 'import', 'similar-name',
 ]);
 
 export function evidence(kind, data = {}, opts = {}) {

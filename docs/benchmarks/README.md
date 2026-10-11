@@ -18,6 +18,7 @@ Measurements taken while developing context-tools. The reports are written in Po
 | [outcome-round3-2026-10-10](outcome-round3-2026-10-10.pt-BR.md) | Held-out round: 5 new cases in TypeScript and Python (Sonnet 5: 21/25 without, 24/25 with, 24% cheaper) and all 11 cases on Haiku 4.5 (48/55 without, 50/55 with, 36% cheaper). |
 | [outcome-round4-2026-10-10](outcome-round4-2026-10-10.pt-BR.md) | The qualified-search hint (2.7.3), arm with the plugin only: Sonnet 5 25/25 on the new cases, Haiku 4.5 53/55; why the hint's wording mattered (0/5 → 4/5). |
 | [outcome-round5-2026-10-11](outcome-round5-2026-10-11.pt-BR.md) | Held-out bug fixes: three bugs injected into node-semver plus one question, Sonnet 5 and Haiku 4.5. Everyone solved everything; Sonnet 23% cheaper with the plugin, Haiku 19% more expensive. |
+| [outcome-round5b-2026-10-11](outcome-round5b-2026-10-11.pt-BR.md) | Where Haiku's extra cost on round 5 came from: the hooks' output logged per run, the dependency note (npm attempts 38 → 23) and a shorter evidence pack (3,200 → ~600 characters). With-plugin arm only, same cases; explains the cost, does not replace the round 5 row. |
 
 ## Outcome benchmark: does the task get solved, and at what cost?
 

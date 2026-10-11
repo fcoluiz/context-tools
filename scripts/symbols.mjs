@@ -450,7 +450,7 @@ function irmaosPorPrefixo(nomeAlvo, arquivo, byFilePos) {
  * linha só, marcando qual é qual. Só agrupa o par exato: três ou mais ocorrências são
  * ambíguas e continuam listadas uma a uma, sem inventar relação.
  */
-function formatarAcertos(hits, byFilePos, t) {
+function formatarAcertos(hits, byFilePos, t, { semIrmaosDeTeste = false } = {}) {
   const usados = new Set();
   const out = [];
   for (let i = 0; i < hits.length; i++) {
@@ -476,7 +476,7 @@ function formatarAcertos(hits, byFilePos, t) {
       out.push(`  ${sanitizeModelText(h.file, 180)}:${intervalo(h)}`);
       out.push(`      ${sanitizeModelText(h.kind, 180)}`);
     }
-    const irmaos = irmaosPorPrefixo(h.name, h.file, byFilePos);
+    const irmaos = semIrmaosDeTeste && /^test /.test(h.kind || '') ? { nomes: [] } : irmaosPorPrefixo(h.name, h.file, byFilePos);
     if (irmaos.nomes.length) {
       const resto = irmaos.total - irmaos.nomes.length;
       out.push(t('sym.siblings', { nomes: irmaos.nomes.map((n) => sanitizeModelText(n, 100)).join(', '), resto }));
@@ -503,7 +503,7 @@ function escopoLabel(repos) {
 }
 
 /** Uma consulta contra o índice já construído. Só monta linhas; não imprime. */
-function reportOne(query, { defs, byFile, byFilePos, fileCount, repos }, { wantAll, ms, t = makeT('en'), result = null }) {
+function reportOne(query, { defs, byFile, byFilePos, fileCount, repos }, { wantAll, ms, t = makeT('en'), result = null, beforeGrep = false }) {
   const out = [];
   const escopo = escopoLabel(repos);
   // `TExporter.RegistroABC`: o índice guarda só `RegistroABC` (ver `QUALIFICADOR_RE` em
@@ -532,6 +532,13 @@ function reportOne(query, { defs, byFile, byFilePos, fileCount, repos }, { wantA
   // em vez da definição. A pergunta "onde X está" tem uma resposta certa, e não é o teste.
   const ehSegundaClasse = (h) => /^(key|test) /.test(h.kind || '');
   hits.sort((a, b) => (ehSegundaClasse(a) ? 1 : 0) - (ehSegundaClasse(b) ? 1 : 0));
+  // Antes de um Grep (hook PreToolUse), um nome de teste que só CONTÉM o termo não é "a definição":
+  // buscar `PreToolUse` neste repositório devolvia seis testes `E2E: PreToolUse …` sob o rótulo
+  // de definição, cada um com uma linha repetindo os outros cinco. Sem acerto exato, o teste sai —
+  // e, sem mais nada, o hook cala e o Grep responde. Chave de configuração fica: às vezes é tudo.
+  if (beforeGrep && !hits.some((h) => h.name.toLowerCase() === queryNua.toLowerCase())) {
+    for (let i = hits.length - 1; i >= 0; i--) if (/^test /.test(hits[i].kind || '')) hits.splice(i, 1);
+  }
 
   if (hits.length) {
     if (result) result.kind = 'symbol';
@@ -543,7 +550,7 @@ function reportOne(query, { defs, byFile, byFilePos, fileCount, repos }, { wantA
       out.push(t('sym.partialHidden', { n: hits.length - exact.length }));
     }
     out.push('');
-    for (const linha of formatarAcertos(shown.slice(0, cap), byFilePos, t)) out.push(linha);
+    for (const linha of formatarAcertos(shown.slice(0, cap), byFilePos, t, { semIrmaosDeTeste: beforeGrep })) out.push(linha);
     if (shown.length > cap) out.push(t('sym.more', { n: shown.length - cap }));
     return out;
   }

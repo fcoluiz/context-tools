@@ -178,15 +178,20 @@ is checked by running the code). Four or five runs per arm per case:
 | 4 | Haiku 4.5 | 11 | 48/55 ¹ | **53/55** | −18% |
 | 5 — **held out** | Sonnet 5 | 3 bug fixes + 1 question (JavaScript) | 16/16 | 16/16 | −23% |
 | 5 — **held out** | Haiku 4.5 | 3 bug fixes + 1 question (JavaScript) | 16/16 | 16/16 | **+19%** |
+| 6 — **independent** ² | Sonnet 5 | 3 bug fixes, 2 new repositories (JavaScript) | 12/12 | 12/12 | −36% |
+| 6 — **independent** ² | Haiku 4.5 | 3 bug fixes, 2 new repositories (JavaScript) | 12/12 | 12/12 | −34% |
 
 ¹ Round 4 measured only the arm with the plugin (2.7.3); the arm without it is round 3's.
+² Cases written before the plugin was ever run on those repositories (js-yaml, commander.js), with the
+plugin as released after round 5; both arms measured.
 
 - **Never fewer tasks solved.** In every round the plugin solved at least as many as the agent alone.
-- **Cheaper in 6 of 7 rows; not on Haiku fixing bugs.** The gap is largest on "who uses X" and "where
-  exactly" questions. On round 5's bug fixes everyone solved everything: Sonnet was 23% cheaper with
-  the plugin, Haiku 19% more expensive — with run-to-run spread (14 to 42 turns on one case) that
-  four runs cannot settle. On bug fixes with a clear symptom, the plugin is not a measured advantage
-  for Haiku.
+- **Cheaper in 8 of 9 rows.** The gap is largest on "who uses X" and "where exactly" questions. The
+  exception is round 5, Haiku fixing bugs: 19% more expensive. Logging what the hooks injected showed
+  why (an evidence pack full of noise, turns spent on tests that could not run); both were fixed, and
+  round 6 — new bugs in two repositories the plugin had never seen — measured Haiku 34% cheaper and
+  Sonnet 36% cheaper on bug fixes, with every task solved in both arms. The round 5 row stays as it
+  was measured.
 - **Where the accuracy gain comes from:** Grep returns lines without the method around them, and an
   agent that answers from that alone names the wrong method or class. A hook says which symbol each
   matched line falls in, and warns when a qualified search (`Class\.method`) will miss the calls made

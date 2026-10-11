@@ -1,0 +1,1154 @@
+[
+  {
+    "case": "fix-yaml-merge-keys",
+    "arm": "without",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.42642540000000007,
+    "turns": 21,
+    "durationMs": 97388,
+    "tokens": {
+      "input": 42,
+      "output": 5449,
+      "cacheCreation": 20010,
+      "cacheRead": 746078
+    },
+    "hooks": {
+      "emitted": 0,
+      "contextChars": 0,
+      "deduped": 0,
+      "byScript": {}
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: merge",
+      "Grep: merge",
+      "Grep: merge",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \"const yaml=require('./lib/js-yaml.js'); console.log(yaml.load('base: &",
+      "Bash: cd \"<copy>\" && node -e \"const yaml=require('./index.js'); console.log(yaml.load('base: &b {a: ",
+      "Bash: cd \"<copy>\" && npm test 2>&1 | tail -80",
+      "Bash: cd \"<copy>\" && npx mocha 2>&1 | tail -100",
+      "Bash: cd \"<copy>\" && npx mocha",
+      "Bash: cd \"<copy>\" && ls node_modules/.bin | grep mocha",
+      "Bash: cd \"<copy>\" && ls",
+      "Bash: cd \"<copy>\" && npm install 2>&1 | tail -40",
+      "Bash: cd \"<copy>\" && npm install",
+      "Bash: npm install",
+      "Bash: which mocha 2>&1; node -e \"console.log(require.resolve('mocha'))\" 2>&1",
+      "Grep: merge",
+      "Read: <copy>\\test\\samples-common\\construct-merge.yml",
+      "Bash: cd \"<copy>\" && node -e \" const yaml = require('./index.js'); const fs = require('fs'); const s",
+      "Bash: cd \"<copy>\" && git diff"
+    ],
+    "answer": "**Root cause:** `mergeMappings` in `lib/loader.js:300` had an inverted condition — it only copied a merge-key source's properties into the destination when the destination *already* had that key, instead of when it *didn't*. Since merge (`<<`) is always processed before the keys that follow it, the destination starts empty, so the condition was always false and nothing from the merged map ever got copied in.\n\n**Fix:** flip `if (_hasOwnProperty.call(destination, key))` to `if (!_hasOwnProperty.call(destination, key))` (lib/loader.js:300).\n\nVerified: `yaml.load('base: &b {a: 1, b: 2}\\nx:\\n  <<: *b\\n  c: 3\\n').x` now returns `{ a: 1, b: 2, c: 3 }`, and the spec's canonical merge-key sample (`test/samples-common/construct-merge.yml`) produces four identical maps as required. I wasn't able to run the full `mocha` suite because `node_modules` isn't installed and `npm install` needed approval that didn't go through — let me know if you'd like me to run it."
+  },
+  {
+    "case": "fix-yaml-merge-keys",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.1776531,
+    "turns": 7,
+    "durationMs": 37208,
+    "tokens": {
+      "input": 14,
+      "output": 1854,
+      "cacheCreation": 13829,
+      "cacheRead": 222757
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 958,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 249
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 250
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 149
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 1,
+          "contextChars": 310
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: merge",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: node -e \" var yaml = require('./lib/index.js') || require('./index.js'); \" 2>&1 | head -5 ls",
+      "Bash: node -e \" var yaml = require('./index.js'); var r = yaml.load('base: &b {a: 1, b: 2}\\nx:\\n <<: *b\\n c: 3\\n'); console.log(JSON.stringify(r.x)); \"",
+      "Bash: node -e \" var yaml = require('./index.js'); // explicit key should win over merge key (override test) var r1 = yaml.load('base: &b {a: 1, b: 2}\\nx:\\n <<: *b\\n b"
+    ],
+    "answer": "All edge cases behave correctly: explicit keys override merged ones, multi-document merges work, and duplicate key detection still triggers for genuine duplicates.\n\n**Root cause**: `mergeMappings` in `lib/loader.js:300` had the condition inverted — it only copied a merge-source key into the destination when the destination **already had** that key (`_hasOwnProperty.call(destination, key)`), which is backwards. Merge keys should populate keys that *aren't yet* in the destination (and mark them overridable so a later explicit key can still override them).\n\n**Fix** (`lib/loader.js:300`): changed the condition to `!_hasOwnProperty.call(destination, key)`, one-character logic flip, no test changes."
+  },
+  {
+    "case": "fix-yaml-merge-keys",
+    "arm": "without",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.27938900000000005,
+    "turns": 13,
+    "durationMs": 51687,
+    "tokens": {
+      "input": 26,
+      "output": 3057,
+      "cacheCreation": 16556,
+      "cacheRead": 444780
+    },
+    "hooks": {
+      "emitted": 0,
+      "contextChars": 0,
+      "deduped": 0,
+      "byScript": {}
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: mergeMappings|merge key|<<|_hasOwnProperty.call(mergeMap|mergeMap",
+      "Grep: mergeMappings|merge key|mergeMap",
+      "Read: <copy>\\lib\\loader.js",
+      "Grep: overridableKeys",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" const yaml = require('./lib/js-yaml.js') || require('./index.js'); \" ",
+      "Bash: cd \"<copy>\" && node -e \" const yaml = require('./index.js'); const result = yaml.load('base: &",
+      "Bash: cd \"<copy>\" && npm test 2>&1 | tail -60",
+      "Bash: cd \"<copy>\" && npx mocha 2>&1 | tail -80",
+      "Bash: npx mocha 2>&1 | tail -80",
+      "Bash: npx mocha",
+      "Bash: npx mocha"
+    ],
+    "answer": "I need your approval to run the test suite (`npx mocha`). Would you like to allow it?"
+  },
+  {
+    "case": "fix-yaml-merge-keys",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.21546450000000006,
+    "turns": 10,
+    "durationMs": 42775,
+    "tokens": {
+      "input": 18,
+      "output": 2344,
+      "cacheCreation": 15328,
+      "cacheRead": 294275
+    },
+    "hooks": {
+      "emitted": 7,
+      "contextChars": 2040,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 249
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 250
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 149
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 3,
+          "contextChars": 1082
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 1,
+          "contextChars": 310
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: mergeKey|merge key|<<",
+      "Read: <copy>\\lib\\type\\merge.js",
+      "Grep: isMergeKey|mergeKey|_merge|<<",
+      "Grep: merge",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" var yaml = require('./lib/js-yaml.js'); var res = yaml.load('base: &b",
+      "Glob: index.js",
+      "Bash: cd \"<copy>\" && node -e \" var yaml = require('./index.js'); var res = yaml.load('base: &b {a: 1"
+    ],
+    "answer": "Confirmed fixed: output is now `{\"a\":1,\"b\":2,\"c\":3}`.\n\n**Cause:** in `mergeMappings` (`lib/loader.js:300`), the condition was inverted — it only copied a key from the merged mapping when the destination *already had* that key, so merge keys (`<<`) never contributed anything new, and explicit keys defined alongside `<<` were the only ones surviving.\n\n**Fix:** negate the condition so a key from the merge source is copied only when the destination *doesn't already have it* (explicit keys still override merged-in ones, and `overridableKeys` correctly tracks which keys came from the merge). One-character change (`_hasOwnProperty.call(destination, key)` → `!_hasOwnProperty.call(destination, key)`)."
+  },
+  {
+    "case": "fix-yaml-merge-keys",
+    "arm": "without",
+    "rep": 3,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.42368279999999997,
+    "turns": 30,
+    "durationMs": 84644,
+    "tokens": {
+      "input": 40,
+      "output": 5747,
+      "cacheCreation": 20361,
+      "cacheRead": 715036
+    },
+    "hooks": {
+      "emitted": 0,
+      "contextChars": 0,
+      "deduped": 0,
+      "byScript": {}
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: <<",
+      "Grep: merge",
+      "Grep: mergeMappings|isMerge|mergeKey|MERGE",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \"const yaml=require('./index.js'); console.log(yaml.load('base: &b {a: ",
+      "Bash: cd \"<copy>\" && npm test 2>&1 | tail -60",
+      "Bash: cd \"<copy>\" && npx mocha 2>&1 | tail -80",
+      "Bash: cd \"<copy>\" && npx mocha",
+      "Bash: npx mocha",
+      "Bash: node node_modules/.bin/_mocha 2>&1 | tail -n 100",
+      "Glob: node_modules/mocha/**/mocha.js",
+      "Glob: node_modules/.bin/*mocha*",
+      "Glob: node_modules/*",
+      "Glob: test\\samples-common\\construct-merge.*",
+      "Glob: test\\samples-common\\duplicate-merge-key.*",
+      "Glob: test\\samples-load-errors\\invalid-merge-*.*",
+      "Glob: test/samples-common/construct-merge*",
+      "Glob: test/samples-common/duplicate-merge-key*",
+      "Glob: test/samples-load-errors/invalid-merge*",
+      "Read: <copy>\\test\\samples-common\\construct-merge.yml",
+      "Read: <copy>\\test\\samples-common\\construct-merge.js",
+      "Read: <copy>\\test\\samples-common\\duplicate-merge-key.yml",
+      "Read: <copy>\\test\\samples-common\\duplicate-merge-key.js",
+      "Bash: node -e \" const fs = require('fs'); const yaml = require('./index.js'); const path = require('path'); function check(yml, js) { const src = fs.readFileSync(yml,",
+      "Bash: node -e \" const fs = require('fs'); const assert = require('assert'); const yaml = require('./index.js'); function check(yml, js) { const src = fs.readFileSync(",
+      "Read: <copy>\\test\\samples-load-errors\\invalid-merge-1.yml",
+      "Read: <copy>\\test\\samples-load-errors\\invalid-merge-2.yml",
+      "Bash: node -e \" const fs = require('fs'); const yaml = require('./index.js'); ['test/samples-load-errors/invalid-merge-1.yml','test/samples-load-errors/invalid-merge-"
+    ],
+    "answer": "All relevant merge-key fixtures (valid merges, duplicate-merge-key override semantics, and invalid-merge error cases) behave correctly with the fix, and mocha/eslint aren't installed in this environment (no `node_modules`) so the full suite can't be run, but manual verification against the exact test fixtures covers the affected code path.\n\n**Root cause:** `lib/loader.js:300` (`mergeMappings`) had its condition inverted — it only copied a key from the merge source into the destination when the destination *already had* that key, i.e. it never actually merged anything into an empty/new mapping.\n\n**Fix:** negated the condition so a key is copied when the destination does *not* already have it:\n```js\nif (!_hasOwnProperty.call(destination, key)) {\n  destination[key] = source[key];\n  overridableKeys[key] = true;\n}\n```\n\nVerified `yaml.load('base: &b {a: 1, b: 2}\\nx:\\n  <<: *b\\n  c: 3\\n').x` now returns `{ a: 1, b: 2, c: 3 }`, and the `construct-merge`, `duplicate-merge-key`, and `invalid-merge-1/2` fixtures all pass/throw as their test files expect."
+  },
+  {
+    "case": "fix-yaml-merge-keys",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.1752264,
+    "turns": 7,
+    "durationMs": 31430,
+    "tokens": {
+      "input": 14,
+      "output": 1728,
+      "cacheCreation": 13744,
+      "cacheRead": 222668
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 958,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 249
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 250
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 149
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 1,
+          "contextChars": 310
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: merge",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" var yaml = require('./lib/index.js') || require('./index.js'); consol",
+      "Glob: index.js",
+      "Bash: cd \"<copy>\" && node -e \" var yaml = require('./index.js'); console.log(JSON.stringify(yaml.loa"
+    ],
+    "answer": "Fixed and verified: `yaml.load(...)` now returns `{ a: 1, b: 2, c: 3 }` as expected.\n\nRoot cause: `mergeMappings` in `lib/loader.js` had an inverted condition (`if (_hasOwnProperty.call(destination, key))` instead of `if (!_hasOwnProperty.call(destination, key))`), so merged-in keys were only copied when they'd already been explicitly set — i.e., never in the normal case. One-character fix (added the missing `!`)."
+  },
+  {
+    "case": "fix-yaml-merge-keys",
+    "arm": "without",
+    "rep": 4,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.3547992000000001,
+    "turns": 17,
+    "durationMs": 72726,
+    "tokens": {
+      "input": 34,
+      "output": 4378,
+      "cacheCreation": 18356,
+      "cacheRead": 594034
+    },
+    "hooks": {
+      "emitted": 0,
+      "contextChars": 0,
+      "deduped": 0,
+      "byScript": {}
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: merge",
+      "Bash: ls",
+      "Read: <copy>\\package.json",
+      "Grep: merge",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: node -e \" const yaml = require('./index.js'); const r = yaml.load('base: &b {a: 1, b: 2}\\nx:\\n <<: *b\\n c: 3\\n'); console.log(JSON.stringify(r)); \"",
+      "Bash: npx mocha 2>&1 | tail -60",
+      "Bash: npx mocha",
+      "Bash: npx mocha",
+      "Bash: npx mocha",
+      "Bash: node node_modules/.bin/mocha --reporter dot 2>&1 | tail -80",
+      "Bash: ls node_modules 2>&1 | head -5; echo \"---\"; ls test | head -20",
+      "Grep: merge",
+      "Read: <copy>\\test\\samples-common\\construct-merge.yml",
+      "Bash: node -e \" const yaml = require('./index.js'); const fs = require('fs'); const docs = yaml.loadAll(fs.readFileSync('test/samples-common/construct-merge.yml', 'ut"
+    ],
+    "answer": "Fixed. The bug was in `mergeMappings` in `lib/loader.js:300` — the `hasOwnProperty` check was inverted, so merge keys (`<<:`) only copied keys that were *already* present in the destination (practically never, since the destination starts empty when `<<` is processed), instead of filling in keys that *aren't* already set. Changed `if (_hasOwnProperty.call(destination, key))` to `if (!_hasOwnProperty.call(destination, key))`.\n\nVerified:\n- The reported repro now returns `{a:1, b:2, c:3}` for `x`.\n- The spec's official merge-key example (`test/samples-common/construct-merge.yml`, all four \"equal\" maps) now all produce matching values, including the multi-merge and override cases.\n\nCouldn't run the full mocha suite since `node_modules` isn't installed and installing would require network access — let me know if you'd like me to install dependencies and run it."
+  },
+  {
+    "case": "fix-yaml-merge-keys",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.16735109999999997,
+    "turns": 7,
+    "durationMs": 30184,
+    "tokens": {
+      "input": 14,
+      "output": 1505,
+      "cacheCreation": 13215,
+      "cacheRead": 218147
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 989,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 249
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 250
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 149
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 1,
+          "contextChars": 341
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: mergeKey|<<|merge",
+      "Grep: merge|mergeMappings|overridableKeys",
+      "Read: lib\\loader.js",
+      "Edit: lib\\loader.js",
+      "Bash: node -e \" var yaml = require('./lib/js-yaml.js') || require('./index.js'); \" 2>&1 | head -20 ls lib",
+      "Bash: node -e \" var yaml = require('./index.js'); var r = yaml.load('base: &b {a: 1, b: 2}\\nx:\\n <<: *b\\n c: 3\\n'); console.log(JSON.stringify(r.x)); \""
+    ],
+    "answer": "Confirmed fixed: `x` now resolves to `{a:1, b:2, c:3}`.\n\nThe bug was in `mergeMappings` (`lib/loader.js:300`): the condition had an inverted `_hasOwnProperty` check, so merge-key source properties were only copied when the destination already had that key — i.e. never, for a fresh merge. Flipped it to `!_hasOwnProperty.call(destination, key)`, which copies source keys in when they're *not* already present (preserving the rule that explicitly-set keys win over merged ones)."
+  },
+  {
+    "case": "fix-yaml-block-chomping",
+    "arm": "without",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.261042,
+    "turns": 13,
+    "durationMs": 47495,
+    "tokens": {
+      "input": 26,
+      "output": 2532,
+      "cacheCreation": 15212,
+      "cacheRead": 436820
+    },
+    "hooks": {
+      "emitted": 0,
+      "contextChars": 0,
+      "deduped": 0,
+      "byScript": {}
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: STRIP|chomping|chomp",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \"var yaml=require('./lib/index.js') || require('./index.js'); conso",
+      "Bash: cd \"<copy>\" && node -e \"var yaml=require('./index.js'); console.log(JSON.stringify(yaml.lo",
+      "Bash: cd \"<copy>\" && npm test 2>&1 | tail -60",
+      "Bash: cd \"<copy>\" && npx mocha 2>&1 | tail -80",
+      "Bash: npx mocha 2>&1 | tail -80",
+      "Bash: npx mocha",
+      "Bash: npx mocha",
+      "PowerShell: npx mocha"
+    ],
+    "answer": "This needs explicit approval to run. Should I proceed with running `npx mocha` to verify the fix against the full test suite?"
+  },
+  {
+    "case": "fix-yaml-block-chomping",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.25559129999999997,
+    "turns": 12,
+    "durationMs": 49451,
+    "tokens": {
+      "input": 24,
+      "output": 2739,
+      "cacheCreation": 15527,
+      "cacheRead": 404241
+    },
+    "hooks": {
+      "emitted": 5,
+      "contextChars": 1563,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 249
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 250
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 149
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 1,
+          "contextChars": 534
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 381
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: chomping",
+      "Grep: CHOMPING_STRIP|CHOMPING_CLIP|CHOMPING_KEEP|function readBlockScalar",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" const yaml = require('./lib/js-yaml.js') || require('./index.js')",
+      "Bash: cd \"<copy>\" && node -e \" const yaml = require('./index.js'); console.log(JSON.stringify(ya",
+      "Bash: cd \"<copy>\" && npx mocha test/units/*.js test/issues/*.js 2>&1 | tail -40",
+      "Bash: cd \"<copy>\" && npx mocha test/units/*.js test/issues/*.js 2>&1 | tail -40",
+      "Bash: cd \"<copy>\" && npx mocha test/units test/issues",
+      "Bash: npx mocha test/units test/issues",
+      "Bash: ls node_modules 2>&1 | head -5; echo \"---\"; ls node_modules/.bin 2>&1 | head -5"
+    ],
+    "answer": "As expected, `node_modules` isn't installed (per the session hook), so mocha can't run — that's why the sandboxed npx call was blocked/would fail anyway. I already verified the fix directly by requiring `lib` and exercising all three chomping modes, which now produce correct results.\n\n## Summary\n\nThe bug was in `lib/loader.js:848`, inside `readBlockScalar`. The ternary that maps the chomping indicator character to its mode was swapped:\n\n```js\nchomping = (ch === 0x2B/* + */) ? CHOMPING_STRIP : CHOMPING_KEEP;\n```\n\nPer the YAML spec, `+` means *keep* and `-` means *strip*, so `|-` was incorrectly being treated as `CHOMPING_KEEP` (preserving trailing newlines) and `|+` as `CHOMPING_STRIP`. Fixed to:\n\n```js\nchomping = (ch === 0x2B/* + */) ? CHOMPING_KEEP : CHOMPING_STRIP;\n```\n\nVerified directly against `lib/` (no `node_modules`, so couldn't run the mocha suite):\n- `|-` → `\"text\"` (strip, correct now)\n- `|+` → `\"text\\n\\n\"` (keep, correct now)\n- `|` → `\"text\\n\"` (clip, unaffected, still correct)\n\nNo tests were modified."
+  },
+  {
+    "case": "fix-yaml-block-chomping",
+    "arm": "without",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.5564313000000001,
+    "turns": 24,
+    "durationMs": 122077,
+    "tokens": {
+      "input": 48,
+      "output": 8350,
+      "cacheCreation": 24246,
+      "cacheRead": 949651
+    },
+    "hooks": {
+      "emitted": 0,
+      "contextChars": 0,
+      "deduped": 0,
+      "byScript": {}
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Bash: cd \"<copy>\" && ls && cat package.json | head -30",
+      "Grep: chomping|CHOMPING_STRIP|CHOMPING_CLIP|CHOMPING_KEEP",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" const yaml = require('./lib/loader.js'); console.log(JSON.stringi",
+      "Grep: function readLineBreak|function is_EOL|function is_WHITE_SPACE|function captureSegment",
+      "Grep: readLineBreak|is_EOL|is_WHITE_SPACE\\s*=|captureSegment\\s*=",
+      "Grep: function readLineBreak|function is_EOL|function captureSegment",
+      "Read: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && cp lib/loader.js /tmp/loader_backup.js 2>/dev/null || copy lib\\loader.js li",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" const yaml = require('./lib/loader.js'); console.log(JSON.stringi",
+      "Edit: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" const yaml = require('./lib/loader.js'); console.log(JSON.stringi",
+      "Bash: cd \"<copy>\" && npm test 2>&1 | tail -60",
+      "Bash: cd \"<copy>\" && npx mocha 2>&1 | tail -80",
+      "Bash: npx mocha 2>&1 | tail -100",
+      "Bash: npx mocha",
+      "Bash: npx mocha",
+      "PowerShell: npx mocha 2>&1 | Select-Object -Last 100",
+      "PowerShell: npx mocha",
+      "PowerShell: npx mocha"
+    ],
+    "answer": "This requires explicit user approval to run. May I run the test suite (`npx mocha`) to verify the fix doesn't break anything?"
+  },
+  {
+    "case": "fix-yaml-block-chomping",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.3279234,
+    "turns": 10,
+    "durationMs": 149455,
+    "tokens": {
+      "input": 20,
+      "output": 6215,
+      "cacheCreation": 21412,
+      "cacheRead": 353888
+    },
+    "hooks": {
+      "emitted": 7,
+      "contextChars": 2894,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 249
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 250
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 149
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 1,
+          "contextChars": 752
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 3,
+          "contextChars": 1494
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: chomping|STRIP|CLIP|KEEP",
+      "Read: <copy>\\lib\\loader.js",
+      "Grep: input \\+=|state.input =|\\\\0",
+      "Read: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" var yaml = require('./lib/js-yaml.js') || require('./index.js'); ",
+      "Bash: cd \"<copy>\" && ls index.js lib && node -e \" var yaml = require('./index.js'); var r = yaml",
+      "Grep: function readLineBreak|function captureSegment|function is_EOL",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" var yaml = require('./index.js'); console.log(JSON.stringify(yaml"
+    ],
+    "answer": "All three chomping modes now behave correctly: `|-` strips (`\"text\"`), `|+` keeps (`\"text\\n\\n\"`), and plain `|` clips (`\"text\\n\"`).\n\nThe bug was a swapped ternary in `lib/loader.js:848` — the `-` indicator was mapping to `CHOMPING_KEEP` and `+` to `CHOMPING_STRIP`, backwards from the YAML spec. Fixed by swapping the branches; no test changes needed."
+  },
+  {
+    "case": "fix-yaml-block-chomping",
+    "arm": "without",
+    "rep": 3,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.27047369999999993,
+    "turns": 14,
+    "durationMs": 51407,
+    "tokens": {
+      "input": 28,
+      "output": 2606,
+      "cacheCreation": 15157,
+      "cacheRead": 465639
+    },
+    "hooks": {
+      "emitted": 0,
+      "contextChars": 0,
+      "deduped": 0,
+      "byScript": {}
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Bash: cat package.json | head -20",
+      "Grep: chomping|CHOMPING|STRIP|CLIP|KEEP",
+      "Read: <copy>\\lib\\loader.js",
+      "Bash: grep -n \"CHOMPING\" lib/loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: node -e \"console.log(JSON.stringify(require('./index.js').load('s: |-\\n text\\n\\n').s))\"",
+      "Bash: npm test 2>&1 | tail -40",
+      "Bash: npx mocha 2>&1 | tail -60",
+      "Bash: npx mocha",
+      "Bash: npx mocha",
+      "Bash: node node_modules/.bin/mocha 2>&1 | tail -80",
+      "Bash: ls node_modules 2>&1 | head -20; echo \"---\"; ls node_modules 2>&1 | wc -l",
+      "Bash: node -e \" const yaml = require('./index.js'); console.log(1, JSON.stringify(yaml.load('s: |-\\n text\\n\\n').s)); // strip -> 'text' console.log(2, JSON.stringify("
+    ],
+    "answer": "All chomping modes behave correctly now (strip/clip/keep for both `|` and `>` styles). Since `node_modules` isn't installed in this environment, I verified the fix manually rather than via the mocha suite, but the existing spec files (e.g. `test/issues/`) would exercise this same path.\n\n**Fix:** `lib/loader.js:848` — swapped `+`/`-` chomping-indicator assignment so `-` now correctly maps to `CHOMPING_STRIP` and `+` to `CHOMPING_KEEP` (they were previously reversed, causing `|-` to keep trailing newlines instead of stripping them)."
+  },
+  {
+    "case": "fix-yaml-block-chomping",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.2331843,
+    "turns": 9,
+    "durationMs": 49855,
+    "tokens": {
+      "input": 18,
+      "output": 3025,
+      "cacheCreation": 16307,
+      "cacheRead": 299711
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 1152,
+      "deduped": 0,
+      "byScript": {
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 250
+        },
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 249
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 149
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 504
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: chomp|strip|clip|keep",
+      "Grep: chomp|CHOMPING|readBlockScalar",
+      "Read: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && git log -p -1 --follow -- lib/loader.js | grep -n \"CHOMPING_STRIP\\|CHOMPING",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" var yaml = require('./lib/js-yaml.js') || require('./index.js'); ",
+      "Bash: cd \"<copy>\" && node -e \" var yaml = require('./index.js'); var r = yaml.load('s: |-\\n text",
+      "Bash: cd \"<copy>\" && node -e \" var yaml = require('./index.js'); console.log(JSON.stringify(yaml"
+    ],
+    "answer": "`|+` keeps both trailing newlines and plain `|` (clip) keeps exactly one — both correct now.\n\n**Root cause**: `lib/loader.js:848` had the `+`/`-` chomping indicators swapped — `+` (keep) was mapped to `CHOMPING_STRIP` and `-` (strip) was mapped to `CHOMPING_KEEP`, so `|-` kept trailing blank lines instead of stripping them.\n\n**Fix**: swapped the ternary back to `ch === 0x2B /* + */ ? CHOMPING_KEEP : CHOMPING_STRIP`. One-line change, no tests touched."
+  },
+  {
+    "case": "fix-yaml-block-chomping",
+    "arm": "without",
+    "rep": 4,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.2713815,
+    "turns": 13,
+    "durationMs": 48240,
+    "tokens": {
+      "input": 26,
+      "output": 2720,
+      "cacheCreation": 16388,
+      "cacheRead": 438365
+    },
+    "hooks": {
+      "emitted": 0,
+      "contextChars": 0,
+      "deduped": 0,
+      "byScript": {}
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: STRIP|CLIP|chomp",
+      "Grep: chomp|readBlockScalar|CHOMPING",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" var yaml = require('./lib/js-yaml.js') || require('./lib'); \" 2>&",
+      "Bash: cd \"<copy>\" && node -e \" var yaml = require('./lib/index.js'); console.log(JSON.stringify(",
+      "Bash: cd \"<copy>\" && cat package.json | grep -A2 '\"main\"'",
+      "Read: <copy>\\package.json",
+      "Bash: cd \"<copy>\" && node -e \" var yaml = require('./index.js'); console.log(JSON.stringify(yaml",
+      "Bash: cd \"<copy>\" && npx mocha 2>&1 | tail -60",
+      "Bash: npx mocha",
+      "Bash: npx mocha"
+    ],
+    "answer": "I need approval to run the test suite via `npx mocha`. Would you like me to proceed?"
+  },
+  {
+    "case": "fix-yaml-block-chomping",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.21213540000000003,
+    "turns": 9,
+    "durationMs": 49108,
+    "tokens": {
+      "input": 18,
+      "output": 2367,
+      "cacheCreation": 14915,
+      "cacheRead": 290288
+    },
+    "hooks": {
+      "emitted": 5,
+      "contextChars": 1535,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 249
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 250
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 149
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 2,
+          "contextChars": 887
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Bash: cd \"<copy>\" && ls && grep -rl \"chomping\" lib 2>/dev/null",
+      "Grep: function readBlockScalar",
+      "Grep: readBlockScalar",
+      "Read: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" const yaml = require('./lib/loader.js'); console.log(JSON.stringi",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \" const yaml = require('./lib/loader.js'); console.log(JSON.stringi"
+    ],
+    "answer": "All three chomping modes now behave correctly: `|-` strips (`\"text\"`), `|+` keeps (`\"text\\n\\n\"`), and plain `|` clips (`\"text\\n\"`).\n\nThe bug was a one-character swap in `lib/loader.js:848`: the ternary assigned `CHOMPING_STRIP` for `+` and `CHOMPING_KEEP` for `-`, backwards from the YAML spec. Fixed by swapping the branches."
+  },
+  {
+    "case": "fix-commander-long-equals",
+    "arm": "without",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.2812063,
+    "turns": 14,
+    "durationMs": 54708,
+    "tokens": {
+      "input": 28,
+      "output": 2940,
+      "cacheCreation": 16359,
+      "cacheRead": 460691
+    },
+    "hooks": {
+      "emitted": 0,
+      "contextChars": 0,
+      "deduped": 0,
+      "byScript": {}
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: indexOf\\('='\\)|indexOf(\"=\")",
+      "Read: <copy>\\lib\\command.js",
+      "Edit: <copy>\\lib\\command.js",
+      "Bash: cd \"<copy>\" && node -e \" const { Command } = require('./lib/command.js'); const program ",
+      "Bash: cd \"<copy>\" && npx jest tests/ -t \"=\" 2>&1 | tail -60",
+      "Bash: npx jest tests/ 2>&1 | tail -40",
+      "Bash: npx jest tests/",
+      "Bash: npx jest tests/",
+      "Bash: node node_modules/.bin/jest tests/ 2>&1 | tail -60",
+      "Bash: ls node_modules 2>&1 | head -5; echo \"---\"; cat package.json | grep -A3 '\"scripts\"'",
+      "Grep: --port=|=bar|long.*=|--pepper=",
+      "Grep: --[a-zA-Z-]+=",
+      "Read: <copy>\\tests\\command.parseOptions.test.js"
+    ],
+    "answer": "The fix is confirmed correct — `tests/command.parseOptions.test.js:301-306` already expects `--ccc=value` to parse to `ccc: 'value'` (not `'=value'`), matching the corrected behavior. Dependencies aren't installed so I couldn't run the full Jest suite, but I validated the fix directly against the compiled library and it now produces the right result.\n\n**Cause**: `lib/command.js:1856` sliced the long-option value starting at the `=` character itself (`arg.slice(index)`) instead of just after it, so the leading `=` leaked into the value.\n\n**Fix**: changed to `arg.slice(index + 1)`."
+  },
+  {
+    "case": "fix-commander-long-equals",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.13429259999999998,
+    "turns": 6,
+    "durationMs": 18454,
+    "tokens": {
+      "input": 10,
+      "output": 1016,
+      "cacheCreation": 12251,
+      "cacheRead": 151722
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 1004,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 266
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 250
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 149
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 339
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: indexOf\\('='\\)|split\\('='\\)|=.*substr|startsWith\\('--'\\)",
+      "Glob: lib/*.js",
+      "Read: <copy>\\lib\\command.js",
+      "Edit: <copy>\\lib\\command.js",
+      "Bash: cd \"<copy>\" && node -e \" const { Command } = require('./lib/command.js'); const program "
+    ],
+    "answer": "Confirmed fixed: `--port=8080` now parses to `'8080'` instead of `'=8080'`.\n\nThe bug was an off-by-one in `lib/command.js:1856` — `arg.slice(index)` included the `=` separator in the value; changed to `arg.slice(index + 1)`."
+  },
+  {
+    "case": "fix-commander-long-equals",
+    "arm": "without",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.1703333,
+    "turns": 9,
+    "durationMs": 27135,
+    "tokens": {
+      "input": 16,
+      "output": 1429,
+      "cacheCreation": 12194,
+      "cacheRead": 250051
+    },
+    "hooks": {
+      "emitted": 0,
+      "contextChars": 0,
+      "deduped": 0,
+      "byScript": {}
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: splitOptionFlags|optionEqualsSign|=.*split|indexOf\\('='\\)",
+      "Grep: startsWith\\('--'\\)|long.*=.*value|arg\\.slice",
+      "Read: <copy>\\lib\\command.js",
+      "Edit: <copy>\\lib\\command.js",
+      "Bash: cd \"<copy>\" && node -e \" const { Command } = require('./lib/command.js'); const program ",
+      "Bash: cd \"<copy>\" && npx jest tests/options tests/command.options 2>&1 | tail -40",
+      "Bash: npx jest tests 2>&1 | tail -60",
+      "Bash: npx jest tests"
+    ],
+    "answer": "I need your approval to run the test suite (`npx jest tests`) to confirm the fix doesn't break anything. Want me to proceed?"
+  },
+  {
+    "case": "fix-commander-long-equals",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.17045760000000001,
+    "turns": 7,
+    "durationMs": 32774,
+    "tokens": {
+      "input": 14,
+      "output": 1433,
+      "cacheCreation": 13739,
+      "cacheRead": 221622
+    },
+    "hooks": {
+      "emitted": 5,
+      "contextChars": 1543,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 266
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 250
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 149
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 2,
+          "contextChars": 878
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: indexOf\\('='\\)|split\\('='\\)|=.*longFlag|normalize",
+      "Grep: =",
+      "Grep: '='|\"=\"|indexOf\\(.=.\\)|arg\\.slice",
+      "Read: <copy>\\lib\\command.js",
+      "Edit: <copy>\\lib\\command.js",
+      "Bash: cd \"<copy>\" && node -e \" const { Command } = require('./lib/command.js'); const program "
+    ],
+    "answer": "Confirmed fixed: `--port=8080` now yields `opts().port === '8080'`.\n\nThe bug was in `lib/command.js:1856` — when splitting `--foo=bar` on the `=` index, the value was emitted as `arg.slice(index)`, which keeps the `=` character itself (`=bar`). Changed to `arg.slice(index + 1)` to drop it."
+  },
+  {
+    "case": "fix-commander-long-equals",
+    "arm": "without",
+    "rep": 3,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.21411699999999997,
+    "turns": 12,
+    "durationMs": 42643,
+    "tokens": {
+      "input": 22,
+      "output": 2080,
+      "cacheCreation": 12821,
+      "cacheRead": 350880
+    },
+    "hooks": {
+      "emitted": 0,
+      "contextChars": 0,
+      "deduped": 0,
+      "byScript": {}
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: splitOptionFlags|unknownOption|optionFor|parseOptions",
+      "Glob: lib/*.js",
+      "Grep: indexOf\\('='\\)|startsWith\\('--'\\)|long.*=",
+      "Read: <copy>\\lib\\command.js",
+      "Edit: <copy>\\lib\\command.js",
+      "Bash: node -e \" const { Command } = require('./lib/command.js'); const program = new Command(); program.option('--port <n>'); program.parse(['--port=8080'], { from: '",
+      "Bash: cd \"<copy>\" && npx jest 2>&1 | tail -40",
+      "Bash: npx jest 2>&1 | tail -40",
+      "Bash: npx jest",
+      "Bash: npx jest",
+      "Bash: npx jest"
+    ],
+    "answer": "## Summary\n\n**Root cause**: in `lib/command.js`, the long-option `--flag=value` parser computed `index = arg.indexOf('=')` but then emitted `arg.slice(index)` — which includes the `=` character itself — instead of `arg.slice(index + 1)`.\n\n**Fix**: `lib/command.js:1856` — changed `arg.slice(index)` to `arg.slice(index + 1)`.\n\nVerified manually: `program.option('--port <n>').parse(['--port=8080'])` now yields `opts().port === '8080'`. I attempted to run the full Jest suite to double check for regressions, but it requires your approval to execute — let me know if you'd like me to run it (or approve the `npx jest` command) and I'll confirm."
+  },
+  {
+    "case": "fix-commander-long-equals",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.18692189999999995,
+    "turns": 9,
+    "durationMs": 31728,
+    "tokens": {
+      "input": 18,
+      "output": 1536,
+      "cacheCreation": 13228,
+      "cacheRead": 281533
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 1327,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 266
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 250
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 149
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 662
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: splitOptionFlags|=.*split|optionFlags|unknownArgs|parseOptions",
+      "Grep: indexOf\\('='\\)|split\\('='\\)|long=|longOption|'='",
+      "Grep: =",
+      "Grep: long",
+      "Grep: long",
+      "Read: <copy>\\lib\\command.js",
+      "Edit: <copy>\\lib\\command.js",
+      "Bash: cd \"<copy>\" && node -e \" const { Command } = require('./lib/command.js'); const program "
+    ],
+    "answer": "Confirmed fixed — `opts().port` is now `'8080'` instead of `'=8080'`.\n\nThe bug was in `lib/command.js:1856` (inside `parseOptions`): when splitting a long option like `--port=8080` on the `=`, the code did `arg.slice(index)` instead of `arg.slice(index + 1)`, leaving the `=` attached to the value. One-character fix, no test changes needed."
+  },
+  {
+    "case": "fix-commander-long-equals",
+    "arm": "without",
+    "rep": 4,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.19702740000000005,
+    "turns": 10,
+    "durationMs": 33661,
+    "tokens": {
+      "input": 20,
+      "output": 1723,
+      "cacheCreation": 12567,
+      "cacheRead": 316848
+    },
+    "hooks": {
+      "emitted": 0,
+      "contextChars": 0,
+      "deduped": 0,
+      "byScript": {}
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-haiku-4-5-20251001,claude-sonnet-5",
+    "tools": [
+      "Grep: indexOf\\('='\\)|split\\('='\\)|=.*indexOf",
+      "Read: <copy>\\lib\\command.js",
+      "Edit: <copy>\\lib\\command.js",
+      "Bash: cd \"<copy>\" && node -e \" const { Command } = require('./lib/command.js'); const program ",
+      "Bash: cd \"<copy>\" && npx jest tests/ 2>&1 | tail -n 40",
+      "Bash: npx jest tests/ 2>&1 | tail -n 40",
+      "Bash: npx jest tests/",
+      "Bash: npx jest tests",
+      "Bash: npx jest tests"
+    ],
+    "answer": "The test run requires manual approval that isn't going through automatically — I'll leave that to you to run (`npx jest tests`) if you'd like full confirmation. The fix itself is verified working via direct reproduction.\n\n**Cause:** in `lib/command.js`, the `--foo=bar` handler computed `index = arg.indexOf('=')` but then emitted `arg.slice(index)`, which includes the `=` character itself, producing `=bar` instead of `bar`.\n\n**Fix:** changed `arg.slice(index)` → `arg.slice(index + 1)` (lib/command.js:1856)."
+  },
+  {
+    "case": "fix-commander-long-equals",
+    "arm": "with",
+    "rep": 4,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 0.1299012,
+    "turns": 5,
+    "durationMs": 26170,
+    "tokens": {
+      "input": 10,
+      "output": 971,
+      "cacheCreation": 11696,
+      "cacheRead": 150434
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 838,
+      "deduped": 0,
+      "byScript": {
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 250
+        },
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 266
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 149
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 173
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Grep: indexOf\\('='\\)|split\\(/=/|=.*optionEqualsIndex|optionEquals",
+      "Read: <copy>\\lib\\command.js",
+      "Edit: <copy>\\lib\\command.js",
+      "Bash: cd <copy> && node -e \" const { Command } = require('./lib/command.js'); const program = "
+    ],
+    "answer": "Confirmed fixed: `--port=8080` now yields `'8080'` instead of `'=8080'`.\n\nRoot cause: in `lib/command.js`'s `parseOptions`, the `--foo=bar` branch found `=` at `index` but sliced from `index` (keeping the `=`) instead of `index + 1`. Fixed by changing `arg.slice(index)` to `arg.slice(index + 1)` (command.js:1856)."
+  }
+]

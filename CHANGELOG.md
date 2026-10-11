@@ -10,6 +10,11 @@ reconstructed from git history.
 
 ### Added
 
+- **Outcome round 6: independent validation.** Three new bugs in two repositories the plugin had
+  never run on (js-yaml 4.1.0, commander.js v15), cases written before any run, both arms: every task
+  solved in both, and with the plugin Sonnet 5 was 36% cheaper and Haiku 4.5 34% cheaper — the
+  opposite of round 5's +19% on Haiku, after the changes that round's hook log motivated. Two rows in
+  the README table ([report](docs/benchmarks/outcome-round6-2026-10-11.pt-BR.md)).
 - **Outcome harness: parallel runs and a local mirror.** `--parallel=N` runs N independent runs at
   once — same cost, a fraction of the time (4 runs in 27 s, mirror included) — with results kept in
   the plan's order. A remote repository is mirrored once and each run clones from the mirror at the

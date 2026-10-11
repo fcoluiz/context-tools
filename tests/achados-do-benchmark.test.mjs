@@ -18,6 +18,7 @@ import { documentationSessionContext } from '../scripts/lib/documentation.mjs';
 import { buildContextPack } from '../scripts/context-pack.mjs';
 import { parseStream, claudeArgs, anonimizar, runError, medidaValida, summarizeHookLog } from '../scripts/benchmark-outcome.mjs';
 import { makeT } from '../scripts/lib/i18n.mjs';
+import { formatEvidence } from '../scripts/lib/evidence.mjs';
 
 const S = (nome) => localPath(`../scripts/${nome}`);
 const t = makeT('en');
@@ -291,4 +292,31 @@ test('CONTEXT_TOOLS_HOOK_LOG: cada saída de hook vira uma linha, e o harness re
     rmSync(dir, { recursive: true, force: true });
     rmSync(log, { force: true });
   }
+});
+
+// Rodada 5b (node-semver, busca por `compare`): o pacote antes do Grep batia o teto de 3.200
+// caracteres com importações contadas como definição, duas dúzias de nomes parciais e linhas que o
+// próprio Grep ia devolver.
+test('context-pack antes do Grep: importação vira uma linha, parciais viram nomes, sem texto repetido', () => {
+  const req = (n) => `const compare = require('./compare')\nmodule.exports = (a, b) => compare(a, b) === ${n}\n`;
+  const dir = projeto({
+    'functions/compare.js': "const SemVer = require('../classes/semver')\nconst compare = (a, b) => new SemVer(a).compare(b)\nmodule.exports = compare\n",
+    'classes/semver.js': 'class SemVer {\n  compare (other) {\n    return this.compareMain(other)\n  }\n\n  compareMain (other) {\n    return 0\n  }\n}\nmodule.exports = SemVer\n',
+    'functions/eq.js': req(0), 'functions/gt.js': req(1), 'functions/lt.js': req(-1),
+    'test/compare.js': "const compareBuild = require('../functions/compare')\n",
+  });
+  try {
+    const pack = buildContextPack(dir, 'compare', { budget: 800, history: false, beforeGrep: true });
+    const linhas = pack.items.map(formatEvidence);
+    assert.deepEqual(pack.items.filter((i) => i.kind === 'definition').map((i) => i.file).sort(), ['classes/semver.js', 'functions/compare.js']);
+    assert.ok(linhas.includes('[import] (parsed) compare is imported, not defined, in 3 file(s): functions/eq.js, functions/gt.js, functions/lt.js'), linhas.join('\n'));
+    assert.ok(linhas.includes('[similar-name] (partial) other names containing compare: compareMain'), 'parcial de teste fica de fora; o resto vira uma linha');
+    assert.ok(!pack.items.some((i) => i.kind === 'textual-match' || i.kind === 'outline'), 'o Grep devolve isso logo em seguida');
+    const cli = buildContextPack(dir, 'compare', { budget: 800, history: false });
+    assert.ok(cli.items.some((i) => i.kind === 'textual-match'), 'fora do hook, o pacote continua completo');
+    const soImport = projeto({ 'a.js': "const x = require('./x')\n", 'b.js': "const x = require('./x')\n" });
+    try {
+      assert.equal(buildContextPack(soImport, 'x', { budget: 800, beforeGrep: true }).items.filter((i) => i.kind === 'definition').length, 2, 'sem definição real, nada é enxugado');
+    } finally { rmSync(soImport, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

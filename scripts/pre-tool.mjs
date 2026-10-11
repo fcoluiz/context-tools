@@ -133,18 +133,18 @@ export async function executarPreTool(entrada) {
       const { buildContextPack } = await import('./context-pack.mjs');
       const { formatEvidence } = await import('./lib/evidence.mjs');
       let budget = PACK_BUDGET;
-      let pack = buildContextPack(root, padrao, { budget, history: false, index: indice });
+      let pack = buildContextPack(root, padrao, { budget, history: false, index: indice, beforeGrep: true });
       const temDefinicao = pack.items.some((item) => item.kind === 'definition' && item.confidence === 'exact');
       if (!temDefinicao) {
         budget = PACK_ESCALATION_BUDGET;
-        pack = buildContextPack(root, padrao, { budget, history: false, index: indice });
+        pack = buildContextPack(root, padrao, { budget, history: false, index: indice, beforeGrep: true });
       }
       if (pack.items.length) {
         const corpoPack = [
           t('pre.pack', { busca, budget }),
           ...pack.items.map(formatEvidence),
           ...pack.limitations.map((note) => `! ${note}`),
-        ].join('\n').slice(0, MAX_PACK_BLOCO);
+        ].reduce((acc, linha) => (acc.length + linha.length + 1 > MAX_PACK_BLOCO ? acc : `${acc}${acc ? '\n' : ''}${linha}`), '');
         recordMetric(root, 'pretool', {
           host: ferramenta,
           outcome: 'pack',

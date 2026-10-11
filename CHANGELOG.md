@@ -8,21 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
-## [2.7.5] — 2026-10-11
-
 ### Added
 
-- **The SessionStart test line says when the tests cannot run yet.** When a JavaScript project
-  declares dependencies and none are installed (no `node_modules` up to the repository root, no Yarn
-  PnP), the line adds that `npm test` will fail until `npm install` (or the project's package
-  manager), and that a change can be checked by running the code directly. In round 5 of the outcome
-  benchmark, agents in both arms spent turns on `npm test` and `npm install` in a copy without
-  dependencies, while the line said "npm test (runs `tap`)" as if it would work.
-- **Outcome harness: what the hooks injected, per run.** `claude -p`'s `stream-json` does not show
-  what PreToolUse/PostToolUse hooks add to the context. With `CONTEXT_TOOLS_HOOK_LOG=<file>`, every
-  hook output is appended to that file as one JSON line; the harness sets it per run
-  (`<case>.<arm>.<rep>.hooks.jsonl`, outside the copy) and records in `results.json` how many outputs
-  each hook emitted and how many characters — the text stays in the raw log only.
 - **Outcome round 5b: where Haiku's extra cost came from.** The with-plugin arm of round 5's bug
   fixes, rerun twice with the hook log: the evidence pack before a Grep was the largest injection
   (3,200 characters, mostly noise), and the dependency note cut `npm test`/`npm install` attempts
@@ -48,6 +35,22 @@ reconstructed from git history.
   dropped from the `PreToolUse` answer; if nothing else is left, the hook stays quiet and the Grep
   answers. Test cases no longer get a "same file, similar name" line listing the other tests in the
   file. `symbols.mjs` on the command line still finds tests; configuration keys still count.
+
+## [2.7.5] — 2026-10-11
+
+### Added
+
+- **The SessionStart test line says when the tests cannot run yet.** When a JavaScript project
+  declares dependencies and none are installed (no `node_modules` up to the repository root, no Yarn
+  PnP), the line adds that `npm test` will fail until `npm install` (or the project's package
+  manager), and that a change can be checked by running the code directly. In round 5 of the outcome
+  benchmark, agents in both arms spent turns on `npm test` and `npm install` in a copy without
+  dependencies, while the line said "npm test (runs `tap`)" as if it would work.
+- **Outcome harness: what the hooks injected, per run.** `claude -p`'s `stream-json` does not show
+  what PreToolUse/PostToolUse hooks add to the context. With `CONTEXT_TOOLS_HOOK_LOG=<file>`, every
+  hook output is appended to that file as one JSON line; the harness sets it per run
+  (`<case>.<arm>.<rep>.hooks.jsonl`, outside the copy) and records in `results.json` how many outputs
+  each hook emitted and how many characters — the text stays in the raw log only.
 
 ## [2.7.4] — 2026-10-11
 

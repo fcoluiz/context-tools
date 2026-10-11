@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.7.4] — 2026-10-11
+
 ### Added
 
 - **Outcome round 5: bug fixes on held-out cases.** Three bugs injected into node-semver

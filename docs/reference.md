@@ -666,8 +666,10 @@ sends the user down a dead end.
 ### Global install or update (recommended)
 
 ```bash
-npx --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes
+npx -y github:fcoluiz/context-tools
 ```
+
+`context-tools-setup-all --global --yes` (the long form) does the same.
 
 Installs or updates the latest release for every agent whose CLI is on the machine (Claude Code in
 the `user` scope, Codex globally), without touching any project. Running it again updates: on

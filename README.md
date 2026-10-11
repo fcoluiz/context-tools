@@ -61,29 +61,50 @@ standalone copy are both installed.
 
 ## Install or update
 
-One command installs context-tools for **every agent you have** (Claude Code and/or Codex), for
-your user — every project, not just the current one. Run the same command again to update to the
-latest release:
+One command, nothing to answer. It installs context-tools for **every agent you have** (Claude Code
+and/or Codex), for your user — every project, not just the current one. Run it again to update:
 
 ```bash
-npx --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes
+npx -y github:fcoluiz/context-tools
 ```
 
-On **Windows PowerShell**, use `npx.cmd` instead of `npx`. The default execution policy blocks the
-`npx.ps1` shim that npm installs ("running scripts is disabled on this system"); `npx.cmd` runs the
-same program without changing any security setting:
+On **Windows PowerShell**, type `npx.cmd` instead of `npx` (the default execution policy blocks the
+`npx.ps1` shim; `npx.cmd` is the same program and changes no security setting).
 
-```powershell
-npx.cmd --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes
-```
+Then open a new session — that is all. The hooks work on their own: before a Grep they say where a
+symbol is defined, after it which function each line falls in, and at the start of a session how to
+run the tests and when a newer release is out (with this same command). On Codex, the first time,
+open `/hooks` and trust the context-tools hooks once.
 
 Requires Node.js 18+ and the CLI of at least one agent (`claude` or `codex`). It never changes the
-folder you run it from, and never installs an agent CLI you do not already use. Open a new session
-afterwards. On Codex, the first time, open `/hooks` and trust the context-tools hooks once. From then
-on, a session start tells you when a newer release is out, with this same command.
+folder you run it from, and never installs an agent CLI you do not already use.
 
-The plugin brings the tools **and** the hooks. Use `--target=claude` or `--target=codex` to limit it
-to one agent, and drop `--global` to set up only the current project instead.
+| want | add to the command |
+|---|---|
+| only one agent | `--target=claude` or `--target=codex` |
+| only the current project, not your user | `--project .` |
+| the MCP server too (see below) | `--mcp` (and `--remove-mcp` to take it out) |
+| to see what it would do, changing nothing | `--dry-run` |
+
+### MCP server (optional, off by default)
+
+For Claude Code and Codex the plugin is enough: in every measured round the value came from the
+hooks, and agents never needed to call a tool for it. The MCP server is for **other MCP clients**, or
+for whoever prefers typed tool calls: five read-only tools (`find_symbol`, `references`, `impact`,
+`outline`, `overview`) with the same answers as the commands. It stays off by default because tool
+definitions are paid on every request: about 2,000 characters (~500 tokens), a ceiling enforced by a
+test. To turn it on:
+
+```bash
+npx -y github:fcoluiz/context-tools --mcp
+```
+
+That registers it with `claude mcp add` / `codex mcp add` and keeps it updated with every run. Any
+other client can start it directly:
+
+```json
+{ "mcpServers": { "context-tools": { "command": "node", "args": ["<home>/.context-tools/runtime/scripts/mcp-server.mjs"] } } }
+```
 
 ### With the agent's own CLI
 
@@ -99,29 +120,6 @@ Codex:
 ```bash
 codex plugin marketplace add fcoluiz/context-tools
 codex plugin add context-tools@context-tools-codex
-```
-
-### Optional: MCP server
-
-The plugin (skill + hooks) is the recommended way to use context-tools in Claude Code and Codex. An
-MCP server is also available for **other MCP clients** and for whoever prefers typed tool calls: five
-read-only tools (`find_symbol`, `references`, `impact`, `outline`, `overview`) that return the same
-answers as the commands, from a process that stays alive (no Node start-up per call).
-
-It is **off by default**, because tool definitions have a cost: about 2,000 characters (~500 tokens)
-added to every request of a client that loads them — a ceiling enforced by a test. Turn it on with
-the same installer:
-
-```bash
-npx --yes --package github:fcoluiz/context-tools context-tools-setup-all --global --yes --mcp
-```
-
-The installer copies the scripts to `~/.context-tools/runtime` (a path that survives updates) and
-runs `claude mcp add` / `codex mcp add` for you. Running the installer again keeps the server up to
-date; `--remove-mcp` unregisters it. Any other client can start it directly:
-
-```json
-{ "mcpServers": { "context-tools": { "command": "node", "args": ["<home>/.context-tools/runtime/scripts/mcp-server.mjs"] } } }
 ```
 
 ### Standalone, without a plugin

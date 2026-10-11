@@ -110,8 +110,9 @@ function startBackgroundRefresh(path) {
 
 function updateCommand(env = process.env) {
   const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-  const global = env.CLAUDE_PLUGIN_ROOT || env.PLUGIN_ROOT ? ' --global' : '';
-  return `${npx} --yes --package github:fcoluiz/context-tools context-tools-setup-all${global} --yes`;
+  // Plugin (global): o comando curto, cujo padrão já é global e sem perguntas.
+  if (env.CLAUDE_PLUGIN_ROOT || env.PLUGIN_ROOT) return `${npx} --yes github:fcoluiz/context-tools`;
+  return `${npx} --yes --package github:fcoluiz/context-tools context-tools-setup-all --yes`;
 }
 
 /**

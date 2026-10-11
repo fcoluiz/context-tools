@@ -15,6 +15,7 @@ import {
 } from './scripts/lib/setup-shared.mjs';
 import { TARGETS } from './scripts/lib/setup-targets.mjs';
 import { runSetup, chooseGuidedRoot, projectStatus as projectStatusFor } from './scripts/lib/setup-engine.mjs';
+import { isMain } from './scripts/lib/roots.mjs';
 
 export {
   parseArgs, detectProjectRoot, compareVersions, latestTagFromLsRemote, relativeExtra,
@@ -42,7 +43,9 @@ async function main() {
   process.exitCode = await runSetup(ADAPTER, ctx, { command, root, flags });
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
+// `isMain` compara o caminho REAL: no Linux/macOS o bin do npm é um symlink, e uma comparação
+// direta fazia o instalador sair sem fazer nada.
+if (isMain(import.meta.url)) {
   const { flags } = parseArgs();
   main()
     .catch((error) => { console.error(t('setup.error', { mensagem: error.message })); process.exitCode = 1; })

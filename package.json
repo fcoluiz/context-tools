@@ -24,6 +24,7 @@
   ],
   "type": "module",
   "bin": {
+    "context-tools": "./context-tools.mjs",
     "context-tools-setup": "./setup-codex.mjs",
     "context-tools-setup-claude": "./setup-claude.mjs",
     "context-tools-setup-all": "./setup.mjs",

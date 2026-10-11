@@ -320,3 +320,22 @@ test('context-pack antes do Grep: importação vira uma linha, parciais viram no
     } finally { rmSync(soImport, { recursive: true, force: true }); }
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+// Visto em uso real: buscar `PreToolUse` neste repositório devolvia seis testes `E2E: PreToolUse …`
+// como "a DEFINIÇÃO", cada um com uma linha de "nome parecido" repetindo os outros cinco.
+test('PreToolUse: nome de teste que só contém o termo não é definição; o hook cala e o Grep responde', () => {
+  const testes = "import test from 'node:test';\ntest('E2E: CargaFiscal responde antes', () => {});\ntest('E2E: CargaFiscal cala em texto', () => {});\n";
+  const soTestes = projeto({ '.git/HEAD': 'ref: x\n', 'tests/e2e.test.mjs': testes });
+  const comDefinicao = projeto({ '.git/HEAD': 'ref: x\n', 'tests/e2e.test.mjs': testes, 'src/carga.js': 'export function CargaFiscal() {}\n' });
+  const grep = { tool_name: 'Grep', tool_input: { pattern: 'CargaFiscal' } };
+  try {
+    assert.match(spawnSync(process.execPath, [S('symbols.mjs'), 'CargaFiscal'], { cwd: soTestes, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: soTestes } }).stdout,
+      /E2E: CargaFiscal responde antes/, 'na linha de comando, achar o teste continua valendo');
+    assert.equal(hook('pre-tool.mjs', soTestes, grep), '', 'antes do Grep, só testes não são resposta');
+    const ctx = hook('pre-tool.mjs', comDefinicao, grep);
+    assert.match(ctx, /src\/carga\.js/);
+    assert.doesNotMatch(ctx, /E2E:/);
+  } finally {
+    for (const d of [soTestes, comDefinicao]) rmSync(d, { recursive: true, force: true });
+  }
+});

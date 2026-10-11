@@ -40,6 +40,11 @@ reconstructed from git history.
   bug fixes, the pack for `compare` in node-semver hit the 3,200-character cap with 6 imports
   counted as exact definitions and 24 partial ones; it is now 609 characters, with the import count
   complete (12 files). `context-pack.mjs` on the command line is unchanged.
+- **A test name is no longer "the definition" before a Grep.** When nothing is named exactly like
+  the searched term, test cases whose name merely contains it (`E2E: PreToolUse answers …`) are
+  dropped from the `PreToolUse` answer; if nothing else is left, the hook stays quiet and the Grep
+  answers. Test cases no longer get a "same file, similar name" line listing the other tests in the
+  file. `symbols.mjs` on the command line still finds tests; configuration keys still count.
 
 ## [2.7.4] — 2026-10-11
 

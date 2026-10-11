@@ -116,7 +116,7 @@ export async function executarPreTool(entrada) {
   const t = makeT(detectLang(cfg));
   const t0 = Date.now();
   const indice = buildIndex(root, cfg);
-  const linhas = reportOne(padrao, indice, { wantAll: false, ms: Date.now() - t0, t });
+  const linhas = reportOne(padrao, indice, { wantAll: false, ms: Date.now() - t0, t, beforeGrep: true });
   if (!linhas || !linhas.length) {
     recordMetric(root, 'pretool', { host: ferramenta, outcome: 'miss', patternLength: padrao.length, durationMs: handlerDurationMs() });
     return '';

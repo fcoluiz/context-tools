@@ -57,7 +57,7 @@ test('SessionStart de um projeto comum custa pouco', () => {
     const env = { CLAUDE_PROJECT_DIR: root, CONTEXT_TOOLS_SESSION_ID: 'orc' };
     const total = ['context-maps.mjs', 'context-docs.mjs', 'handoff.mjs'].reduce((sum, script) => sum + hook(script, ['--session-start'], env).length, 0);
     assert.ok(total <= 900, `SessionStart somou ${total} chars (teto 900)`);
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('aviso de Stop é cortado no teto, com ponteiro para o health; o prompt de handoff não', async () => {
@@ -90,5 +90,5 @@ test('aviso de mapa defasado no Claude manda rodar ack.mjs em vez de colar hashe
     const stop = hook('context-maps.mjs', ['--stop-report'], env);
     assert.match(stop, /ack\.mjs"? \.claude\/context\/a\.md/);
     assert.ok(!/sha256:[0-9a-f]{64}/.test(stop), `o aviso não deve carregar hashes: ${stop}`);
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });

@@ -8,6 +8,18 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A hook that only carried a notice could still reach the agent twice.** When two copies of the
+  same hook (plugin + standalone install) ran in parallel and the output had a notice but no
+  `additionalContext` (e.g. the "ai-context has no documents yet" line), the dedupe key was empty,
+  so both copies emitted unless one happened to write its notice state first. The notice now counts
+  toward the dedupe key; outputs without a notice keep the same key as before.
+- **Test suite: intermittent cleanup failures.** Fixture repositories could fail `rmSync` with
+  `ENOTEMPTY` while git's background auto-gc/maintenance was still writing `.git/objects/pack`.
+  `npm test` now disables `gc.auto` and `maintenance.auto` for every git the tests run, and
+  cleanups of git fixtures retry.
+
 ## [2.9.1] — 2026-10-12
 
 ### Changed

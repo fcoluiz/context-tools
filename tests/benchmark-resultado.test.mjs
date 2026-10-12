@@ -19,7 +19,7 @@ test('casos: caminho relativo ao arquivo, {casesDir} nos comandos, campos obriga
     assert.deepEqual(c.check.command, ['node', `${dir}/check.mjs`]);
     writeFileSync(file, JSON.stringify({ cases: [{ id: 'b', prompt: 'p', check: { answer: [] } }] }));
     assert.throws(() => loadCases(file), /repo or git/);
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('braços: só o "with" carrega o plugin; os dois ignoram configuração do usuário e MCP', () => {
@@ -60,7 +60,7 @@ test('braços de outras ferramentas: arquivo, variáveis, settings/MCP/plugin e 
     assert.equal(a[a.indexOf('--mcp-config') + 1], '/r/mcp.json');
     assert.ok(a.includes('mcp__outra') && a.includes('Read'), 'ferramentas MCP somam às comuns');
     assert.equal(claudeArgs('without')[claudeArgs('without').indexOf('--setting-sources') + 1], 'project');
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('o que os hooks de qualquer ferramenta injetaram, lido dos eventos do stream', () => {
@@ -129,6 +129,6 @@ test('bug injetado não aparece no histórico: com setup, a cópia começa num c
     const mantido = prepararCopia({ id: 'h3', repo, setup: [quebra], history: 'keep' }); copias.push(mantido);
     assert.equal(g(mantido, 'rev-list', '--count', 'HEAD').stdout.trim(), '3');
   } finally {
-    for (const d of [repo, ...copias]) rmSync(d, { recursive: true, force: true });
+    for (const d of [repo, ...copias]) rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });

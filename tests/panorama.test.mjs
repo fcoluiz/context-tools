@@ -53,7 +53,7 @@ test('overview: áreas, arquivos quentes com marca de conhecimento, arquivo gran
     assert.match(texto, /outline <file>/);
   } finally {
     if (antes === undefined) delete process.env.CONTEXT_TOOLS_STATE_DIR; else process.env.CONTEXT_TOOLS_STATE_DIR = antes;
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -70,5 +70,5 @@ test('ct.mjs: o verbo roda o script de antes no mesmo processo, com os mesmos ar
     assert.equal(desconhecido.status, 1);
     assert.match(desconhecido.stdout, /unknown verb "nada"/);
     assert.match(desconhecido.stdout, /find\s+where is it defined/);
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });

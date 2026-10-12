@@ -88,7 +88,12 @@ export function writeHookOutput(root, payload, opts = {}) {
   }
   const json = parsed ? JSON.stringify(parsed) : payload;
   const event = parsed?.hookSpecificOutput?.hookEventName || 'unknown';
-  const text = parsed?.hookSpecificOutput?.additionalContext || parsed?.systemMessage || '';
+  // O aviso interno (`_contextToolsNotice`) entra na chave: uma saída só com aviso, sem
+  // `additionalContext`, também é mensagem — sem isso as duas cópias paralelas emitiam.
+  const text = [
+    parsed?.hookSpecificOutput?.additionalContext || parsed?.systemMessage || '',
+    parsed?.hookSpecificOutput?._contextToolsNotice || '',
+  ].filter(Boolean).join('\0');
   const emit = !text || claimHookEmission(root, event, text, opts);
   if (process.env.CONTEXT_TOOLS_HOOK_LOG) logHookOutput(process.env.CONTEXT_TOOLS_HOOK_LOG, event, parsed, emit);
   if (!emit) return false;

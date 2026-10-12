@@ -59,6 +59,7 @@ O custo não é ler o arquivo. É **procurar onde a coisa está**, sessão após
 | como montar um pacote de evidências limitado? | `context-pack.mjs <símbolo-ou-arquivo> [--budget=N]` |
 | quais provedores semânticos opcionais estão disponíveis? | `providers.mjs [--json] [--install-plan]` |
 | como está a saúde e o uso local do plugin? | `health.mjs [--days=30] [--audit] [--json]` |
+| o mesmo, mais sessões e inventário, em JSON versionado para CI ou painel | `snapshot-export.mjs [--days=30] [--sessions=20]` |
 | quanto custa o hook Bash do Codex? | `npm run benchmark:pretool -- --samples=5` |
 | quanto custa a checagem de prompt do Codex? | `npm run benchmark:prompt-audit -- --samples=7` |
 
@@ -71,6 +72,16 @@ arquivo ou sem resultado, sem guardar o termo pesquisado. São sinais para prior
 não justificativa isolada para criar um parser nem prova de que o agente usou a resposta.
 O relatório também avisa quando o snapshot auxiliar da sessão excede o limite. No Codex, o `Stop`
 usa o diário local de escritas observadas para atribuir alterações à sessão.
+
+`snapshot-export.mjs` (`ct snapshot`) é o ponto de extensão para quem agrega vários projetos ou
+máquinas: um JSON com schema versionado (`context-tools/snapshot@1`) que traz o resumo do `health`, o
+estado de cada mapa de contexto e documento operacional (caminho e em dia/defasado, não o conteúdo),
+os repositórios (`dono/repo` do GitHub, branch, `HEAD`; um token na URL do remote é removido), os
+números das sessões recentes do Claude Code (mensagens, pico de contexto, reescritas de prefixo,
+duração — nunca o texto do transcript) e um id anônimo da máquina: um UUID aleatório gravado uma vez
+em `~/.context-tools/machine-id`, que não deriva de nome de usuário, hostname nem hardware. Não envia
+nada para lugar nenhum; só imprime. Um teste semeia marcadores no código, nos mapas, nos prompts e nas
+respostas e confere que nenhum chega à saída.
 
 `benchmark:pretool` inicia o hook do Codex em processos Node separados com entradas Bash sintéticas.
 Mostra o tempo ponta a ponta de um comando não relacionado, uma busca textual por regex e uma busca

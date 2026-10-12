@@ -50,6 +50,7 @@ The individual scripts keep working exactly as before.
 | I reviewed this map/doc — record it | `ct ack <map-or-doc.md>` |
 | what does the next session need to know? | `ct handoff [--salvar]` |
 | how healthy is the local setup? | `ct health [--days=30] [--audit] [--json]` |
+| the same as versioned JSON, for CI or a dashboard | `ct snapshot [--days=30] [--sessions=20]` |
 
 The agent does not need to remember any of this. **Hooks** bring the tools in on their own: before a
 `grep` for a symbol the index answers first, a session starts with a short list of the context maps

@@ -185,7 +185,12 @@ function reportAudit(root, config) {
   }
 }
 
-function buildReport(root, days, includeAudit) {
+/**
+ * `onKnowledgeStatus(kind, path, status)`, opcional: o estado de cada mapa (`kind: 'map'`) e de cada
+ * documento (`'document'`) que o resumo conta. O relatório em si não muda; `ct snapshot` usa isto
+ * para listar o inventário sem rodar a conferência de atualidade duas vezes.
+ */
+export function buildReport(root, days, includeAudit, { onKnowledgeStatus } = {}) {
   const config = loadConfig(root);
   const now = Date.now();
   const storage = readMetrics(root);
@@ -199,9 +204,9 @@ function buildReport(root, days, includeAudit) {
   const docs = documentationStatus(root, config);
   const mapStatus = new Map();
   const docStatus = new Map();
-  const mapFreshness = reportFindings((onIssue) => contextMapsStopReport(root, { onIssue, onStatus: (path, status) => mapStatus.set(path, status) }));
+  const mapFreshness = reportFindings((onIssue) => contextMapsStopReport(root, { onIssue, onStatus: (path, status) => { mapStatus.set(path, status); onKnowledgeStatus?.('map', path, status); } }));
   // A diagnostic report must show current findings even if a hook already showed the same text.
-  const documentFreshness = reportFindings((onIssue) => documentationStopReport(root, config, { dedupe: false, onIssue, onStatus: (path, status) => docStatus.set(path, status) }));
+  const documentFreshness = reportFindings((onIssue) => documentationStopReport(root, config, { dedupe: false, onIssue, onStatus: (path, status) => { docStatus.set(path, status); onKnowledgeStatus?.('document', path, status); } }));
   const knowledge = summarizeKnowledge(mapStatus, docStatus, events, days, now);
   const audit = includeAudit ? reportAudit(root, config) : null;
   const metrics = summarizeMetrics(events, days, now);

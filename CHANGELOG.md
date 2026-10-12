@@ -8,6 +8,18 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **`ct snapshot`: the project as versioned JSON** (`context-tools/snapshot@1`), for CI, your own
+  scripts or a dashboard that aggregates projects and machines. It carries the `health` summary, the
+  state of each context map and operational document (path and fresh/stale, never the content), the
+  repositories (GitHub `owner/repo`, branch, `HEAD`, with any token removed from the remote URL), the
+  numbers of recent Claude Code sessions (messages, peak context, prefix rewrites, duration — never
+  transcript text) and an anonymous machine id (a random UUID in `~/.context-tools/machine-id`). It
+  only prints; nothing is sent. A test seeds markers in code, maps, prompts and answers and checks
+  none reaches the output. `health.mjs` now exports `buildReport`, with an optional per-item status
+  callback, so the snapshot does not run the freshness check twice.
+
 ## [2.7.7] — 2026-10-12
 
 ### Added

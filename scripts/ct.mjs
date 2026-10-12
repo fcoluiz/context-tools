@@ -37,6 +37,7 @@ export const VERBS = Object.freeze({
   ack: { script: 'ack.mjs', en: 'record a reviewed map/doc', pt: 'registrar revisão de mapa/documento' },
   check: { script: 'audit-docs.mjs', en: 'rotten pointers and claims in docs', pt: 'ponteiros e alegações podres na doc' },
   health: { script: 'health.mjs', en: 'local health, freshness and usage', pt: 'saúde local, atualidade e uso' },
+  snapshot: { script: 'snapshot-export.mjs', en: 'versioned JSON of health, sessions and inventory', pt: 'JSON versionado de saúde, sessões e inventário' },
   handoff: { script: 'handoff.mjs', en: 'what the next session needs', pt: 'o que a próxima sessão precisa' },
   explain: { script: 'explain.mjs', en: 'why a file is (not) up for review', pt: 'por que um arquivo entra (ou não) em revisão' },
   review: { script: 'review.mjs', en: 'local review queue', pt: 'fila local de revisão' },

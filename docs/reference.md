@@ -58,6 +58,7 @@ the same `grep`s repeated across sessions: knowledge derived, used, and thrown a
 | how do I assemble a bounded evidence pack? | `context-pack.mjs <symbol-or-file> [--budget=N]` |
 | which optional semantic providers are available? | `providers.mjs [--json] [--install-plan]` |
 | how healthy and used is the local plugin? | `health.mjs [--days=30] [--audit] [--json]` |
+| the same, plus sessions and inventory, as versioned JSON for CI or a dashboard | `snapshot-export.mjs [--days=30] [--sessions=20]` |
 | how much does the Codex Bash hook cost? | `npm run benchmark:pretool -- --samples=5` |
 | how much does the Codex prompt audit cost? | `npm run benchmark:prompt-audit -- --samples=7` |
 
@@ -70,6 +71,16 @@ recording the query text. It also reports when the workspace snapshot fallback e
 limit. Codex Stop attribution uses its local file-write journal; these health signals help prioritize
 investigation but do not by themselves
 justify a parser or prove that the agent used a result.
+
+`snapshot-export.mjs` (`ct snapshot`) is the extension point for whoever aggregates several projects
+or machines: one JSON document with a versioned schema (`context-tools/snapshot@1`) holding the
+`health` summary, the state of each context map and operational document (path and fresh/stale, not
+its content), the repositories (GitHub `owner/repo`, branch, `HEAD`; a token in the remote URL is
+removed), the numbers of recent Claude Code sessions (messages, peak context, prefix rewrites,
+duration — never the transcript text) and an anonymous machine id: a random UUID stored once in
+`~/.context-tools/machine-id`, not derived from user name, hostname or hardware. Nothing is sent
+anywhere; it only prints. A test seeds markers in code, maps, prompts and answers and checks that none
+reaches the output.
 
 `explain.mjs --file <path>` shows how the Codex file-write journal (or Claude session baseline) and context-map fingerprints
 classify one explicit file, plus operational documents that reference it. It is a read-only diagnostic;

@@ -51,6 +51,7 @@ caminho). Os scripts individuais continuam funcionando como antes.
 | revisei este mapa/documento — registrar | `ct ack <mapa-ou-doc.md>` |
 | o que a próxima sessão precisa saber? | `ct handoff [--salvar]` |
 | como está a saúde da instalação local? | `ct health [--days=30] [--audit] [--json]` |
+| o mesmo em JSON versionado, para CI ou painel | `ct snapshot [--days=30] [--sessions=20]` |
 
 O agente não precisa lembrar de nada disso. **Hooks** trazem as ferramentas sozinhos: antes de um
 `grep` por símbolo o índice responde primeiro, a sessão começa com uma lista curta dos mapas de

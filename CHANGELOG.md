@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.3] — 2026-10-12
+
 ### Fixed
 
 - **`ct snapshot` left Codex sessions out.** It only looked in the Claude Code transcript folder, so a

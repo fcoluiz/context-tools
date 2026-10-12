@@ -8,6 +8,14 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Changed
+
+- **`ct ui` ranks better and helps narrow down.** A one-word query in a large project (a tax code
+  that appears on hundreds of screens) listed five controls and "+400". Now the whole query as a
+  phrase comes first, whole words before abbreviations, then shorter captions; when there are more
+  matches than shown, the answer first counts them per form, and `--in=<form>` keeps only forms
+  whose path contains that text. Only `ui` changed; `find`, `refs` and the hooks are untouched.
+
 ## [2.9.0] — 2026-10-12
 
 ### Added

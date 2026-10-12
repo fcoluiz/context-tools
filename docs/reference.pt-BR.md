@@ -48,7 +48,7 @@ O custo não é ler o arquivo. É **procurar onde a coisa está**, sessão após
 |---|---|
 | onde X está definido? | `symbols.mjs <nome> [<nome>…]` |
 | quem usa X, e de qual função? | `refs.mjs <nome> [--all] [--strings] [--json]` |
-| que controle de formulário mostra este texto, e que código o usa? (Delphi) | `ui.mjs <texto da tela> [--all] [--json]` |
+| que controle de formulário mostra este texto, e que código o usa? (Delphi) | `ui.mjs <texto da tela> [--in=<formulário>] [--all] [--json]` |
 | como é este projeto? | `overview.mjs [--json] [--budget=N]` |
 | o que está em jogo antes de mudar X? | `impact.mjs <símbolo-ou-arquivo> [--budget=N] [--json]` |
 | como navego este arquivo gigante? | `outline.mjs <arquivo> [filtro]` |
@@ -154,7 +154,10 @@ um rótulo segue o `FocusControl`, ou então o controle mais próximo à direita
 *provável*. Cada resposta diz onde fica (formulário › aba › grupo), o campo de dados e os eventos, e
 as linhas da unit de mesmo nome que usam o controle, com o método — a linha costuma mostrar o campo
 do banco. Controle criado em código, texto definido em execução e formulário herdado não aparecem, e
-a resposta diz isso.
+a resposta diz isso. A ordem põe primeiro a pergunta inteira como frase, depois palavra inteira antes
+de abreviação, depois texto mais curto. Quando há mais resultados do que cabem, a resposta conta
+quantos há em cada formulário, para a próxima consulta somar uma palavra ou usar
+`--in=<nome do arquivo do formulário>`, que deixa só os formulários cujo caminho contém esse texto.
 
 **`impact`** é o briefing antes de uma mudança. Para um símbolo ou arquivo, junta sob orçamento de
 saída os usos do `refs`, o que historicamente muda junto com o arquivo da definição (`coupling`, no

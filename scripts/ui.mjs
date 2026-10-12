@@ -20,6 +20,7 @@
 // Uso:
 //   ui.mjs <texto da tela>     → controles cujo texto casa, com localização e uso no código
 //   ui.mjs <texto> --all       → sem o corte de resultados mostrados
+//   ui.mjs <texto> --in=<x>    → só formulários cujo caminho contém x (ex.: --in=UCadCliente)
 //   ui.mjs <texto> --json      → estrutura completa
 
 import { existsSync } from 'node:fs';
@@ -233,12 +234,17 @@ export function findUiLabel(root, consulta, opts = {}) {
   const cfg = opts.cfg || loadConfig(root);
   const q = termos(consulta);
   if (!q.length) return { status: 'invalid', query: String(consulta ?? '') };
-  const arquivos = [];
-  for (const repo of findRepos(root, { requireGit: false, cfg })) walk(repo.path, FORMULARIO, arquivos);
-  if (!arquivos.length) return { status: 'no-forms', query: consulta };
+  const todos = [];
+  for (const repo of findRepos(root, { requireGit: false, cfg })) walk(repo.path, FORMULARIO, todos);
+  if (!todos.length) return { status: 'no-forms', query: consulta };
+  // `--in=UCadCliente` (ou um pedaço do caminho): só os formulários cujo caminho contém o texto.
+  const dentro = String(opts.in ?? '').trim().toLowerCase().replace(/\\/g, '/');
+  const arquivos = dentro ? todos.filter((abs) => relPath(root, abs).toLowerCase().includes(dentro)) : todos;
+  if (!arquivos.length) return { status: 'no-forms-in', query: consulta, in: opts.in, forms: todos.length };
 
   const candidatos = [];
   let binarios = 0;
+  let cortado = false;
   varredura: for (const abs of arquivos) {
     const texto = lerTexto(abs);
     if (texto === null) continue;
@@ -255,8 +261,9 @@ export function findUiLabel(root, consulta, opts = {}) {
         const palavras = normalizar(valor).split(' ').filter(Boolean);
         const casados = q.filter((t) => casaTermo(t, palavras));
         if (!casados.length) continue;
-        candidatos.push({ abs, raiz, no, prop, valor, casados, line: no.propLines[`@${prop}`] });
-        if (candidatos.length >= MAX_CANDIDATOS) break varredura;
+        const exatos = casados.filter((t) => palavras.includes(t)).length;
+        candidatos.push({ abs, raiz, no, prop, valor, casados, exatos, frase: ` ${palavras.join(' ')} `, line: no.propLines[`@${prop}`] });
+        if (candidatos.length >= MAX_CANDIDATOS) { cortado = true; break varredura; }
       }
     }
   }
@@ -264,10 +271,26 @@ export function findUiLabel(root, consulta, opts = {}) {
   // exigir nada: sai da conta, e a saída diz que saiu.
   const vistos = new Set(candidatos.flatMap((c) => c.casados));
   const efetivos = q.filter((t) => vistos.has(t));
-  for (const c of candidatos) c.score = efetivos.length ? c.casados.length / efetivos.length : 0;
+  // Desempate, nesta ordem: a pergunta inteira aparece seguida no texto ("cst tributo" em "CST Tributo
+  // Saída"), mais palavras casadas por inteiro (não só por começo/abreviação), texto mais curto.
+  const frase = efetivos.length > 1 ? ` ${efetivos.join(' ')} ` : null;
+  for (const c of candidatos) {
+    c.score = efetivos.length ? c.casados.length / efetivos.length : 0;
+    c.naFrase = frase && c.frase.includes(frase) ? 1 : 0;
+  }
   const completos = candidatos.filter((c) => c.score === 1);
   const escolhidos = (completos.length ? completos : candidatos.filter((c) => c.score >= 0.5))
-    .sort((a, b) => b.score - a.score || a.valor.length - b.valor.length || a.abs.localeCompare(b.abs) || a.line - b.line);
+    .sort((a, b) => b.score - a.score || b.naFrase - a.naFrase || b.exatos - a.exatos
+      || a.valor.length - b.valor.length || a.abs.localeCompare(b.abs) || a.line - b.line);
+
+  // Resultado demais para ler um a um: quantos há em cada formulário, para estreitar com `--in`.
+  const porFormulario = new Map();
+  for (const c of escolhidos) {
+    const atual = porFormulario.get(c.abs) || { file: relPath(root, c.abs), n: 0, form: legendaDoFormulario(c.raiz) };
+    atual.n++;
+    porFormulario.set(c.abs, atual);
+  }
+  const byForm = [...porFormulario.values()].sort((a, b) => b.n - a.n || a.file.localeCompare(b.file));
 
   // Uso no código só para o que pode ser mostrado: ler a unit de cada candidato custaria caro.
   const hits = escolhidos.slice(0, MAX_RESULTADOS_ALL).map((c) => {
@@ -294,8 +317,8 @@ export function findUiLabel(root, consulta, opts = {}) {
   });
   return {
     status: 'ok', query: consulta, terms: efetivos, ignored: q.filter((t) => !vistos.has(t)),
-    partial: !completos.length && hits.length > 0, total: escolhidos.length,
-    hits, forms: arquivos.length, binary: binarios, ms: Date.now() - started,
+    partial: !completos.length && hits.length > 0, total: escolhidos.length, capped: cortado,
+    hits, byForm, in: dentro ? opts.in : null, forms: arquivos.length, binary: binarios, ms: Date.now() - started,
   };
 }
 
@@ -304,6 +327,7 @@ const s = (v, n = 100) => sanitizeModelText(v, n);
 export function formatUiLabel(result, t, { all = false } = {}) {
   if (result.status === 'invalid') return [t('ui.invalid')];
   if (result.status === 'no-forms') return [t('ui.noForms')];
+  if (result.status === 'no-forms-in') return [t('ui.noFormsIn', { in: s(result.in, 80), files: result.forms })];
   const q = s(result.query, 80);
   if (!result.hits.length) {
     const out = [t('ui.none', { q, files: result.forms, ms: result.ms })];
@@ -312,9 +336,22 @@ export function formatUiLabel(result, t, { all = false } = {}) {
     return out;
   }
   const cap = all ? MAX_RESULTADOS_ALL : MAX_RESULTADOS;
-  const out = [t('ui.header', { q, n: result.total, files: result.forms, ms: result.ms })];
+  const out = [t('ui.header', { q, n: `${result.capped ? '≥' : ''}${result.total}`, files: result.forms, ms: result.ms })];
+  if (result.in) out.push(t('ui.in', { in: s(result.in, 80) }));
   if (result.ignored?.length) out.push(t('ui.ignored', { words: result.ignored.map((w) => s(w, 30)).join(', ') }));
   if (result.partial) out.push(t('ui.partial'));
+  // Muitos resultados em várias telas: antes dos detalhes, onde eles estão, para a próxima consulta
+  // estreitar com mais uma palavra ou `--in=<formulário>` em vez de ler centenas de controles.
+  const byForm = result.byForm || [];
+  if (result.total > cap && byForm.length > 1) {
+    out.push(t('ui.byForm', { n: byForm.length }));
+    for (const f of byForm.slice(0, 8)) {
+      const legenda = f.form?.caption ? ` — ${s(f.form.caption, 60)}` : '';
+      out.push(`    ${s(f.file, 160)} (${f.n})${legenda}`);
+    }
+    if (byForm.length > 8) out.push(`    ${t('ui.moreForms', { n: byForm.length - 8 })}`);
+    out.push(t('ui.narrow'));
+  }
   for (const h of result.hits.slice(0, cap)) {
     out.push('');
     out.push(`  "${s(h.text, 80)}" — ${s(h.file, 160)}:${h.line}  ${s(h.component.name, 60)}: ${s(h.component.type, 40)}.${s(h.prop, 40)}`);
@@ -346,7 +383,8 @@ function main() {
   const t = makeT(detectLang(cfg));
   const consulta = args.filter((a) => !a.startsWith('--')).join(' ');
   if (!consulta.trim()) { console.log(t('ui.usage')); return null; }
-  const result = findUiLabel(root, consulta, { cfg });
+  const filtro = args.find((a) => a.startsWith('--in='));
+  const result = findUiLabel(root, consulta, { cfg, in: filtro ? filtro.slice(5) : undefined });
   if (args.includes('--json')) console.log(JSON.stringify(result, null, 2));
   else console.log(formatUiLabel(result, t, { all: args.includes('--all') }).join('\n'));
   return result;

@@ -198,3 +198,48 @@ test('refs --strings: o nome de campo que só existe em string aparece, com o m�
     assert.match(texto, /FieldByName\('COD_VEND'\)\.AsString := EdtCodigoVendedor\.Text/);
   });
 });
+
+// Vários formulários com a mesma palavra: ordem pela frase inteira e por palavra inteira antes da
+// abreviação, resumo por formulário quando há resultado demais, e `--in` para estreitar.
+function projetoAmplo() {
+  const dir = mkdtempSync(join(tmpdir(), 'ct-tela-amplo-'));
+  const rotulo = (nome, texto, top) => `  object ${nome}: TLabel\n    Left = 8\n    Top = ${top}\n    Caption = '${texto}'\n  end\n`;
+  const form = (nome, legenda, rotulos) => `object ${nome}: T${nome}\n  Caption = '${legenda}'\n${rotulos.map(([n, tx], i) => rotulo(n, tx, i * 30)).join('')}end\n`;
+  const w = (rel, content) => { mkdirSync(join(dir, rel, '..'), { recursive: true }); writeFileSync(join(dir, rel), content); };
+  w('src/UCadTributo.dfm', form('FrmCadTributo', 'Cadastro de Tributo', [
+    ['LblA', 'Tributo CST Entrada'], ['LblB', 'CST Tributo Sa'], ['LblC', 'Trib. Federal'], ['LblD', 'Tributo Estadual X'],
+  ]));
+  w('src/UCadProduto.dfm', form('FrmCadProduto', 'Cadastro de Produto', [
+    ['LblE', 'Tributo'], ['LblF', 'Grupo de Tributo'], ['LblG', 'Tributo Municipal'],
+  ]));
+  spawnSync('git', ['init', '-q'], { cwd: dir });
+  return dir;
+}
+
+test('ui: frase inteira e palavra inteira vêm antes; muitos resultados mostram onde estão; --in estreita', () => {
+  const dir = projetoAmplo();
+  comEstado(dir, () => {
+    const cst = findUiLabel(dir, 'cst tributo');
+    assert.deepEqual(cst.hits.map((h) => h.text), ['CST Tributo Sa', 'Tributo CST Entrada'], 'a frase seguida ganha do texto mais curto');
+
+    const trib = findUiLabel(dir, 'tributo');
+    const ordem = trib.hits.map((h) => h.text);
+    assert.ok(ordem.indexOf('Tributo Estadual X') < ordem.indexOf('Trib. Federal'), `palavra inteira antes da abreviação: ${ordem}`);
+    assert.equal(trib.total, 8, 'a legenda do formulário também é texto da tela');
+    assert.deepEqual(trib.byForm.map((f) => [f.file, f.n]), [['src/UCadTributo.dfm', 5], ['src/UCadProduto.dfm', 3]]);
+    const texto = formatUiLabel(trib, t).join('\n');
+    assert.match(texto, /spread over 2 forms/);
+    assert.match(texto, /src\/UCadTributo\.dfm \(5\) — Cadastro de Tributo/);
+    assert.match(texto, /--in=<form file name>/);
+    assert.doesNotMatch(formatUiLabel(trib, t, { all: true }).join('\n'), /spread over/, 'com --all cabe tudo: sem resumo');
+
+    const so = findUiLabel(dir, 'tributo', { in: 'ucadproduto' });
+    assert.equal(so.total, 3);
+    assert.ok(so.hits.every((h) => h.file === 'src/UCadProduto.dfm'));
+    assert.match(formatUiLabel(so, t).join('\n'), /only forms whose path contains "ucadproduto"/);
+
+    const nada = findUiLabel(dir, 'tributo', { in: 'naoexiste' });
+    assert.equal(nada.status, 'no-forms-in');
+    assert.match(formatUiLabel(nada, t).join('\n'), /no form path contains "naoexiste" \(of 2\)/);
+  });
+});

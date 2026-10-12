@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, utimesSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -54,7 +54,12 @@ function transcript(dir, sid) {
 function snapshot(raiz, extraEnv = {}) {
   const r = spawnSync(process.execPath, [SCRIPT, `--root=${raiz}`, '--sessions=5'], {
     encoding: 'utf8', cwd: raiz,
-    env: { ...process.env, CONTEXT_TOOLS_HOST: 'claude', CONTEXT_MAPS_ROOT: raiz, CLAUDE_PROJECT_DIR: raiz, ...extraEnv },
+    env: {
+      ...process.env, CONTEXT_TOOLS_HOST: 'claude', CONTEXT_MAPS_ROOT: raiz, CLAUDE_PROJECT_DIR: raiz,
+      // Sem isto o teste varreria as sessões reais do Codex de quem roda a suíte.
+      CONTEXT_TOOLS_CODEX_SESSIONS: join(raiz, 'sem-sessoes-codex'),
+      ...extraEnv,
+    },
   });
   assert.equal(r.status, 0, r.stderr);
   return { texto: r.stdout, json: JSON.parse(r.stdout) };
@@ -88,6 +93,50 @@ test('snapshot: schema versionado, repositório sem credencial, inventário e se
     }
   } finally {
     for (const d of [raiz, casa, transcritos]) rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});
+
+/** Um rollout do Codex como ele grava: `session_meta` com o `cwd`, e o `token_count` acumulado. */
+function rolloutCodex(base, dia, id, cwd, ms) {
+  const dir = join(base, '2026', '10', dia);
+  mkdirSync(dir, { recursive: true });
+  const linha = (o) => JSON.stringify(o);
+  const caminho = join(dir, `rollout-2026-10-${dia}T10-00-00-${id}.jsonl`);
+  writeFileSync(caminho, [
+    linha({ timestamp: '2026-10-02T10:00:00.000Z', type: 'session_meta', payload: { id, cwd, base_instructions: { text: 'x'.repeat(100000) } } }),
+    linha({ timestamp: '2026-10-02T10:00:01.000Z', type: 'turn_context', payload: { model: 'gpt-test-1' } }),
+    linha({ timestamp: '2026-10-02T10:00:02.000Z', type: 'event_msg', payload: { type: 'task_started' } }),
+    linha({ timestamp: '2026-10-02T10:00:03.000Z', type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: SEGREDO_PROMPT }] } }),
+    linha({ timestamp: '2026-10-02T10:05:00.000Z', type: 'event_msg', payload: { type: 'token_count', info: {
+      total_token_usage: { input_tokens: 1000, cached_input_tokens: 800, output_tokens: 50, total_tokens: 1050 },
+      last_token_usage: { input_tokens: 1000, cached_input_tokens: 800, output_tokens: 50 },
+      model_context_window: 200000,
+    } } }),
+  ].join('\n') + '\n');
+  utimesSync(caminho, ms / 1000, ms / 1000);
+}
+
+test('snapshot: sessões do Codex desta pasta entram junto com as do Claude, as mais recentes primeiro', () => {
+  const raiz = projeto();
+  const casa = mkdtempSync(join(tmpdir(), 'ctx-snapshot-home-'));
+  const transcritos = mkdtempSync(join(tmpdir(), 'ctx-snapshot-transc-'));
+  const codex = mkdtempSync(join(tmpdir(), 'ctx-snapshot-codex-'));
+  try {
+    transcript(transcritos, 'sessao-claude');
+    utimesSync(join(transcritos, 'sessao-claude.jsonl'), 1000, 1000);
+    // Sessão retomada: o arquivo fica no diretório do dia em que começou, mas o mtime é recente.
+    rolloutCodex(codex, '01', 'codex-desta-pasta', `${raiz}/`, Date.now());
+    rolloutCodex(codex, '02', 'codex-de-outra-pasta', join(raiz, 'outra'), Date.now());
+    const { texto, json } = snapshot(raiz, { CONTEXT_TOOLS_HOME: casa, CONTEXT_TOOLS_TRANSCRIPTS: transcritos, CONTEXT_TOOLS_CODEX_SESSIONS: codex });
+    const ids = json.sessions.map((s) => s.id);
+    assert.deepEqual(ids, ['codex-desta-pasta', 'sessao-claude'], 'a de outra pasta fica de fora');
+    const [c] = json.sessions;
+    assert.equal(c.host, 'codex');
+    assert.equal(c.model, 'gpt-test-1');
+    assert.deepEqual(c.tokens, { input: 200, output: 50, cacheRead: 800, cacheWrite: 0 }, 'entrada sem o que veio do cache');
+    assert.ok(!texto.includes(SEGREDO_PROMPT), 'o prompt do Codex não vaza');
+  } finally {
+    for (const d of [raiz, casa, transcritos, codex]) rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 

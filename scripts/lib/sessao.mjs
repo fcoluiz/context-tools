@@ -8,8 +8,8 @@
 // Regra desta lib: nunca lançar. Transcript ausente, formato mudado, permissão negada — tudo
 // vira `null` ou zero. Ela alimenta um hook, e hook que quebra derruba a sessão do usuário.
 
-import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, readdirSync, existsSync, statSync, openSync, readSync, closeSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 // `statSync` e `readdirSync` já vinham do topo — `transcriptsRecentes` reusa os dois.
 import { homedir } from 'node:os';
 import { safe, sanitizeModelText } from './roots.mjs';
@@ -292,6 +292,76 @@ export function transcriptsRecentes(root, sidAtual, limite = 4) {
     .map((f) => ({ sid: f.replace(/\.jsonl$/, ''), caminho: join(dir, f), mtime: safe(() => statSync(join(dir, f)).mtimeMs, 0) }))
     .sort((a, b) => b.mtime - a.mtime)
     .slice(0, limite);
+}
+
+/**
+ * Pasta onde o Codex grava as sessões: `$CODEX_HOME/sessions/AAAA/MM/DD/rollout-*.jsonl`.
+ * `CONTEXT_TOOLS_CODEX_SESSIONS` aponta direto para ela, pelo mesmo motivo de
+ * `CONTEXT_TOOLS_TRANSCRIPTS`: sem a escotilha, o teste leria as sessões reais do usuário.
+ */
+export function pastaDeSessoesCodex(env = process.env) {
+  const forcada = env.CONTEXT_TOOLS_CODEX_SESSIONS;
+  if (forcada) return existsSync(forcada) ? forcada : null;
+  const padrao = join(env.CODEX_HOME || join(homedir(), '.codex'), 'sessions');
+  return existsSync(padrao) ? padrao : null;
+}
+
+/** A primeira linha do rollout (`session_meta`), lida sem carregar o arquivo inteiro. */
+function metaDoRollout(caminho) {
+  return safe(() => {
+    const fd = openSync(caminho, 'r');
+    try {
+      // A linha traz as instruções base do Codex (dezenas de KB); 1 MB é folga, não limite real.
+      const pedaco = Buffer.alloc(64 * 1024);
+      const partes = [];
+      for (let lido = 0; lido < 1024 * 1024;) {
+        const n = readSync(fd, pedaco, 0, pedaco.length, lido);
+        if (!n) break;
+        const fim = pedaco.subarray(0, n).indexOf(10);
+        partes.push(Buffer.from(pedaco.subarray(0, fim >= 0 ? fim : n)));
+        if (fim >= 0) break;
+        lido += n;
+      }
+      const o = JSON.parse(Buffer.concat(partes).toString('utf8'));
+      return o && o.type === 'session_meta' && o.payload ? o.payload : null;
+    } finally { closeSync(fd); }
+  }, null);
+}
+
+const chaveDePasta = (p) => {
+  const abs = resolve(String(p)).replace(/[\\/]+$/, '');
+  return process.platform === 'win32' ? abs.toLowerCase() : abs;
+};
+
+/**
+ * Sessões do Codex abertas NESTA pasta, da mais recente para a mais antiga. O Codex não separa
+ * por projeto como o Claude Code: tudo fica numa árvore por data, e a pasta da sessão só aparece
+ * no `cwd` da primeira linha. Ordena por mtime (sessão retomada continua no diretório da data em
+ * que começou) e só abre o cabeçalho dos arquivos até achar `limite` da pasta.
+ */
+export function transcriptsCodexRecentes(root, limite = 4, env = process.env) {
+  const base = pastaDeSessoesCodex(env);
+  if (!base || limite <= 0) return [];
+  const arquivos = [];
+  const varrer = (dir, nivel) => {
+    for (const e of safe(() => readdirSync(dir, { withFileTypes: true }), []) || []) {
+      const p = join(dir, e.name);
+      if (e.isDirectory() && nivel < 3) varrer(p, nivel + 1);
+      else if (e.isFile() && /^rollout-.*\.jsonl$/.test(e.name)) arquivos.push({ caminho: p, mtime: safe(() => statSync(p).mtimeMs, 0) });
+    }
+  };
+  varrer(base, 0);
+  arquivos.sort((a, b) => b.mtime - a.mtime);
+  const alvo = chaveDePasta(root);
+  const achados = [];
+  for (const a of arquivos) {
+    if (achados.length >= limite) break;
+    const meta = metaDoRollout(a.caminho);
+    if (!meta || !meta.cwd || chaveDePasta(meta.cwd) !== alvo) continue;
+    const sid = String(meta.id || meta.session_id || a.caminho.replace(/^.*rollout-|\.jsonl$/g, ''));
+    achados.push({ sid, caminho: a.caminho, mtime: a.mtime });
+  }
+  return achados;
 }
 
 /**

@@ -79,7 +79,8 @@ or machines: one JSON document with a versioned schema (`context-tools/snapshot@
 its content), the repositories (GitHub `owner/repo`, branch, `HEAD`; a token in the remote URL is
 removed), the numbers of recent Claude Code and Codex sessions (messages, peak context, prefix
 rewrites, duration, token totals per billing category — input, output, cache read, cache write — and
-the id of the model used most; never the transcript text) and an anonymous machine id: a random UUID stored once in
+the id of the model used most; never the transcript text — Codex sessions are matched by the folder
+they were opened in, under `$CODEX_HOME/sessions`) and an anonymous machine id: a random UUID stored once in
 `~/.context-tools/machine-id`, not derived from user name, hostname or hardware. Nothing is sent
 anywhere; it only prints. A test seeds markers in code, maps, prompts and answers and checks that none
 reaches the output.

@@ -21,7 +21,7 @@ import { homedir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { resolveRoot, findRepos, isMain, safe, sanitizeModelText, runtimeHost } from './lib/roots.mjs';
 import { buildReport } from './health.mjs';
-import { metricasDaSessao, transcriptsRecentes } from './lib/sessao.mjs';
+import { metricasDaSessao, transcriptsRecentes, transcriptsCodexRecentes } from './lib/sessao.mjs';
 
 export const SNAPSHOT_SCHEMA = 'context-tools/snapshot@1';
 
@@ -77,10 +77,16 @@ function modeloPrincipal(modelos) {
   return id && /^[\w.:/@[\]-]{1,100}$/.test(id) ? id : null;
 }
 
-/** Só os números de cada sessão; o transcript em si nunca é copiado. */
-function sessoes(root, limite) {
+/**
+ * Só os números de cada sessão; o transcript em si nunca é copiado. As sessões do Claude Code e
+ * as do Codex desta pasta entram juntas, as `limite` mais recentes entre as duas.
+ */
+function sessoes(root, limite, env) {
   if (limite <= 0) return [];
-  return transcriptsRecentes(root, null, limite).map(({ sid, caminho }) => {
+  const todas = [...transcriptsRecentes(root, null, limite), ...transcriptsCodexRecentes(root, limite, env)]
+    .sort((a, b) => b.mtime - a.mtime)
+    .slice(0, limite);
+  return todas.map(({ sid, caminho }) => {
     const m = safe(() => metricasDaSessao(caminho), null);
     if (!m) return null;
     const num = (v) => (Number.isFinite(v) ? v : null);
@@ -143,7 +149,7 @@ export function buildSnapshot(root, { days = 30, sessions = 20, env = process.en
       symbolLookups: metrics.symbolLookups,
       storageStatus: metrics.storageStatus,
     },
-    sessions: sessoes(root, sessions),
+    sessions: sessoes(root, sessions, env),
   };
 }
 

@@ -1304,6 +1304,11 @@ test('metricasDaSessao normaliza o transcript do Codex sem usar a curva do Claud
         last_token_usage: { input_tokens: 180000, cached_input_tokens: 150000, cache_write_input_tokens: 0, output_tokens: 400, reasoning_output_tokens: 100, total_tokens: 180500 },
         model_context_window: 258400,
       }, rate_limits: { primary: { used_percent: 12 } } }),
+      // Evento sem last_token_usage: o total acumulado não pode virar pico de contexto.
+      linha('2026-08-06T05:00:00.000Z', { type: 'token_count', info: {
+        total_token_usage: { input_tokens: 99000000, cached_input_tokens: 0, output_tokens: 0, total_tokens: 99000000 },
+        model_context_window: 258400,
+      } }),
       linha('2026-08-06T07:00:00.000Z', { type: 'task_compacted' }),
       linha('2026-08-06T07:00:01.000Z', { type: 'task_started' }),
       linha('2026-08-06T07:00:02.000Z', { type: 'token_count', info: {

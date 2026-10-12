@@ -8,6 +8,14 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A Codex session could report a peak context larger than its own window.** When a `token_count`
+  event came without `last_token_usage`, the peak fell back to the session's cumulative input total
+  (hundreds of millions of tokens in a long session). Only the last request's input measures the
+  window now; events without it are skipped. This affected the peak in `ct snapshot` and the session
+  metrics shown in handoffs.
+
 ## [2.9.3] — 2026-10-12
 
 ### Fixed

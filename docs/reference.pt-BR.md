@@ -47,7 +47,8 @@ O custo não é ler o arquivo. É **procurar onde a coisa está**, sessão após
 | pergunta | comando |
 |---|---|
 | onde X está definido? | `symbols.mjs <nome> [<nome>…]` |
-| quem usa X, e de qual função? | `refs.mjs <nome> [--all] [--json]` |
+| quem usa X, e de qual função? | `refs.mjs <nome> [--all] [--strings] [--json]` |
+| que controle de formulário mostra este texto, e que código o usa? (Delphi) | `ui.mjs <texto da tela> [--all] [--json]` |
 | como é este projeto? | `overview.mjs [--json] [--budget=N]` |
 | o que está em jogo antes de mudar X? | `impact.mjs <símbolo-ou-arquivo> [--budget=N] [--json]` |
 | como navego este arquivo gigante? | `outline.mjs <arquivo> [filtro]` |
@@ -141,7 +142,19 @@ mensagem de erro não é uso; essas são contadas à parte, porque uma rota guar
 ser), deixa a definição de fora e diz **em qual função cada uso está** — a resposta já sai como "quem
 chama". Formulários Delphi também entram, porque `OnClick = BtnSalvarClick` é o único lugar onde um
 evento é ligado. É por nome, não por tipo, e diz isso em toda resposta: dois símbolos de mesmo nome
-não são distinguidos, e chamada dinâmica não aparece.
+não são distinguidos, e chamada dinâmica não aparece. `--strings` lista também as menções em
+comentário e string, à parte dos usos, cada uma com a função e o texto da linha: no Delphi o nome de
+campo do banco (`FieldByName('COD_CLIENTE')`, SQL) só existe ali.
+
+**`ui`** parte das palavras que o usuário vê, para a pergunta "onde no sistema eu informo X?".
+Procura em Caption, Hint, Text, DisplayLabel e itens de lista dos formulários `.dfm`/`.fmx`, sem
+acento nem caixa (os `#NNN` do formulário Delphi são decodificados) e aceitando abreviação (`Cód.`
+casa com "código"); palavra da pergunta que não aparece em tela nenhuma sai da conta e é nomeada. De
+um rótulo segue o `FocusControl`, ou então o controle mais próximo à direita ou abaixo, marcado como
+*provável*. Cada resposta diz onde fica (formulário › aba › grupo), o campo de dados e os eventos, e
+as linhas da unit de mesmo nome que usam o controle, com o método — a linha costuma mostrar o campo
+do banco. Controle criado em código, texto definido em execução e formulário herdado não aparecem, e
+a resposta diz isso.
 
 **`impact`** é o briefing antes de uma mudança. Para um símbolo ou arquivo, junta sob orçamento de
 saída os usos do `refs`, o que historicamente muda junto com o arquivo da definição (`coupling`, no
@@ -834,7 +847,7 @@ ferramentas (sem resources, sem prompts) e marca as cinco como só de leitura:
 | ferramenta | o mesmo que |
 |---|---|
 | `find_symbol` | `symbols.mjs <nomes…>` |
-| `references` | `refs.mjs <nome>` |
+| `references` | `refs.mjs <nome> [--strings]` |
 | `impact` | `impact.mjs <alvo> --budget=N` |
 | `outline` | `outline.mjs <arquivo> [filtro]` — o caminho tem de estar dentro do projeto |
 | `overview` | `overview.mjs` |

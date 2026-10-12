@@ -39,7 +39,8 @@ caminho). Os scripts individuais continuam funcionando como antes.
 | pergunta | verbo |
 |---|---|
 | onde X está definido? | `ct find <nome> [<nome>…]` |
-| quem usa X, e de qual função? | `ct refs <nome>` |
+| quem usa X, e de qual função? | `ct refs <nome> [--strings]` |
+| onde fica na tela "Código do cliente", e que código o lê? (Delphi) | `ct ui <texto da tela>` |
 | o que está em jogo antes de mudar X? | `ct impact <símbolo-ou-arquivo>` |
 | como é este projeto? | `ct overview` |
 | como navegar este arquivo enorme? | `ct outline <arquivo> [filtro]` |

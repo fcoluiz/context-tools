@@ -16,6 +16,8 @@
 // Uso:
 //   refs.mjs <nome>            → usos agrupados por arquivo, com o símbolo que contém cada um
 //   refs.mjs <nome> --all      → sem o corte de arquivos mostrados
+//   refs.mjs <nome> --strings  → lista também as menções em comentário/string (nome de campo de
+//                                banco em SQL ou `FieldByName('X')` só existe ali), à parte dos usos
 //   refs.mjs <nome> --json     → estrutura completa (consumida por impact.mjs e pelo servidor MCP)
 
 import { extname } from 'node:path';
@@ -95,6 +97,7 @@ export function findReferences(root, nome, opts = {}) {
   const alvoMinusculo = alvo.toLowerCase();
 
   const references = [];
+  const textual = [];
   let total = 0;
   let inText = 0;
   for (const abs of [...index.files, ...formularios(root, cfg, index.files)]) {
@@ -107,15 +110,28 @@ export function findReferences(root, nome, opts = {}) {
     const codigo = codeOnlyLines(linhas, extname(abs)) || linhas;
     const rel = relPath(root, abs);
     const usos = [];
+    const emTexto = [];
     for (let i = 0; i < linhas.length && usos.length < MAX_LINHAS_POR_ARQUIVO; i++) {
       if (!re.test(linhas[i])) continue;
-      if (!re.test(codigo[i] || '')) { inText++; continue; }
+      if (!re.test(codigo[i] || '')) {
+        inText++;
+        if (opts.strings && emTexto.length < MAX_LINHAS_POR_ARQUIVO) emTexto.push(i + 1);
+        continue;
+      }
       if (linhasDeDefinicao.has(`${rel}:${i + 1}`)) continue;
       usos.push(i + 1);
     }
-    if (!usos.length) continue;
+    if (!usos.length && !emTexto.length) continue;
     const parser = parserForExt(extname(abs));
     const intervalos = parser ? comIntervalos(parser(linhas), linhas.length) : [];
+    if (emTexto.length) {
+      textual.push({
+        file: rel,
+        form: FORMULARIO.test(abs),
+        uses: emTexto.map((line) => ({ line, in: simboloDaLinha(abs, linhas, intervalos, line)?.name ?? null, text: linhas[line - 1].trim() })),
+      });
+    }
+    if (!usos.length) continue;
     references.push({
       file: rel,
       form: FORMULARIO.test(abs),
@@ -124,8 +140,10 @@ export function findReferences(root, nome, opts = {}) {
     total += usos.length;
   }
   references.sort((a, b) => b.uses.length - a.uses.length || a.file.localeCompare(b.file));
+  textual.sort((a, b) => b.uses.length - a.uses.length || a.file.localeCompare(b.file));
   return {
     status: 'ok', name: alvo, definitions, references, total, files: references.length, inText,
+    ...(opts.strings ? { inTextRefs: textual } : {}),
     scanned: index.fileCount, repos: index.repos, ms: Date.now() - started,
   };
 }
@@ -144,14 +162,33 @@ export function resumoDoArquivo(ref, t, maxGrupos = 3) {
   return partes.join(', ');
 }
 
+/** Menções em comentário/string (`--strings`): cada linha com o símbolo que a contém e o texto. */
+function listaTextual(result, t, cap) {
+  const refs = result.inTextRefs || [];
+  if (!refs.length) return [];
+  const out = [t('refs.inText.list')];
+  for (const ref of refs.slice(0, cap)) {
+    out.push(`  ${sanitizeModelText(ref.file, 160)} (${ref.uses.length})${ref.form ? ` ${t('refs.form')}` : ''}`);
+    for (const u of ref.uses.slice(0, 4)) {
+      out.push(`    :${u.line}${u.in ? ` ${sanitizeModelText(u.in, 60)}` : ''} — ${sanitizeModelText(u.text, 110)}`);
+    }
+    if (ref.uses.length > 4) out.push(`    ${t('refs.moreGroups', { n: ref.uses.length - 4 })}`);
+  }
+  if (refs.length > cap) out.push(t('refs.moreFiles', { n: refs.length - cap }));
+  return out;
+}
+
 export function formatReferences(result, t, { all = false } = {}) {
   if (result.status === 'invalid') return [t('refs.invalid', { q: sanitizeModelText(result.name, 80) })];
   if (result.status === 'no-files') return [t('refs.noFiles')];
   const out = [];
   const escopo = escopoLabel(result.repos);
   const nome = sanitizeModelText(result.name, 80);
+  const cap = all ? MAX_ARQUIVOS_ALL : MAX_ARQUIVOS;
   if (!result.total) {
     out.push(t('refs.none', { q: nome, files: result.scanned, ms: result.ms, escopo }));
+    const textual = listaTextual(result, t, cap);
+    if (textual.length) { out.push('', ...textual); return out; }
     out.push(t('refs.none.hint', { q: result.name }));
     return out;
   }
@@ -162,13 +199,14 @@ export function formatReferences(result, t, { all = false } = {}) {
   if (!result.definitions.length) out.push(t('refs.noDefinition'));
   else if (new Set(result.definitions.map((d) => d.file)).size > 1) out.push(t('refs.ambiguous', { n: result.definitions.length }));
   out.push('');
-  const cap = all ? MAX_ARQUIVOS_ALL : MAX_ARQUIVOS;
   for (const ref of result.references.slice(0, cap)) {
     out.push(`  ${sanitizeModelText(ref.file, 160)} (${ref.uses.length})${ref.form ? ` ${t('refs.form')}` : ''} — ${resumoDoArquivo(ref, t)}`);
   }
   if (result.references.length > cap) out.push(t('refs.moreFiles', { n: result.references.length - cap }));
   out.push('');
-  if (result.inText) out.push(t('refs.inText', { n: result.inText }));
+  const textual = listaTextual(result, t, cap);
+  if (textual.length) out.push(...textual, '');
+  else if (result.inText) out.push(t('refs.inText', { n: result.inText }));
   out.push(t('refs.caveat'));
   return out;
 }
@@ -180,7 +218,7 @@ function main() {
   const t = makeT(detectLang(cfg));
   const nome = args.find((a) => !a.startsWith('--'));
   if (!nome) { console.log(t('refs.usage')); return null; }
-  const result = findReferences(root, nome, { cfg });
+  const result = findReferences(root, nome, { cfg, strings: args.includes('--strings') });
   if (args.includes('--json')) console.log(JSON.stringify(result, null, 2));
   else console.log(formatReferences(result, t, { all: args.includes('--all') }).join('\n'));
   return result;

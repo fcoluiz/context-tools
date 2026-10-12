@@ -124,7 +124,7 @@ paid each time the skill loads; with verbs the skill went from 16,873 to about 6
 concentrated, the files changed most in the last six months (marked when a map or `ai-context`
 document already covers them), files too large to read whole, the strongest co-changes, the test
 command and how much written knowledge exists. It writes nothing and interprets no domain. The
-`SessionStart` note that an empty `ai-context/` already shows points to it — the case where the
+`SessionStart` notice that an empty `ai-context/` shows the user (in Codex) points to it — the case where the
 project has no written knowledge yet and a mechanical panorama helps most.
 
 **`refs`** answers the question that comes right after "where is it": **who uses it**. It reads the
@@ -584,7 +584,9 @@ At large scale the degradation is **superlinear**: 1,517 files → 657 ms · 5,0
 `SessionStart` is the only cost you pay without asking. Measured on the reference workspace:
 **630 bytes, ~175 tokens** — about 5% of a single average file read, once per session. Up-to-date
 maps are grouped into one line per repository; only stale ones get their own line, which is where
-the file list changes the decision.
+the file list changes the decision. With no map and no `ai-context` document yet, it puts **nothing**
+in the agent's context: saying "there is nothing to read" cost context and a turn spent exploring the
+new folder (outcome round 7); the notice for creating a map or document goes to the user.
 
 `Stop` warnings cost **zero when there is nothing to warn about**, and have a hash-based
 anti-repetition lock: an identical warning does not repeat. Without it the condition would persist

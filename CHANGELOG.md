@@ -27,6 +27,18 @@ reconstructed from git history.
   in the trace; `injected` in `results.json` and the report's "median hook chars" now measure it the
   same way for every arm, not only for context-tools.
 
+### Changed
+
+- **`SessionStart` says nothing to the agent when there is nothing to read.** With no context map and
+  no `ai-context` document yet, the model used to get "no context maps were found" and "no documents
+  yet; created ai-context/…" — about 1,400 characters, and a turn spent exploring the new folder
+  (outcome round 7). Now its context gets nothing; the notice about creating a map or document still
+  goes to the user (as `systemMessage` in Codex), and `autoInit` still creates the structure.
+- **The test-command line adds how to verify:** "Verify a change once; no scratch test files in the
+  repo." In round 7 the agent alone, fixing a bug, ran the suite to explore and wrote throwaway test
+  files; the tool that told it not to was 45% cheaper on bug fixes. Only the working rule was taken —
+  not the "ultra-concise answers" rule, which cost that tool accuracy on questions.
+
 ### Fixed
 
 - **Outcome harness: a run is no longer lost when its copy cannot be removed.** On Windows a process a

@@ -189,7 +189,7 @@ test('Codex SessionStart transforma alerta acionável em systemMessage visível'
     const output = JSON.parse(result.stdout);
     assert.match(output.systemMessage, /No context maps were found/);
     assert.equal(output.hookSpecificOutput._contextToolsNotice, undefined);
-    assert.match(output.hookSpecificOutput.additionalContext, /No context maps were found/);
+    assert.equal(output.hookSpecificOutput.additionalContext, '', 'sem mapa, nada para o agente ler: o aviso é só para o usuário');
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 

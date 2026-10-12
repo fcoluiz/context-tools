@@ -27,9 +27,9 @@ function arg(name, fallback = null) {
 // `systemMessage` vai para o USUÁRIO, não para o contexto do agente: a sugestão de registro é
 // decisão de quem pergunta, e o agente não deve agir sobre ela por conta própria.
 function emitHook(root, eventName, text, notice = '', autoReview = false, systemMessage = '') {
-  if (!text && !systemMessage) return;
+  if (!text && !systemMessage && !notice) return;
   const output = {};
-  if (text) {
+  if (text || notice) {
     const hookSpecificOutput = { hookEventName: eventName, additionalContext: text.slice(0, 3200) };
     if (notice) hookSpecificOutput._contextToolsNotice = notice.slice(0, 1800);
     if (autoReview) hookSpecificOutput._contextToolsAutoReview = true;
@@ -90,7 +90,12 @@ async function main() {
     // this session's edits from older pending work without asking the model to inspect either.
     try { documentationStopReport(root, cfg, { dedupe: false, sessionOnly: true }); } catch { /* preflight cache is best-effort */ }
     const context = documentationSessionContext(root, cfg);
-    emitHook(root, 'SessionStart', context, sessionNotice(root, cfg, context));
+    const notice = sessionNotice(root, cfg, context);
+    // Só o índice (ou nada): o agente não tem documento para ler, e a linha "não há documentos;
+    // criei a estrutura" custava contexto e um turno explorando a pasta nova (rodada 7). A
+    // estrutura continua sendo criada; quem precisa saber é o usuário, pelo `notice`.
+    const forModel = documentationStatus(root, cfg).documents <= 1 ? '' : context;
+    emitHook(root, 'SessionStart', forModel, notice);
     return;
   }
   if (mode === '--stop-report') {

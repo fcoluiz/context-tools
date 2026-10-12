@@ -159,13 +159,13 @@ test('E2E: Stop automático limita documentos às fontes alteradas na sessão', 
   } finally { rmSync(raiz, { recursive: true, force: true }); }
 });
 
-test('E2E: sem mapa nenhum, o hook orienta o agente e sinaliza a primeira sessão', () => {
+test('E2E: sem mapa nenhum, o agente não recebe nada e o usuário é avisado na primeira sessão', () => {
   const raiz = repo({ comMapa: false });
   try {
     const r = rodar('context-maps.mjs', ['--session-start'], raiz);
     assert.equal(r.status, 0);
     const output = JSON.parse(r.stdout);
-    assert.match(output.hookSpecificOutput.additionalContext, /No context maps were found/);
+    assert.equal(output.hookSpecificOutput.additionalContext, '', 'sem mapa não há o que ler');
     assert.match(output.hookSpecificOutput._contextToolsNotice, /No context maps were found/);
   } finally { rmSync(raiz, { recursive: true, force: true }); }
 });
@@ -992,8 +992,8 @@ test('E2E: projeto em linguagem que o índice não lê — explica, não quebra,
     assert.match(s.stdout, /\.rb \(5\)/, 'precisa dizer QUAL linguagem e quantos arquivos');
     assert.match(s.stdout, /will NOT help/, 'precisa desmentir o remédio que não serve');
 
-    // O SessionStart deve informar a ausência de mapas; o Stop permanece sem ruído sem
-    // alterações ocorridas durante a sessão.
+    // O SessionStart avisa o usuário da ausência de mapas (notice); o Stop permanece sem ruído
+    // sem alterações ocorridas durante a sessão.
     for (const [script, args] of [['context-maps.mjs', ['--session-start']], ['context-maps.mjs', ['--stop-report']]]) {
       const r = rodar(script, args, raiz);
       assert.equal(r.status, 0);
@@ -1021,9 +1021,10 @@ test('E2E: sem git, cada ferramenta faz a coisa certa (ajuda ou explica)', () =>
     const w = rodar('why.mjs', ['existeAqui', `--root=${raiz}`], raiz);
     assert.match(w.stdout, /no git repository/i, `why precisa explicar: ${w.stdout}`);
 
-    // O hook orienta a primeira sessão mesmo sem mapa; a decisão de criar conteúdo continua do agente.
+    // Sem git e sem mapa, o hook não quebra: avisa o usuário e não põe nada no contexto do agente.
     const maps = JSON.parse(rodar('context-maps.mjs', ['--session-start'], raiz).stdout);
-    assert.match(maps.hookSpecificOutput.additionalContext, /No context maps were found/);
+    assert.equal(maps.hookSpecificOutput.additionalContext, '');
+    assert.match(maps.hookSpecificOutput._contextToolsNotice, /No context maps were found/);
   } finally { rmSync(raiz, { recursive: true, force: true }); }
 });
 

@@ -120,7 +120,7 @@ caracteres.
 concentra, os arquivos mais alterados nos últimos seis meses (marcados quando um mapa ou documento
 `ai-context` já os cobre), arquivos grandes demais para ler inteiros, as co-mudanças mais fortes, o
 comando de teste e quanto conhecimento escrito existe. Não escreve nada e não interpreta domínio. O
-aviso de `SessionStart` que um `ai-context/` vazio já mostra aponta para ele — o caso em que o
+aviso de `SessionStart` que um `ai-context/` vazio mostra ao usuário (no Codex) aponta para ele — o caso em que o
 projeto ainda não tem conhecimento escrito e um panorama mecânico mais ajuda.
 
 **`refs`** responde a pergunta que vem logo depois de "onde está": **quem usa**. Lê os mesmos
@@ -570,7 +570,10 @@ Em escala grande a degradação é **superlinear**: 1.517 arquivos → 657 ms ·
 O `SessionStart` é o único custo que você paga sem pedir. Medido no workspace de referência:
 **630 bytes, ~175 tokens** — cerca de 5% de uma única leitura de arquivo médio, uma vez por sessão.
 Mapas em dia são agrupados numa linha por repositório; só os defasados ganham linha própria, que é
-onde a lista de arquivos muda a decisão.
+onde a lista de arquivos muda a decisão. Sem mapa e sem documento no `ai-context`, ele não põe
+**nada** no contexto do agente: dizer "não há o que ler" custava contexto e um turno explorando a
+pasta nova (rodada 7 do benchmark de resultado); o aviso para criar um mapa ou documento vai para o
+usuário.
 
 Os avisos de `Stop` custam **zero quando não há o que avisar**. No Claude, avisos idênticos são
 deduplicados por hash. No Codex, `stop_hook_active` permite uma continuação automática por turno;

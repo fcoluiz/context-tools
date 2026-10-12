@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.2] — 2026-10-12
+
 ### Fixed
 
 - **A hook that only carried a notice could still reach the agent twice.** When two copies of the

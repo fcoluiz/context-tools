@@ -149,12 +149,17 @@ export function metricasDaSessao(caminho) {
   const usosCodex = [];
   let inicioCodex = null, fimCodex = null, turnosCodex = 0, compactacoesCodex = 0;
   let msgs = 0, contexto = 0, reescritas = 0, gravado = 0, anterior = 0;
-  let primeiro = null, ultimo = null, msgsAteEdit = null;
+  let primeiro = null, ultimo = null, msgsAteEdit = null, modeloCodex = null;
+  // O Claude Code grava uma linha por bloco da resposta, todas com o mesmo `usage`: somar por
+  // linha contaria a mesma requisição várias vezes. Os totais vão por id de mensagem.
+  const usoPorMensagem = new Map();
+  const modelos = {};
   for (const linha of bruto.split('\n')) {
     if (!linha.trim()) continue;
     const o = safe(() => JSON.parse(linha), null);
     if (!o) continue;
 
+    if (o.type === 'turn_context' && o.payload && o.payload.model) modeloCodex = String(o.payload.model);
     const tipoCodex = String(o.payload && o.payload.type || '').toLowerCase();
     if (tipoCodex === 'task_started') turnosCodex++;
     if (tipoCodex.includes('compact')) compactacoesCodex++;
@@ -178,6 +183,9 @@ export function metricasDaSessao(caminho) {
     const u = o.message && o.message.usage;
     if (!u) continue;
     msgs++;
+    const idMensagem = o.message.id || `linha-${msgs}`;
+    if (!usoPorMensagem.has(idMensagem) && o.message.model) modelos[o.message.model] = (modelos[o.message.model] || 0) + 1;
+    usoPorMensagem.set(idMensagem, u);
     const le = u.cache_read_input_tokens || 0;
     const cria = u.cache_creation_input_tokens || 0;
     gravado += cria;
@@ -188,9 +196,29 @@ export function metricasDaSessao(caminho) {
     const t = o.timestamp ? Date.parse(o.timestamp) : null;
     if (t) { if (primeiro === null) primeiro = t; ultimo = t; }
   }
-  if (usosCodex.length) return metricasCodex(usosCodex, inicioCodex, fimCodex, turnosCodex, compactacoesCodex);
+  if (usosCodex.length) {
+    const m = metricasCodex(usosCodex, inicioCodex, fimCodex, turnosCodex, compactacoesCodex);
+    // No Codex, `input_tokens` já inclui o que veio do cache.
+    m.tokens = {
+      input: Math.max(0, m.totalInputTokens - m.totalCachedInputTokens),
+      output: m.totalOutputTokens,
+      cacheRead: m.totalCachedInputTokens,
+      cacheWrite: m.totalCacheWriteInputTokens,
+    };
+    m.modelos = modeloCodex ? { [modeloCodex]: m.msgs || 1 } : {};
+    return m;
+  }
   if (!msgs) return null;
+  const tokens = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+  for (const u of usoPorMensagem.values()) {
+    tokens.input += numero(u.input_tokens);
+    tokens.output += numero(u.output_tokens);
+    tokens.cacheRead += numero(u.cache_read_input_tokens);
+    tokens.cacheWrite += numero(u.cache_creation_input_tokens);
+  }
   return {
+    tokens,
+    modelos,
     host: 'claude',
     msgs,
     contexto,

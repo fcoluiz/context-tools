@@ -38,9 +38,15 @@ function transcript(dir, sid) {
   const linha = (o) => JSON.stringify(o);
   writeFileSync(join(dir, `${sid}.jsonl`), [
     linha({ type: 'user', timestamp: '2026-10-01T10:00:00.000Z', message: { role: 'user', content: SEGREDO_PROMPT } }),
-    ...Array.from({ length: 5 }, (_, i) => linha({
+    // A última resposta aparece em duas linhas (um bloco por linha, mesmo id e mesmo usage), como o
+    // Claude Code grava: os totais não podem contar a mesma requisição duas vezes.
+    ...[0, 1, 2, 3, 4, 4].map((i) => linha({
       type: 'assistant', timestamp: new Date(Date.parse('2026-10-01T10:00:00.000Z') + (i + 1) * 60000).toISOString(),
-      message: { content: [{ type: 'text', text: SEGREDO_RESPOSTA }], usage: { cache_read_input_tokens: 10000 * (i + 1), cache_creation_input_tokens: 500 } },
+      message: {
+        id: `msg_${i}`, model: 'claude-test-1',
+        content: [{ type: 'text', text: SEGREDO_RESPOSTA }],
+        usage: { input_tokens: 10, output_tokens: 100, cache_read_input_tokens: 10000 * (i + 1), cache_creation_input_tokens: 500 },
+      },
     })),
   ].join('\n') + '\n');
 }
@@ -74,6 +80,8 @@ test('snapshot: schema versionado, repositório sem credencial, inventário e se
     assert.equal(s.id, 'sessao-1');
     assert.equal(s.host, 'claude');
     assert.equal(s.peakContextTokens, 50000);
+    assert.deepEqual(s.tokens, { input: 50, output: 500, cacheRead: 150000, cacheWrite: 2500 }, 'uma vez por mensagem');
+    assert.equal(s.model, 'claude-test-1');
     assert.ok(s.messages > 0 && s.startedAt && s.endedAt);
     for (const marcador of [SEGREDO_CODIGO, SEGREDO_MAPA, SEGREDO_PROMPT, SEGREDO_RESPOSTA, 'ghp_TOKENSECRETO']) {
       assert.ok(!texto.includes(marcador), `${marcador} vazou para o snapshot`);

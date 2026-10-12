@@ -1297,6 +1297,7 @@ test('metricasDaSessao normaliza o transcript do Codex sem usar a curva do Claud
     const linha = (timestamp, payload) => JSON.stringify({ timestamp, type: 'event_msg', payload });
     writeFileSync(caminho, [
       JSON.stringify({ timestamp: '2026-08-06T00:00:00.000Z', type: 'session_meta' }),
+      JSON.stringify({ timestamp: '2026-08-06T00:00:00.500Z', type: 'turn_context', payload: { model: 'gpt-test-1' } }),
       linha('2026-08-06T03:00:00.000Z', { type: 'task_started' }),
       linha('2026-08-06T03:00:01.000Z', { type: 'token_count', info: {
         total_token_usage: { input_tokens: 120000, cached_input_tokens: 90000, cache_write_input_tokens: 0, output_tokens: 2000, reasoning_output_tokens: 500, total_tokens: 122500 },
@@ -1324,6 +1325,8 @@ test('metricasDaSessao normaliza o transcript do Codex sem usar a curva do Claud
     assert.equal(m.totalOutputTokens, 3000);
     assert.equal(m.compactacoes, 1);
     assert.equal(m.rateLimits.primary.used_percent, 13);
+    assert.deepEqual(m.tokens, { input: 40000, output: 3000, cacheRead: 110000, cacheWrite: 1000 }, 'input do Codex já inclui o cache');
+    assert.deepEqual(m.modelos, { 'gpt-test-1': 2 });
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 

@@ -71,6 +71,12 @@ function repositorios(root) {
   });
 }
 
+/** Id do modelo com mais respostas na sessão; só o formato de um id passa (nada de texto livre). */
+function modeloPrincipal(modelos) {
+  const [id] = Object.entries(modelos || {}).sort((a, b) => b[1] - a[1])[0] || [];
+  return id && /^[\w.:/@[\]-]{1,100}$/.test(id) ? id : null;
+}
+
 /** Só os números de cada sessão; o transcript em si nunca é copiado. */
 function sessoes(root, limite) {
   if (limite <= 0) return [];
@@ -90,6 +96,13 @@ function sessoes(root, limite) {
       hours: num(m.horas) == null ? null : Math.round(m.horas * 100) / 100,
       startedAt: m.inicio ? new Date(m.inicio).toISOString() : null,
       endedAt: m.fim ? new Date(m.fim).toISOString() : null,
+      // Totais da sessão por categoria de cobrança, e o modelo mais usado: o bastante para estimar
+      // custo com a tabela de preço de quem consome. Contagens e um id de modelo, nunca texto.
+      tokens: m.tokens ? {
+        input: num(m.tokens.input), output: num(m.tokens.output),
+        cacheRead: num(m.tokens.cacheRead), cacheWrite: num(m.tokens.cacheWrite),
+      } : null,
+      model: modeloPrincipal(m.modelos),
     };
   }).filter(Boolean);
 }

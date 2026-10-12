@@ -76,8 +76,9 @@ justify a parser or prove that the agent used a result.
 or machines: one JSON document with a versioned schema (`context-tools/snapshot@1`) holding the
 `health` summary, the state of each context map and operational document (path and fresh/stale, not
 its content), the repositories (GitHub `owner/repo`, branch, `HEAD`; a token in the remote URL is
-removed), the numbers of recent Claude Code sessions (messages, peak context, prefix rewrites,
-duration — never the transcript text) and an anonymous machine id: a random UUID stored once in
+removed), the numbers of recent Claude Code and Codex sessions (messages, peak context, prefix
+rewrites, duration, token totals per billing category — input, output, cache read, cache write — and
+the id of the model used most; never the transcript text) and an anonymous machine id: a random UUID stored once in
 `~/.context-tools/machine-id`, not derived from user name, hostname or hardware. Nothing is sent
 anywhere; it only prints. A test seeds markers in code, maps, prompts and answers and checks that none
 reaches the output.

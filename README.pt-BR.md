@@ -166,6 +166,60 @@ nunca apresentado como definição.
 produção de terceiros — cerca de **9.000 arquivos e 192.000 símbolos** em projetos Python, Go,
 Delphi/Pascal, Rust, TypeScript, C#, Java e PHP — com **zero símbolos apontando a linha errada**.
 
+## O que está provado, o que é sinal, o que ainda é hipótese
+
+As afirmações deste projeto, ordenadas pela evidência que há por trás. "Provado" é medido, com os
+dados brutos publicados; "sinal" é quando há evidência apontando nessa direção, mas não uma medida
+que resolva; "hipótese" é para o que o desenho existe, ainda sem medida.
+
+**Provado** — um agente terminando a mesma tarefa, em repositórios públicos, com e sem o plugin
+([rodadas 2–7](docs/benchmarks/)):
+
+- **Nunca fez o agente resolver menos tarefas.** Em toda rodada e modelo, pelo menos tantas respostas
+  certas com o plugin quanto sem ele.
+- **Perguntas sobre o código saem mais baratas e mais certas**: de 15% a 36% mais baratas em todas as
+  rodadas. O ganho é maior em "quem usa X" e "onde exatamente": um hook diz em qual método ou classe
+  cada resultado da busca cai — é o que um agente respondendo só com linhas de `grep` erra.
+- **Ganhou de cinco ferramentas com o mesmo propósito nas perguntas** (rodada 7): o mais preciso
+  (21/22, empatado com o Serena) e o mais barato entre os que acertaram (−26%), na metade dos turnos.
+- **Hooks chegam ao agente; ferramentas a mais, em geral, não.** Na rodada 7 o agente chamou as
+  ferramentas MCP do codebase-memory e do token-savior zero vezes em 34 execuções cada, e elas
+  deixaram a correção de bug 25–46% mais cara. Por isso o context-tools age por hooks e vem com o
+  servidor MCP desligado.
+- **Os custos fixos têm teto:** o aviso do `SessionStart` é ~175 tokens, o índice leva ~1,75 s do zero
+  e ~130 ms do cache local, e cada teto é garantido por um teste
+  ([referência](docs/reference.pt-BR.md#tokens)).
+- **A economia de token só pela navegação é pequena: 1–3%** do custo de uma sessão real, porque a
+  maior parte é contexto sendo relido ([como foi medido](docs/reference.pt-BR.md#a-economia-de-token-medida--e-ela-é-pequena)).
+  O valor está em menos caminhos errados, não em menos tokens por busca.
+
+**Sinal** — a evidência aponta nessa direção, mas não está resolvido:
+
+- **Correção de bug sai mais barata, numa medida que varia.** Mais barata em 4 de 5 medidas (−11% a
+  −36%) e 19% mais cara em uma (rodada 5, Haiku), que motivou correções. Os mesmos casos deram −34% na
+  rodada 6 e −11% na 7: o efeito é real na direção e instável no tamanho, com 12 execuções por braço.
+- **Dizer menos no início da sessão e uma regra de trabalho ajudam na correção de bug** (2.7.7). Saiu
+  dos rastros da rodada 7, em que a ferramenta que mandava o agente "conferir uma vez e parar" foi a
+  mais barata; ainda não medido de novo.
+- **O mesmo vale no Codex.** Os hooks são os mesmos e o adaptador do Codex é coberto por testes de ponta
+  a ponta, mas toda rodada de resultado rodou o Claude Code (`claude -p`). Os modelos do Codex podem
+  também usar ferramentas MCP com mais facilidade do que os do Claude usaram aqui.
+- **Dividir uma sessão longa compensa.** O custo por mensagem cresce 3,4× com a duração da sessão
+  (medido); o aviso "a divisão compensou, ~N%" no início da sessão conta mensagens reais, mas tira a
+  porcentagem de uma curva simulada, e diz isso.
+
+**Hipótese** — para o que o desenho existe, ainda sem medida:
+
+- **Conhecimento que sobrevive às sessões.** Todo benchmark começa de um clone novo: índice frio, sem
+  mapas de contexto, sem documentos no `ai-context`, sem handoff — o pior caso do plugin. Se uma área
+  mapeada é retomada mais rápido na sessão seguinte, e quanto os avisos de mapa e documento defasados
+  evitam, não foi medido.
+- **Bases maiores e privadas, outros modelos.** As rodadas usam repositórios públicos de algumas
+  centenas a alguns milhares de arquivos, com Sonnet e Haiku. O desenho mira workspaces grandes, com
+  vários repositórios, onde reexplorar custa mais.
+- **Times.** O fluxo de pull request que deixa conhecimento para a próxima pessoa é testado como
+  código, não medido como resultado.
+
 ## Ajuda? O que foi medido
 
 Um agente real (`claude -p`) faz a mesma tarefa numa cópia limpa de um repositório público, uma vez

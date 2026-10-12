@@ -26,6 +26,10 @@ reconstructed from git history.
 - **Outcome harness: what any tool's hooks injected.** `--include-hook-events` puts every hook response
   in the trace; `injected` in `results.json` and the report's "median hook chars" now measure it the
   same way for every arm, not only for context-tools.
+- **README: what is proven, what is a signal, what is still a hypothesis.** The project's claims
+  sorted by the evidence behind them, in both languages — measured with raw data, pointing one way
+  but not settled, or what the design is for with no benchmark yet (knowledge across sessions, large
+  private codebases, teams).
 
 ### Changed
 

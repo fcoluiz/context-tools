@@ -75,8 +75,9 @@ justify a parser or prove that the agent used a result.
 
 `snapshot-export.mjs` (`ct snapshot`) is the extension point for whoever aggregates several projects
 or machines: one JSON document with a versioned schema (`context-tools/snapshot@1`) holding the
-`health` summary, the state of each context map and operational document (path and fresh/stale, not
-its content), the repositories (GitHub `owner/repo`, branch, `HEAD`; a token in the remote URL is
+`health` summary, the state of each context map and operational document (path, fresh/stale and
+whether git versions it — `tracked`, `ignored`, `untracked`, or `null` outside a git repository — not
+its content; a map git does not version exists only on that machine), the repositories (GitHub `owner/repo`, branch, `HEAD`; a token in the remote URL is
 removed), the numbers of recent Claude Code and Codex sessions (messages, peak context, prefix
 rewrites, duration, token totals per billing category — input, output, cache read, cache write — and
 the id of the model used most; never the transcript text — Codex sessions are matched by the folder

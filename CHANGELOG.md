@@ -8,6 +8,14 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **`ct snapshot` says whether git versions each map and document.** Every inventory item now has a
+  `git` field: `tracked`, `ignored` (blocked by a `.gitignore`), `untracked`, or `null` outside a git
+  repository. A context map that git does not version exists only on the machine that wrote it, so
+  whoever clones the repository never gets it; a dashboard that aggregates several machines can now
+  point at those maps. One `git ls-files` and one `git check-ignore` per folder, never per file.
+
 ## [2.9.4] — 2026-10-12
 
 ### Fixed

@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.8.0] — 2026-10-12
+
 ### Added
 
 - **`ct snapshot`: the project as versioned JSON** (`context-tools/snapshot@1`), for CI, your own

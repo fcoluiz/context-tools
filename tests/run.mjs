@@ -25,8 +25,20 @@ if (!arquivos.length) {
 
 // Os testes nunca consultam a rede nem gravam na pasta do usuário: a verificação de versão nova
 // fica desligada para todo hook que um teste dispara. `update-check.test.mjs` religa por chamada.
+// Os repositórios de fixture fazem commits em pasta temporária; o `git commit` pode disparar
+// gc/maintenance automático em segundo plano, que ainda escreve em `.git/objects/pack` quando o
+// teste apaga a pasta (ENOTEMPTY no rmSync, intermitente no CI). Desligado para todo git dos testes,
+// somando às `GIT_CONFIG_*` que já existirem no ambiente.
+const gitConfig = { 'gc.auto': '0', 'maintenance.auto': 'false' };
+const base = Number.parseInt(process.env.GIT_CONFIG_COUNT, 10) || 0;
+const gitEnv = { GIT_CONFIG_COUNT: String(base + Object.keys(gitConfig).length) };
+Object.entries(gitConfig).forEach(([key, value], i) => {
+  gitEnv[`GIT_CONFIG_KEY_${base + i}`] = key;
+  gitEnv[`GIT_CONFIG_VALUE_${base + i}`] = value;
+});
+
 const r = spawnSync(process.execPath, ['--test', ...arquivos], {
   stdio: 'inherit',
-  env: { ...process.env, CONTEXT_TOOLS_UPDATE_CHECK: '0' },
+  env: { ...process.env, ...gitEnv, CONTEXT_TOOLS_UPDATE_CHECK: '0' },
 });
 process.exit(r.status ?? 1);

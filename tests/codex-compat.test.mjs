@@ -101,7 +101,7 @@ test('Codex UserPromptSubmit usa preflight offline no adapter e cala quando o ma
     assert.equal(output.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
     assert.match(output.hookSpecificOutput.additionalContext, /prompt-area/);
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -153,7 +153,7 @@ test('Codex Bash busca usa o mesmo pre-hook sem tocar no estado Claude', () => {
     assert.match(JSON.parse(claude.stdout).hookSpecificOutput.additionalContext, /buildIndex/);
     assert.ok(existsSync(join(root, '.claude', '.pre-tool-state.json')));
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -172,7 +172,7 @@ test('Codex SessionStart grava baseline no estado Codex', () => {
     assert.ok(JSON.parse(readFileSync(baseline, 'utf8'))['codex-baseline']);
     assert.ok(!existsSync(join(root, '.claude', '.context-maps-session-baseline.json')));
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -190,7 +190,7 @@ test('Codex SessionStart transforma alerta acionável em systemMessage visível'
     assert.match(output.systemMessage, /No context maps were found/);
     assert.equal(output.hookSpecificOutput._contextToolsNotice, undefined);
     assert.equal(output.hookSpecificOutput.additionalContext, '', 'sem mapa, nada para o agente ler: o aviso é só para o usuário');
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('Codex usa cwd do evento como raiz mesmo quando o projeto sem git está dentro de workspace maior', () => {
@@ -215,7 +215,7 @@ test('Codex usa cwd do evento como raiz mesmo quando o projeto sem git está den
     assert.ok(JSON.parse(readFileSync(baseline, 'utf8'))['codex-project-root']);
     assert.ok(!existsSync(join(pai, '.codex', 'context-tools', '.context-maps-session-baseline.json')),
       'o hook não pode subir para o estado do workspace-pai');
-  } finally { rmSync(pai, { recursive: true, force: true }); }
+  } finally { rmSync(pai, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('Codex Stop permanece silencioso e o handoff registra as métricas', () => {
@@ -259,7 +259,7 @@ test('Codex Stop permanece silencioso e o handoff registra as métricas', () => 
     assert.equal(handoff.status, 0, handoff.stderr);
     assert.match(handoff.stdout, /Codex session/i);
     assert.ok(existsSync(join(root, '.codex', 'context-tools', 'handoff-codex-lo.md')));
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('Codex Stop inicia uma revisão automática única para mapas e documentação pendentes', () => {
@@ -316,7 +316,7 @@ test('Codex Stop inicia uma revisão automática única para mapas e documentaç
       stop_hook_active: false,
     });
     assert.equal(repeatedTask.stdout.trim(), '', 'não repete a mesma revisão em tarefas seguintes sem mudança durante o cooldown');
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('configuração específica de um host não atravessa para o outro', () => {
@@ -330,7 +330,7 @@ test('configuração específica de um host não atravessa para o outro', () => 
     assert.equal(loadConfig(root, { CONTEXT_TOOLS_HOST: 'codex' }).lang, 'en');
     assert.equal(loadConfig(root, { CONTEXT_TOOLS_HOST: 'claude' }).lang, 'pt');
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -369,7 +369,7 @@ test('instalação both cria as duas integrações sem misturar os diretórios',
     assert.ok(commands.some((command) => command.includes('node ".codex/scripts/codex-hook.mjs')));
     assert.ok(commands.every((command) => !command.includes('git rev-parse')));
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -397,7 +397,7 @@ test('Claude e Codex usam o mesmo núcleo de md-hint com estado isolado', () => 
     assert.equal(claudeAgain.stdout.trim(), '');
     assert.equal(codexAgain.stdout.trim(), '');
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -418,7 +418,7 @@ test('md-hint observa o idioma do arquivo antes do idioma do ambiente', () => {
     const claudeText = readFileSync(join(root, 'CLAUDE.md'), 'utf8');
     assert.match(claudeText, /Antes de delegar a um subagente de exploração/);
     assert.doesNotMatch(claudeText, /Before delegating to an exploration subagent/);
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('md-hint preserva bytes, encoding ANSI e quebras de linha existentes', () => {
@@ -433,7 +433,7 @@ test('md-hint preserva bytes, encoding ANSI e quebras de linha existentes', () =
     assert.ok(depois.subarray(0, antes.length).equals(antes), 'o prefixo original precisa permanecer byte a byte');
     assert.match(depois.toString('latin1'), /Antes de delegar a um subagente de explora/);
     assert.match(depois.toString('latin1'), /\r\n## Antes/);
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('codex-md-hint respeita codexMdHint:false sem alterar AGENTS.md', () => {
@@ -448,7 +448,7 @@ test('codex-md-hint respeita codexMdHint:false sem alterar AGENTS.md', () => {
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.stdout.trim(), '');
     assert.equal(readFileSync(agents, 'utf8'), antes);
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('opt-out do Claude não desliga o hint do Codex em instalação conjunta', () => {
@@ -462,5 +462,5 @@ test('opt-out do Claude não desliga o hint do Codex em instalação conjunta', 
     assert.equal(result.status, 0, result.stderr);
     assert.match(JSON.parse(result.stdout).hookSpecificOutput.additionalContext, /AGENTS\.md/);
     assert.match(readFileSync(agents, 'utf8'), /context-tools:before-explore-codex/);
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });

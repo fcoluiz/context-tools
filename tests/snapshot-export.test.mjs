@@ -87,7 +87,7 @@ test('snapshot: schema versionado, repositório sem credencial, inventário e se
       assert.ok(!texto.includes(marcador), `${marcador} vazou para o snapshot`);
     }
   } finally {
-    for (const d of [raiz, casa, transcritos]) rmSync(d, { recursive: true, force: true });
+    for (const d of [raiz, casa, transcritos]) rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -100,7 +100,7 @@ test('snapshot: identidade anônima da máquina é estável e não deriva de nom
     assert.equal(readFileSync(join(casa, 'machine-id'), 'utf8').trim(), a);
     rmSync(join(casa, 'machine-id'));
     assert.notEqual(machineId(env), a, 'apagar o arquivo gera outro');
-  } finally { rmSync(casa, { recursive: true, force: true }); }
+  } finally { rmSync(casa, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('snapshot: remote sem credencial e slug do GitHub em https e ssh', () => {

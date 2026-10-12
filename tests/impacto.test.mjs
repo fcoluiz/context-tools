@@ -62,7 +62,7 @@ test('refs: uso real fora da definição, com o símbolo que o contém; comentá
     assert.match(texto, /by name, not by type/, 'a saída diz o que não sabe');
   } finally {
     if (antes === undefined) delete process.env.CONTEXT_TOOLS_STATE_DIR; else process.env.CONTEXT_TOOLS_STATE_DIR = antes;
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -74,7 +74,7 @@ test('refs: nome sem uso diz que pode ser código morto OU uso dinâmico; nome i
     assert.match(sem, /used dynamically/);
     const invalido = spawnSync(process.execPath, [join(SCRIPTS, 'refs.mjs'), 'a b', `--root=${dir}`], { encoding: 'utf8', env: env(dir) }).stdout;
     assert.match(invalido, /not one\. For text search use rg/);
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('impact: usos, co-mudança direcional, testes e mapa que cobre a definição', () => {
@@ -97,7 +97,7 @@ test('impact: usos, co-mudança direcional, testes e mapa que cobre a definiçã
     assert.match(curto, /cut at the 200-char budget/, 'orçamento estourado é dito, não engolido');
   } finally {
     if (antes === undefined) delete process.env.CONTEXT_TOOLS_STATE_DIR; else process.env.CONTEXT_TOOLS_STATE_DIR = antes;
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -111,5 +111,5 @@ test('impact: arquivo como alvo e nome inexistente', () => {
     assert.match(nada, /no definition and no project file/);
     const fora = spawnSync(process.execPath, [join(SCRIPTS, 'impact.mjs'), '../fora.js', `--root=${dir}`], { encoding: 'utf8', env: env(dir) }).stdout;
     assert.match(fora, /no definition and no project file/, 'caminho fora do projeto não é aceito como alvo');
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });

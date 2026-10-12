@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { spawn } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
+import { spawn, spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { localPath } from './paths.mjs';
 import { claimHookEmission, HOOK_DEDUPE_WINDOW_MS } from '../scripts/lib/hook-output.mjs';
@@ -59,6 +60,23 @@ test('CONTEXT_TOOLS_HOOK_DEDUPE=0 desliga a deduplicação', () => {
     const env = { CONTEXT_TOOLS_HOOK_DEDUPE: '0' };
     assert.equal(claimHookEmission(root, 'SessionStart', 'texto', { env }), true);
     assert.equal(claimHookEmission(root, 'SessionStart', 'texto', { env }), true);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('saída só com aviso interno (sem additionalContext) também é deduplicada', () => {
+  const root = tempProject();
+  try {
+    // Em subprocesso: writeHookOutput escreve no stdout, que aqui é do test runner.
+    const lib = pathToFileURL(join(SCRIPTS, 'lib', 'hook-output.mjs')).href;
+    const code = `import { writeHookOutput } from ${JSON.stringify(lib)};
+      const out = (notice) => ({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: '', _contextToolsNotice: notice } });
+      const r = [writeHookOutput(process.argv[1], out('aviso')), writeHookOutput(process.argv[1], out('aviso')), writeHookOutput(process.argv[1], out('outro'))];
+      process.stderr.write(JSON.stringify(r));`;
+    const r = spawnSync(process.execPath, ['--input-type=module', '-e', code, root], {
+      encoding: 'utf8', env: { ...process.env, CONTEXT_TOOLS_SESSION_ID: 'notice-only', CONTEXT_TOOLS_HOOK_DEDUPE: '' },
+    });
+    assert.equal(r.status, 0, r.stderr);
+    assert.deepEqual(JSON.parse(r.stderr), [true, false, true]);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 

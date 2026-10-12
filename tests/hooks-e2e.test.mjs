@@ -60,7 +60,7 @@ test('E2E: SessionStart devolve JSON válido no contrato do hook', () => {
     assert.equal(j.hookSpecificOutput.hookEventName, 'SessionStart');
     assert.ok(typeof j.hookSpecificOutput.additionalContext === 'string');
     assert.ok(j.hookSpecificOutput.additionalContext.includes('minha-area'));
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: preflight offline só injeta contexto para arquivo citado e com pendência', () => {
@@ -87,7 +87,7 @@ test('E2E: preflight offline só injeta contexto para arquivo citado e com pend�
     writeFileSync(join(raiz, 'src', 'unmapped.ts'), 'export const x = 1;\n');
     const unmapped = audit('Please inspect `src/unmapped.ts`.');
     assert.match(JSON.parse(unmapped.stdout).hookSpecificOutput.additionalContext, /no context map covers/i);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: Stop automático só reporta mapa ligado a arquivo alterado após o baseline', () => {
@@ -113,7 +113,7 @@ test('E2E: Stop automático só reporta mapa ligado a arquivo alterado após o b
     const context = JSON.parse(stop.stdout).hookSpecificOutput.additionalContext;
     assert.match(context, /area-a/);
     assert.doesNotMatch(context, /area-b/, 'mapa já stale antes do início da sessão fica fora');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: Stop automático limita documentos às fontes alteradas na sessão', () => {
@@ -156,7 +156,7 @@ test('E2E: Stop automático limita documentos às fontes alteradas na sessão', 
     const context = JSON.parse(stop.stdout).reason;
     assert.match(context, /area-a\.md/);
     assert.doesNotMatch(context, /area-b\.md/, 'documento stale antes da sessão fica fora');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: sem mapa nenhum, o agente não recebe nada e o usuário é avisado na primeira sessão', () => {
@@ -167,7 +167,7 @@ test('E2E: sem mapa nenhum, o agente não recebe nada e o usuário é avisado na
     const output = JSON.parse(r.stdout);
     assert.equal(output.hookSpecificOutput.additionalContext, '', 'sem mapa não há o que ler');
     assert.match(output.hookSpecificOutput._contextToolsNotice, /No context maps were found/);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: mapa corrompido não derruba o hook nem vaza lixo', () => {
@@ -180,7 +180,7 @@ test('E2E: mapa corrompido não derruba o hook nem vaza lixo', () => {
     const r = rodar('context-maps.mjs', ['--session-start'], raiz);
     assert.equal(r.status, 0, 'M4: exit 0 sempre');
     if (r.stdout.trim()) JSON.parse(r.stdout); // se falar, tem que ser JSON válido
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: Stop aponta mapas sem frontmatter ou metadata obrigatória', () => {
@@ -195,7 +195,7 @@ test('E2E: Stop aponta mapas sem frontmatter ou metadata obrigatória', () => {
     const context = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
     assert.match(context, /missing or invalid metadata/i);
     assert.match(context, /quebrado\.md/);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: sem git, "verified_at: HEAD" não é data válida — hook diz "não verificável", não finge cobertura', () => {
@@ -215,7 +215,7 @@ test('E2E: sem git, "verified_at: HEAD" não é data válida — hook diz "não 
     const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
     assert.match(ctx, /not verifiable/i, 'verified_at inválido sem git precisa admitir, não fingir');
     assert.match(ctx, /git init/i, 'sem git nenhum, o rodapé precisa sugerir o remédio');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: sem git, verified_at como DATA aciona o fallback de mtime', () => {
@@ -235,7 +235,7 @@ test('E2E: sem git, verified_at como DATA aciona o fallback de mtime', () => {
     assert.match(ctx, /POSSIBLY OUT OF DATE/, `precisa flagar via mtime: ${ctx}`);
     assert.match(ctx, /src\/a\.js/, 'precisa dizer QUAL arquivo');
     assert.match(ctx, /mtime/i, 'precisa deixar claro que o sinal é mais fraco que git');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: repo ganha git depois — verified_at (data) migra sozinho pra commit quando nada mudou por mtime', () => {
@@ -269,7 +269,7 @@ test('E2E: repo ganha git depois — verified_at (data) migra sozinho pra commit
     const novoConteudo = readFileSync(mapa, 'utf8');
     assert.match(novoConteudo, new RegExp(`verified_at: ${head}`), 'verified_at precisa virar o SHA do HEAD');
     assert.match(novoConteudo, /covers:\s*\n\s*- "src\/a\.js"/, 'resto do frontmatter precisa sobreviver intacto');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: repo ganha git depois, mas arquivo coberto mudou DEPOIS de verified_at — não migra, segue não verificável', () => {
@@ -302,7 +302,7 @@ test('E2E: repo ganha git depois, mas arquivo coberto mudou DEPOIS de verified_a
 
     const conteudo = readFileSync(join(raiz, '.claude', 'context', 'a.md'), 'utf8');
     assert.match(conteudo, new RegExp(`verified_at: "?${dataAntiga}`), 'verified_at não pode ser reescrito sem confirmação');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: Stop avisa quando arquivo coberto muda sem o mapa mudar', () => {
@@ -316,7 +316,7 @@ test('E2E: Stop avisa quando arquivo coberto muda sem o mapa mudar', () => {
     assert.ok(r.stdout.trim(), 'deveria avisar');
     const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
     assert.ok(/src\/a\.js/.test(ctx), 'precisa dizer QUAL arquivo mudou');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: Stop cala pendência antiga e auditoria global ainda a encontra', () => {
@@ -339,7 +339,7 @@ test('E2E: Stop cala pendência antiga e auditoria global ainda a encontra', () 
     assert.equal(r.stdout.trim(), '', 'pendência anterior ao baseline não entra no Stop automático');
     assert.match(contextMapsStopReport(raiz), /src\/a\.js/,
       'a auditoria global ainda mostra a referência persistente verified_at');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: Stop aceita que o mapa foi revisado depois de uma alteração local ainda não commitada', () => {
@@ -363,7 +363,7 @@ test('E2E: Stop aceita que o mapa foi revisado depois de uma alteração local a
     const r = rodar('context-maps.mjs', ['--stop-report'], raiz, { CLAUDE_CODE_SESSION_ID: sid });
     assert.equal(r.status, 0);
     assert.equal(r.stdout.trim(), '', 'metadata revisada deve encerrar a revisão pendente');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: Stop não repete o mesmo aviso (trava anti-loop)', () => {
@@ -378,7 +378,7 @@ test('E2E: Stop não repete o mesmo aviso (trava anti-loop)', () => {
     assert.ok(primeira.stdout.trim(), 'primeira precisa avisar');
     const segunda = rodar('context-maps.mjs', ['--stop-report'], raiz, { CLAUDE_CODE_SESSION_ID: sid });
     assert.equal(segunda.stdout.trim(), '', 'aviso idêntico não pode repetir');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: coupling --hook devolve JSON ou silêncio, nunca texto solto', () => {
@@ -390,7 +390,7 @@ test('E2E: coupling --hook devolve JSON ou silêncio, nunca texto solto', () => 
       const j = JSON.parse(r.stdout);
       assert.equal(j.hookSpecificOutput.hookEventName, 'Stop');
     }
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: --strict do audit-docs sai com 1 quando acha ponteiro de linha', () => {
@@ -405,7 +405,7 @@ test('E2E: --strict do audit-docs sai com 1 quando acha ponteiro de linha', () =
     writeFileSync(join(raiz, 'docs', 'g.md'), 'Ver a funcao alfa para detalhes.\n');
     const limpo = rodar('audit-docs.mjs', ['--strict', `--root=${raiz}`], raiz);
     assert.equal(limpo.status, 0, 'sem ponteiro precisa passar');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: caso de teste é resposta de SEGUNDA CLASSE, atrás da definição', () => {
@@ -430,7 +430,7 @@ test('E2E: caso de teste é resposta de SEGUNDA CLASSE, atrás da definição', 
     assert.ok(iDef >= 0, `a definição precisa aparecer, veio: ${r.stdout}`);
     assert.ok(iTeste >= 0, 'o teste também precisa aparecer — ele é resposta útil, só não é a primeira');
     assert.ok(iDef < iTeste, `a definição tem de vir ANTES do teste, veio: ${r.stdout}`);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: audit-docs audita os MAPAS, mas não o resto de .claude/', () => {
@@ -452,7 +452,7 @@ test('E2E: audit-docs audita os MAPAS, mas não o resto de .claude/', () => {
     assert.match(r.stdout, /simboloQueNuncaExistiu/, 'o fantasma do mapa tem de ser acusado');
     assert.doesNotMatch(r.stdout, /naoAuditar/, '.claude/ fora de context/ continua sendo estado, não doc');
     assert.doesNotMatch(r.stdout, /outroSimboloInexistente/, 'não pode auditar estado de ferramenta');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: padrão de extensão citado num doc não vira "arquivo inexistente"', () => {
@@ -471,7 +471,7 @@ test('E2E: padrão de extensão citado num doc não vira "arquivo inexistente"',
     writeFileSync(join(raiz, 'docs', 'filtro.md'), 'Ver `moduloQueNaoExiste.js` para detalhes.\n');
     const real = rodar('audit-docs.mjs', [`--root=${raiz}`], raiz);
     assert.match(real.stdout, /moduloQueNaoExiste\.js/, 'nome de arquivo de verdade continua sendo cobrado');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: audit-docs RECUSA doc fora da raiz em vez de acusar tudo como inexistente', () => {
@@ -497,8 +497,8 @@ test('E2E: audit-docs RECUSA doc fora da raiz em vez de acusar tudo como inexist
     assert.doesNotMatch(ok.stdout, /OUTSIDE the indexed root/, 'raiz certa não pode ser recusada');
     assert.doesNotMatch(ok.stdout, /minhaFuncaoUnica/, 'símbolo existente não pode virar achado');
   } finally {
-    rmSync(raiz, { recursive: true, force: true });
-    rmSync(vizinho, { recursive: true, force: true });
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(vizinho, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -519,7 +519,7 @@ test('E2E: símbolo citado COM assinatura é conferido, não pulado', () => {
     assert.match(r.stdout, /minhaFuncaoMorta/, `fantasma com assinatura precisa ser acusado: ${r.stdout}`);
     // E o que existe não pode virar achado só por ter sido citado com a assinatura.
     assert.doesNotMatch(r.stdout, /minhaFuncaoViva/, 'símbolo existente não pode virar fantasma');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: pasta de convenção não pode esconder o resto do repositório', () => {
@@ -539,7 +539,7 @@ test('E2E: pasta de convenção não pode esconder o resto do repositório', () 
     const r = rodar('symbols.mjs', ['funcaoEscondida', `--root=${raiz}`], raiz);
     assert.match(r.stdout, /head\.js/, `código fora da pasta de convenção precisa ser achado: ${r.stdout}`);
     assert.doesNotMatch(r.stdout, /no DEFINITION/, 'não pode dizer que não existe');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: arquivo da raiz não é indexado duas vezes', () => {
@@ -553,7 +553,7 @@ test('E2E: arquivo da raiz não é indexado duas vezes', () => {
     const r = rodar('symbols.mjs', ['soUmaVez', `--root=${raiz}`], raiz);
     const acertos = (r.stdout.match(/main\.js/g) || []).length;
     assert.equal(acertos, 1, `esperava 1 ocorrência, veio ${acertos}: ${r.stdout}`);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: symbols distingue "pasta errada" de "linguagem que não leio"', () => {
@@ -582,8 +582,8 @@ test('E2E: symbols distingue "pasta errada" de "linguagem que não leio"', () =>
     assert.match(v.stdout, /sourceDirs/, `pasta vazia mantém o remédio antigo: ${v.stdout}`);
     assert.doesNotMatch(v.stdout, /NONE in a language/, 'sem arquivo nenhum não é problema de linguagem');
   } finally {
-    rmSync(raiz, { recursive: true, force: true });
-    rmSync(vazio, { recursive: true, force: true });
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(vazio, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -613,7 +613,7 @@ for (const [lang, ext, linha] of [
       const r = rodar('context-maps.mjs', ['--stop-report'], raiz, { CLAUDE_CODE_SESSION_ID: sid });
       assert.equal(r.status, 0, 'M4: exit 0 sempre');
       assert.match(r.stdout, new RegExp(`alfa\\.${ext}`), `esperava aviso citando os .${ext}, veio: ${r.stdout}`);
-    } finally { rmSync(raiz, { recursive: true, force: true }); }
+    } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
   });
 }
 
@@ -628,7 +628,7 @@ test('E2E: um arquivo de qualquer linguagem também solicita avaliação de mapa
     const r = rodar('context-maps.mjs', ['--stop-report'], raiz, { CLAUDE_CODE_SESSION_ID: 'sess-um' });
     assert.equal(r.stdout.trim(), '', 'isolated uncovered source stays in manual health until recurrence');
     assert.match(contextMapsStopReport(raiz), /unico\.rs/, 'global audit still shows uncovered source');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: instalador não quebra nem corrompe settings.json de forma inesperada', () => {
@@ -651,7 +651,7 @@ test('E2E: instalador não quebra nem corrompe settings.json de forma inesperada
     const depois = JSON.parse(readFileSync(join(raiz, '.claude', 'settings.json'), 'utf8'));
     assert.equal(depois.ajusteDoUsuario, 42, 'config do usuário precisa sobreviver');
     assert.equal(depois.hooks.SessionStart, 'nao e lista', 'o que era do usuário não pode ser sobrescrito');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: instalador é idempotente e não duplica hook', () => {
@@ -663,7 +663,7 @@ test('E2E: instalador é idempotente e não duplica hook', () => {
     const s = JSON.parse(readFileSync(join(raiz, '.claude', 'settings.json'), 'utf8'));
     const cmds = s.hooks.Stop[0].hooks.map((h) => h.command);
     assert.equal(new Set(cmds).size, cmds.length, 'rodar duas vezes não pode duplicar hook');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: instalador registra EXATAMENTE os hooks do manifesto do plugin', () => {
@@ -698,7 +698,7 @@ test('E2E: instalador registra EXATAMENTE os hooks do manifesto do plugin', () =
     const todos = achatar(manifesto).join('\n');
     assert.match(todos, /handoff\.mjs --stop-report/, 'o manifesto precisa gerar o handoff no Stop');
     assert.match(todos, /PreToolUse\|Grep\|pre-tool\.mjs/, 'o PreToolUse precisa estar no manifesto, com matcher Grep');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: o .gitignore instalado cobre TODO estado que os scripts gravam', () => {
@@ -729,7 +729,7 @@ test('E2E: o .gitignore instalado cobre TODO estado que os scripts gravam', () =
         || esperado.some((p) => p.startsWith('*') && real.endsWith(p.slice(1))),
         `nenhum padrão cobre o arquivo de estado "${real}"`);
     }
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: o fallback embutido de install.mjs não diverge de .claude/.gitignore', () => {
@@ -760,7 +760,7 @@ test('E2E: symbols responde e sai com 0 mesmo sem achar nada', () => {
     const nada = rodar('symbols.mjs', ['zzz_nao_existe', `--root=${raiz}`], raiz);
     assert.equal(nada.status, 0, 'não achar não é erro de execução');
     assert.ok(/rg |Grep/i.test(nada.stdout), 'precisa mandar para o Grep, não devolver vazio');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: audit-docs enxerga doc fora de docs/', () => {
@@ -779,7 +779,7 @@ test('E2E: audit-docs enxerga doc fora de docs/', () => {
 
     const r = rodar('audit-docs.mjs', [`--root=${raiz}`], raiz);
     assert.match(r.stdout, /funcaoQueNaoExiste/, `doc da raiz precisa ser auditada: ${r.stdout}`);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 // ---- PreToolUse: o unico ponto PUSH do plugin. Dimensionado no historico real deste
@@ -805,7 +805,7 @@ test('E2E: PreToolUse responde ANTES do Grep quando o padrão é um símbolo', (
     assert.match(j.hookSpecificOutput.additionalContext, /minhaFuncaoUnica/);
     assert.match(j.hookSpecificOutput.additionalContext, /a\.js/, 'precisa dizer ONDE');
     assert.doesNotMatch(j.hookSpecificOutput.additionalContext, /evidence pack|pacote de evidências/i, 'símbolo simples não deve pagar pack');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: PreToolUse usa pack pequeno quando o símbolo atravessa arquivos', () => {
@@ -818,7 +818,7 @@ test('E2E: PreToolUse usa pack pequeno quando o símbolo atravessa arquivos', ()
     assert.match(ctx, /evidence pack|pacote de evidências/i, 'a rota ambígua precisa declarar o pack');
     assert.match(ctx, /a\.js/, 'o pack precisa preservar a primeira definição');
     assert.match(ctx, /b\.js/, 'o pack precisa preservar a segunda definição');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: PreToolUse nomeia o repo/escopo varrido na resposta', () => {
@@ -831,7 +831,7 @@ test('E2E: PreToolUse nomeia o repo/escopo varrido na resposta', () => {
     const r = preTool({ tool_name: 'Grep', tool_input: { pattern: 'minhaFuncaoUnica' } }, raiz);
     const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
     assert.match(ctx, /scope:/, `resposta precisa dizer qual repo foi varrido: ${ctx}`);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: PreToolUse NÃO repete a mesma resposta na mesma sessão', () => {
@@ -841,7 +841,7 @@ test('E2E: PreToolUse NÃO repete a mesma resposta na mesma sessão', () => {
     assert.ok(preTool({ tool_name: 'Grep', tool_input: { pattern: 'minhaFuncaoUnica' } }, raiz).stdout.trim());
     const segunda = preTool({ tool_name: 'Grep', tool_input: { pattern: 'minhaFuncaoUnica' } }, raiz);
     assert.equal(segunda.stdout.trim(), '', 'repetir gasta token sem informar nada');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: PreToolUse cala em busca textual, símbolo inexistente e outra ferramenta', () => {
@@ -858,7 +858,7 @@ test('E2E: PreToolUse cala em busca textual, símbolo inexistente e outra ferram
     assert.equal(curto.stdout.trim(), '', 'nome curto casaria com meio mundo');
     const outra = preTool({ tool_name: 'Edit', tool_input: { file_path: 'x' } }, raiz, 's4');
     assert.equal(outra.stdout.trim(), '', 'só Grep interessa');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: claude-md-hint anexa o bloco UMA VEZ, e cala nas próximas', () => {
@@ -879,7 +879,7 @@ test('E2E: claude-md-hint anexa o bloco UMA VEZ, e cala nas próximas', () => {
 
     const conteudoDepois = readFileSync(join(raiz, 'CLAUDE.md'), 'utf8');
     assert.equal(conteudoDepois, conteudo, 'segunda chamada não pode duplicar nem alterar nada');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: claude-md-hint não cria CLAUDE.md que o projeto não tinha', () => {
@@ -889,7 +889,7 @@ test('E2E: claude-md-hint não cria CLAUDE.md que o projeto não tinha', () => {
     assert.equal(r.status, 0);
     assert.equal(r.stdout.trim(), '', 'sem CLAUDE.md, não há o que anexar — e não deve criar um');
     assert.equal(existsSync(join(raiz, 'CLAUDE.md')), false, 'não pode criar arquivo que o projeto não tinha');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: claude-md-hint desliga com claudeMdHint:false na config', () => {
@@ -902,7 +902,7 @@ test('E2E: claude-md-hint desliga com claudeMdHint:false na config', () => {
     assert.equal(r.stdout.trim(), '', 'desligado por config, não pode escrever nada');
     const conteudo = readFileSync(join(raiz, 'CLAUDE.md'), 'utf8');
     assert.equal(conteudo, '# Projeto\n', 'CLAUDE.md não pode ser tocado quando desligado');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: claude-md-hint não duplica se o CLAUDE.md já tem o bloco (copiado de outro projeto)', () => {
@@ -913,7 +913,7 @@ test('E2E: claude-md-hint não duplica se o CLAUDE.md já tem o bloco (copiado d
     const r = rodar('claude-md-hint.mjs', [], raiz);
     assert.equal(r.stdout.trim(), '', 'bloco já presente: marca feito e cala, não duplica');
     assert.equal(readFileSync(join(raiz, 'CLAUDE.md'), 'utf8'), antes, 'conteúdo não pode mudar quando o bloco já existe');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: PreToolUse com entrada lixo sai em silêncio e com status 0', () => {
@@ -926,7 +926,7 @@ test('E2E: PreToolUse com entrada lixo sai em silêncio e com status 0', () => {
       assert.equal(r.status, 0, `M4 quebrou com entrada: ${JSON.stringify(lixo)}`);
       assert.equal(r.stdout.trim(), '');
     }
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 // ---- why.mjs: a unica pergunta em que ler mais codigo NAO ajuda.
@@ -942,7 +942,7 @@ test('E2E: why devolve os commits que moldaram as linhas do símbolo', () => {
     assert.equal(r.status, 0);
     assert.match(r.stdout, /guardaImportante/, `precisa nomear o alvo: ${r.stdout}`);
     assert.match(r.stdout, /fila estourava/, 'precisa trazer a RAZÃO, que é o ponto todo');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: why aceita <arquivo> <linha> sem depender do índice', () => {
@@ -955,7 +955,7 @@ test('E2E: why aceita <arquivo> <linha> sem depender do índice', () => {
     const r = rodar('why.mjs', ['src/a.js', '1', `--root=${raiz}`], raiz);
     assert.equal(r.status, 0);
     assert.match(r.stdout, /limiar medido/, `modo arquivo:linha falhou: ${r.stdout}`);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: why distingue "não achei" de "não consegui olhar"', () => {
@@ -968,14 +968,14 @@ test('E2E: why distingue "não achei" de "não consegui olhar"', () => {
     const r = rodar('why.mjs', ['existe', `--root=${semGit}`], semGit);
     assert.equal(r.status, 0);
     assert.match(r.stdout, /no git repository|nenhum reposit/i, `esperava dizer que não há git: ${r.stdout}`);
-  } finally { rmSync(semGit, { recursive: true, force: true }); }
+  } finally { rmSync(semGit, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 
   const raiz = repo({ comMapa: false });
   try {
     const r = rodar('why.mjs', ['SimboloQueNaoExiste', `--root=${raiz}`], raiz);
     assert.equal(r.status, 0);
     assert.match(r.stdout, /not in the index|não está no índice/i);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 // ---- O plugin instalado onde ele NAO SERVE. Regra: continuar ajudando quando pode, e nao
@@ -1002,7 +1002,7 @@ test('E2E: projeto em linguagem que o índice não lê — explica, não quebra,
     }
     const p = rodar('pre-tool.mjs', [], raiz);
     assert.equal(p.status, 0);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: sem git, cada ferramenta faz a coisa certa (ajuda ou explica)', () => {
@@ -1025,7 +1025,7 @@ test('E2E: sem git, cada ferramenta faz a coisa certa (ajuda ou explica)', () =>
     const maps = JSON.parse(rodar('context-maps.mjs', ['--session-start'], raiz).stdout);
     assert.equal(maps.hookSpecificOutput.additionalContext, '');
     assert.match(maps.hookSpecificOutput._contextToolsNotice, /No context maps were found/);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: sem git, Stop também enxerga arquivo tocado nesta sessão via mtime', () => {
@@ -1048,7 +1048,7 @@ test('E2E: sem git, Stop também enxerga arquivo tocado nesta sessão via mtime'
     assert.equal(r.status, 0);
     const ctx = r.stdout.trim() ? JSON.parse(r.stdout).hookSpecificOutput.additionalContext : '';
     assert.match(ctx, /novo\.js/, `precisa acusar o arquivo novo sem mapa: ${ctx}`);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: sem git, auditoria global detecta conteúdo alterado mesmo com mtime preservado', () => {
@@ -1074,7 +1074,7 @@ test('E2E: sem git, auditoria global detecta conteúdo alterado mesmo com mtime 
     const digest = fingerprintSourcesInRoot(raiz, ['src/a.js']).digest;
     writeFileSync(mapa, `---\narea: "minha-area"\ncovers:\n  - "src/a.js"\nverified_at: 2021-01-01\nsource_digest: ${digest}\n---\n`);
     assert.equal(contextMapsStopReport(raiz), '', 'o digest revisado limpa a pendência sem depender da data');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: sem git, coupling aprende acoplamento por SESSÃO (cesta = sessão inteira, não commit)', () => {
@@ -1103,7 +1103,7 @@ test('E2E: sem git, coupling aprende acoplamento por SESSÃO (cesta = sessão in
     assert.match(r.stdout, /a\.js/, `precisa listar a.js: ${r.stdout}`);
     assert.match(r.stdout, /b\.js/, `precisa listar b.js: ${r.stdout}`);
     assert.match(r.stdout, /5 sessions? recorded/i, `precisa dizer que o sinal vem de sessão, não commit: ${r.stdout}`);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: sem git, coupling abaixo do limiar de sessões diz "ainda não sei", não "sem acoplamento"', () => {
@@ -1123,7 +1123,7 @@ test('E2E: sem git, coupling abaixo do limiar de sessões diz "ainda não sei", 
     assert.match(r.stdout, /no git repository/i, `sem git precisa dizer isso: ${r.stdout}`);
     assert.match(r.stdout, /1 of 5/, `precisa dar o placar de quanto falta: ${r.stdout}`);
     assert.doesNotMatch(r.stdout, /no coupling above threshold/i, '1 sessão não é "medi e não achei" — é "ainda não medi o bastante"');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: sessões concorrentes não corrompem o cache', () => {
@@ -1145,7 +1145,7 @@ test('E2E: sessões concorrentes não corrompem o cache', () => {
       const c = JSON.parse(readFileSync(cache, 'utf8')); // lança se corrompido
       assert.ok(c.entries && Object.keys(c.entries).length > 0, 'cache gravado precisa ter entradas');
     }
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 // ---- handoff: o custo por mensagem cresce 3,4x com o contexto (medido em 65 sessoes), e o
@@ -1160,7 +1160,7 @@ test('E2E: handoff lista o que a sessão tocou e NÃO inventa o resto', () => {
     // handoff que mente, e um handoff que mente é pior que não ter handoff.
     assert.match(r.stdout, /NÃO tem como saber|CANNOT know/i, 'precisa separar o que ele não sabe');
     assert.match(r.stdout, /NÃO funcionou|did NOT work/i, 'precisa perguntar o que falhou');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: handoff não reporta o estado interno do plugin como trabalho', () => {
@@ -1176,7 +1176,7 @@ test('E2E: handoff não reporta o estado interno do plugin como trabalho', () =>
     assert.doesNotMatch(r.stdout, /symbols-cache/, 'cache do plugin não é trabalho da sessão');
     assert.doesNotMatch(r.stdout, /session-baseline/, 'baseline do plugin não é trabalho');
     assert.match(r.stdout, /context\/area\.md/, 'mapa de contexto É trabalho e precisa aparecer');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 // ---- sujeira herdada: o baseline guarda o HEAD, e `git diff <HEAD>` compara commit contra
@@ -1198,7 +1198,7 @@ test('E2E: sujeira que já existia antes da sessão NÃO vira trabalho da sessã
     assert.equal(r.status, 0);
     assert.doesNotMatch(r.stdout, /a\.js/, `sujeira herdada não é trabalho da sessão: ${r.stdout}`);
     assert.doesNotMatch(r.stdout, /nova-herdada\.js/, 'não rastreado herdado também não é');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: arquivo já sujo que a sessão EDITA continua aparecendo', () => {
@@ -1219,7 +1219,7 @@ test('E2E: arquivo já sujo que a sessão EDITA continua aparecendo', () => {
     const r = rodar('handoff.mjs', [`--root=${raiz}`], raiz, { CLAUDE_CODE_SESSION_ID: sid });
     assert.equal(r.status, 0);
     assert.match(r.stdout, /a\.js/, `trabalho real não pode sumir: ${r.stdout}`);
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: sem registro de sujeira, o handoff degrada para o comportamento antigo', () => {
@@ -1230,7 +1230,7 @@ test('E2E: sem registro de sujeira, o handoff degrada para o comportamento antig
     const r = rodar('handoff.mjs', [`--root=${raiz}`], raiz, { CLAUDE_CODE_SESSION_ID: 'sessao-sem-baseline' });
     assert.equal(r.status, 0);
     assert.match(r.stdout, /src\/a\.js/, 'sem registro, o comportamento é o de antes');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 // ---- o laço que faltava: o plugin manda dividir a sessão desde que existe, e até 2026-08-04
@@ -1244,7 +1244,7 @@ test('E2E: o veredito da divisão CALA quando não há par para julgar', () => {
     const r = rodar('handoff.mjs', ['--session-start', `--root=${raiz}`], raiz, { CLAUDE_CODE_SESSION_ID: 'sem-par' });
     assert.equal(r.status, 0);
     assert.equal(r.stdout.trim(), '', 'sem par de sessões não há veredito honesto');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('veredito: ganha, empata e perde nos pontos medidos', () => {
@@ -1287,7 +1287,7 @@ test('pastaDeTranscripts acha a pasta de um WORKTREE (o ponto de `.claude`)', ()
     assert.equal(pastaDeTranscripts('C:\\Meus Projetos', base), join(base, simples));
     // Raiz sem pasta correspondente continua devolvendo null em vez de chutar a mais parecida.
     assert.equal(pastaDeTranscripts('C:\\Projetos\\outro-repo', base), null);
-  } finally { rmSync(base, { recursive: true, force: true }); }
+  } finally { rmSync(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('metricasDaSessao normaliza o transcript do Codex sem usar a curva do Claude', () => {
@@ -1327,7 +1327,7 @@ test('metricasDaSessao normaliza o transcript do Codex sem usar a curva do Claud
     assert.equal(m.rateLimits.primary.used_percent, 13);
     assert.deepEqual(m.tokens, { input: 40000, output: 3000, cacheRead: 110000, cacheWrite: 1000 }, 'input do Codex já inclui o cache');
     assert.deepEqual(m.modelos, { 'gpt-test-1': 2 });
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: Codex não avisa por contexto/tempo, mas mantém métricas no handoff', () => {
@@ -1365,8 +1365,8 @@ test('E2E: Codex não avisa por contexto/tempo, mas mantém métricas no handoff
     assert.match(handoff.stdout, /Codex session/i, 'métricas do Codex continuam no handoff');
     assert.ok(existsSync(join(raiz, '.codex', 'context-tools', `handoff-${sid.slice(0, 8)}.md`)));
   } finally {
-    rmSync(raiz, { recursive: true, force: true });
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -1435,7 +1435,7 @@ test('E2E: símbolo grande demais não é atribuído — o nome não diria nada'
     assert.match(r.stdout, /grande\.js/, 'o arquivo tem de aparecer de qualquer jeito');
     assert.doesNotMatch(r.stdout, /helper/, 'símbolo de 250+ linhas não diz onde retomar — não pode ser atribuído');
     assert.match(r.stdout, /pequena/, 'símbolo de tamanho útil continua sendo atribuído');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: o Stop entrega o prompt sozinho, mas SÓ depois do bloco preenchido', () => {
@@ -1483,8 +1483,8 @@ test('E2E: o Stop entrega o prompt sozinho, mas SÓ depois do bloco preenchido',
     // E uma vez só.
     assert.equal(stop().stdout.trim(), '', 'o prompt sai UMA vez por sessão');
   } finally {
-    rmSync(raiz, { recursive: true, force: true });
-    rmSync(transcritos, { recursive: true, force: true });
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(transcritos, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -1523,7 +1523,7 @@ test('--prompt corta o cabeçalho por ESTRUTURA, em idioma que o i18n nem conhec
     // O bloco mecânico vem fresco, no idioma da config, refletindo o que a sessão tocou de fato.
     assert.match(r.stdout, /src\/a\.js/, 'a lista de arquivos tem de ser a real, gerada agora');
     assert.match(r.stdout, /o parser de Pascal/, 'e o bloco volátil preenchido sobrevive');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('--prompt re-rotula o bloco volátil em vez de repetir "preencha"', () => {
@@ -1559,7 +1559,7 @@ test('--prompt re-rotula o bloco volátil em vez de repetir "preencha"', () => {
     // O corte do cabeçalho também é estrutural (tudo antes do primeiro `##`). O documento
     // gravado acima tem `# Handoff` em português; nenhuma regex de idioma participa disso.
     assert.doesNotMatch(r.stdout, /^# Handoff/m, 'o título do arquivo não entra no prompt');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('--prompt regenera o bloco MECÂNICO e preserva só o volátil', () => {
@@ -1587,7 +1587,7 @@ test('--prompt regenera o bloco MECÂNICO e preserva só o volátil', () => {
     assert.doesNotMatch(r.stdout, /arquivo-que-nao-existe-mais/,
       'o bloco mecânico tem de vir fresco do git, não congelado no arquivo salvo');
     assert.match(r.stdout, /src\/a\.js/, 'e tem de refletir o que a sessão realmente tocou');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: --prompt NÃO descarta o bloco volátil já preenchido', () => {
@@ -1605,7 +1605,7 @@ test('E2E: --prompt NÃO descarta o bloco volátil já preenchido', () => {
     assert.equal(r.status, 0);
     assert.match(r.stdout, /RESPOSTA-JA-ESCRITA/, `o preenchido tem que sobreviver: ${r.stdout}`);
     assert.match(r.stdout, /Continuing work|Continuando o trabalho/, 'precisa do enquadramento de quem cola');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: --prompt gera do zero quando não há arquivo salvo', () => {
@@ -1614,7 +1614,7 @@ test('E2E: --prompt gera do zero quando não há arquivo salvo', () => {
     const r = rodar('handoff.mjs', ['--prompt', `--root=${raiz}`], raiz, { CLAUDE_CODE_SESSION_ID: 'sem-arquivo' });
     assert.equal(r.status, 0);
     assert.match(r.stdout, /src\/a\.js/, 'sem arquivo salvo, monta na hora');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: o aviso de sessão cara cala quando não há transcript', () => {
@@ -1624,7 +1624,7 @@ test('E2E: o aviso de sessão cara cala quando não há transcript', () => {
     const r = rodar('handoff.mjs', ['--stop-report', `--root=${raiz}`], raiz, { CLAUDE_CODE_SESSION_ID: 'sessao-que-nao-existe' });
     assert.equal(r.status, 0);
     assert.equal(r.stdout.trim(), '', 'sem transcript não há o que afirmar');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: handoff diz QUAIS SÍMBOLOS mudaram, não só o arquivo', () => {
@@ -1650,7 +1650,7 @@ test('E2E: handoff diz QUAIS SÍMBOLOS mudaram, não só o arquivo', () => {
     assert.equal(r.status, 0);
     assert.match(r.stdout, /alterada/, `precisa nomear o símbolo mudado: ${r.stdout}`);
     assert.doesNotMatch(r.stdout, /tambemIntocada/, 'símbolo não tocado não pode entrar');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: o aviso de sessão sai UMA VEZ e já deixa o handoff em disco', () => {
@@ -1662,10 +1662,10 @@ test('E2E: o aviso de sessão sai UMA VEZ e já deixa o handoff em disco', () =>
   try {
     // Transcript falso: contexto acima do limiar de 200k.
     const projDir = join(tmpdir(), 'ctx-fake-proj');
-    rmSync(projDir, { recursive: true, force: true });
+    rmSync(projDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     const r1 = rodar('handoff.mjs', ['--stop-report', `--root=${raiz}`], raiz, { CLAUDE_CODE_SESSION_ID: sid });
     // Sem transcript real o aviso cala — e isso já é o contrato M4 sendo cumprido.
     assert.equal(r1.status, 0);
     assert.equal(r1.stdout.trim(), '', 'sem dado de sessão, silêncio');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });

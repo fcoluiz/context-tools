@@ -54,7 +54,7 @@ test('drift-check: mapa com revisão antiga e documento sem revisão ficam para 
     assert.equal(porCaminho['ai-context/features/b.md']?.reason, 'no-recorded-review');
     assert.equal(report.items.length, 2, 'src/c.js não é citado por nada');
     assert.equal(drift(dir, '--base=main', '--strict').status, 1, '--strict falha o job quando há achado');
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('drift-check: revisão registrada no próprio PR resolve; formato github anota e escreve o resumo', () => {
@@ -82,7 +82,7 @@ test('drift-check: revisão registrada no próprio PR resolve; formato github an
     });
     assert.match(ok.stdout, /::warning file=\.claude\/context\/a\.md,title=context-tools drift::context map "area-a"/);
     assert.match(readFileSync(resumo, 'utf8'), /### context-tools — written knowledge left behind/);
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('drift-check: ref inválido ou que parece opção nunca vira "nada mudou"', () => {
@@ -93,7 +93,7 @@ test('drift-check: ref inválido ou que parece opção nunca vira "nada mudou"',
       assert.equal(r.status, 2, `${base}: ${r.stdout}`);
       assert.match(r.stdout, /could not compare/);
     }
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('health: conhecimento em dia conta só o verificável e mostra a tendência dos mapas', () => {

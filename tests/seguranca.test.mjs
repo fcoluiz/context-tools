@@ -59,7 +59,7 @@ test('injeção: caractere de controle vindo do repo não chega ao contexto', ()
     for (const [nome, ch] of [['ESC', ''], ['BELL', ''], ['TAB', '\t']]) {
       assert.ok(!ctx.includes(ch), `${nome} não pode chegar ao contexto`);
     }
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('injeção: repo não consegue criar linha nova no bloco injetado', () => {
@@ -75,7 +75,7 @@ test('injeção: repo não consegue criar linha nova no bloco injetado', () => {
     );
     const depois = contextoInjetado(raiz).split('\n').length;
     assert.equal(depois, antes, 'nº de linhas do bloco não pode depender do conteúdo do repo');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('inundação: area gigante não infla o contexto', () => {
@@ -86,7 +86,7 @@ test('inundação: area gigante não infla o contexto', () => {
     const ctx = contextoInjetado(raiz);
     assert.ok(ctx.length < 1000, `bloco inflou para ${ctx.length} chars`);
     assert.ok(!/A{200}/.test(ctx), 'o texto gigante não pode passar inteiro');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('inundação: muitos mapas juntos respeitam o teto do bloco', () => {
@@ -101,7 +101,7 @@ test('inundação: muitos mapas juntos respeitam o teto do bloco', () => {
     const ctx = contextoInjetado(raiz);
     assert.ok(ctx.length <= 4200, `bloco passou do teto: ${ctx.length} chars`);
     assert.ok(ctx.includes('truncad'), 'truncagem precisa ser declarada, não silenciosa');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('o bloco avisa que os nomes são dados, não instruções', () => {
@@ -110,7 +110,7 @@ test('o bloco avisa que os nomes são dados, não instruções', () => {
   try {
     const ctx = contextoInjetado(raiz).toLowerCase();
     assert.ok(ctx.includes('data, not instructions'), 'falta o marcador de conteúdo não confiável');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('VULN CORRIGIDA: verified_at hostil não vira OPÇÃO do git', () => {
@@ -128,7 +128,7 @@ test('VULN CORRIGIDA: verified_at hostil não vira OPÇÃO do git', () => {
     assert.ok(!existsSync(alvo), 'git NÃO pode escrever arquivo a partir de ref do repo');
     assert.ok(/not verifiable|verificável/i.test(ctx), 'ref recusado precisa virar "não verificável"');
   } finally {
-    rmSync(raiz, { recursive: true, force: true });
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     rmSync(alvo, { force: true });
   }
 });
@@ -162,8 +162,8 @@ test('VULN CORRIGIDA: sourceDirs não escapa do projeto', () => {
     const dentro = resolveSourceDirs(raiz, { sourceDirs: ['src'] });
     assert.ok(dentro.some((d) => d.endsWith('src')), 'pasta legítima precisa continuar valendo');
   } finally {
-    rmSync(raiz, { recursive: true, force: true });
-    rmSync(vizinho, { recursive: true, force: true });
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(vizinho, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
@@ -178,7 +178,7 @@ test('git é chamado sem shell — argumento hostil não vira comando', () => {
     );
     contextoInjetado(raiz); // não pode lançar nem executar nada
     assert.ok(true, 'hook sobreviveu a covers hostil');
-  } finally { rmSync(raiz, { recursive: true, force: true }); }
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('symlink de pasta não tira o índice de dentro do repositório', () => {
@@ -205,7 +205,7 @@ test('symlink de pasta não tira o índice de dentro do repositório', () => {
     assert.doesNotMatch(buscar('NAO_PODE_APARECER'), /segredo\.js/, 'índice saiu do repositório');
     assert.match(buscar('podeAparecer'), /ok\.js/, 'o arquivo legítimo do repo continua indexado');
   } finally {
-    rmSync(raiz, { recursive: true, force: true });
-    rmSync(fora, { recursive: true, force: true });
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(fora, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });

@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.8.1] — 2026-10-12
+
 ### Added
 
 - **`ct snapshot` sessions carry token totals and the model.** Each session now has `tokens`

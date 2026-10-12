@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.0] — 2026-10-12
+
 ### Added
 
 - **`ct ui <text on screen>`: from the words the user sees to the code (Delphi).** "Where in the

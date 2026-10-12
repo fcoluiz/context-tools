@@ -44,7 +44,8 @@ the same `grep`s repeated across sessions: knowledge derived, used, and thrown a
 | question | command |
 |---|---|
 | where is X defined? | `symbols.mjs <name> [<name>…]` |
-| who uses X, and from which function? | `refs.mjs <name> [--all] [--json]` |
+| who uses X, and from which function? | `refs.mjs <name> [--all] [--strings] [--json]` |
+| which form control shows this text, and what code uses it? (Delphi) | `ui.mjs <text on screen> [--all] [--json]` |
 | what does this project look like? | `overview.mjs [--json] [--budget=N]` |
 | what is at stake before I change X? | `impact.mjs <symbol-or-file> [--budget=N] [--json]` |
 | how do I navigate this huge file? | `outline.mjs <file> [filter]` |
@@ -146,6 +147,19 @@ can still be one), leaves the definition out, and says **which function each use
 answer already reads as "who calls it". Delphi forms are scanned too, because `OnClick =
 BtnSaveClick` is the only place an event handler is wired. It is by name, not by type, and says so on
 every answer: two symbols with the same name are not told apart, and a dynamic call is invisible.
+`--strings` also lists the mentions inside comments and strings, apart from the uses, each with its
+function and line text: in Delphi a database field name (`FieldByName('CUSTOMER_ID')`, SQL) lives
+only there.
+
+**`ui`** starts from the words the user sees, for the question "where in the system do I enter X?".
+It searches captions, hints, texts, display labels and list items of `.dfm`/`.fmx` forms, ignoring
+accents and case (the `#NNN` escapes of a Delphi form are decoded) and accepting abbreviations
+(`Cust.` matches "customer"); a query word that appears on no screen is dropped and named. From a
+label it follows `FocusControl`, or else takes the nearest control to the right or below and marks
+it *likely*. Each answer says where it sits (form › tab › group), the data field and events, and the
+lines of the unit with the same name that use the control, with their method — the line usually
+shows the database field. Controls created in code, captions set at runtime and inherited forms are
+not seen, and the answer says so.
 
 **`impact`** is the briefing before a change. For a symbol or a file it puts together, under an
 output budget, the uses from `refs`, what historically changes together with the definition file
@@ -845,7 +859,7 @@ tools (no resources, no prompts) and marks all five as read-only:
 | tool | same as |
 |---|---|
 | `find_symbol` | `symbols.mjs <names…>` |
-| `references` | `refs.mjs <name>` |
+| `references` | `refs.mjs <name> [--strings]` |
 | `impact` | `impact.mjs <target> --budget=N` |
 | `outline` | `outline.mjs <file> [filter]` — the path must be inside the project |
 | `overview` | `overview.mjs` |

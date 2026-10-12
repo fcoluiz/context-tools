@@ -4,6 +4,7 @@
 //   ct.mjs find <nome>…          onde está definido            (symbols.mjs)
 //   ct.mjs refs <nome>           quem usa, e de qual função    (refs.mjs)
 //   ct.mjs impact <alvo>         o que está em jogo antes de mudar (impact.mjs)
+//   ct.mjs ui <texto da tela>    onde fica na tela, e o código (ui.mjs)
 //   ct.mjs outline <arquivo>     mapa linha → símbolo          (outline.mjs)
 //   …  `ct.mjs help` lista todos.
 //
@@ -27,6 +28,7 @@ export const VERBS = Object.freeze({
   find: { script: 'symbols.mjs', en: 'where is it defined', pt: 'onde está definido' },
   refs: { script: 'refs.mjs', en: 'who uses it, from which function', pt: 'quem usa, de qual função' },
   impact: { script: 'impact.mjs', en: 'what is at stake before changing it', pt: 'o que está em jogo antes de mudar' },
+  ui: { script: 'ui.mjs', en: 'which form control shows this text (Delphi)', pt: 'qual controle de formulário mostra este texto (Delphi)' },
   outline: { script: 'outline.mjs', en: 'line → symbol map of one file', pt: 'mapa linha → símbolo de um arquivo' },
   overview: { script: 'overview.mjs', en: 'panorama of the project', pt: 'panorama do projeto' },
   pack: { script: 'context-pack.mjs', en: 'bounded evidence pack', pt: 'pacote de evidências com orçamento' },

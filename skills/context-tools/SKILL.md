@@ -20,7 +20,8 @@ de `.sql` não estão no índice.
 | pergunta | comando |
 |---|---|
 | onde X está definido? | `ct.mjs find <nome> [<nome>…] [--all]` |
-| quem usa X, e de qual função? | `ct.mjs refs <nome> [--all]` |
+| quem usa X, e de qual função? | `ct.mjs refs <nome> [--all] [--strings]` |
+| onde na tela fica "texto" (Delphi)? | `ct.mjs ui <texto da tela>` |
 | o que está em jogo antes de mudar X? | `ct.mjs impact <símbolo-ou-arquivo>` |
 | como navego este arquivo grande? | `ct.mjs outline <arquivo> [filtro]` |
 | o que muda junto com este arquivo? | `ct.mjs coupling <arquivo>` (ou `--changed`) |

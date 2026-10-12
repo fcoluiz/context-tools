@@ -47,8 +47,8 @@ export const TOOLS = [
   },
   {
     name: 'references',
-    description: 'Uses of a name outside its definition, each with the function that contains it. Comments and strings excluded. By name, not by type.',
-    inputSchema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
+    description: 'Uses of a name outside its definition, each with the function that contains it. Comments and strings excluded unless strings=true. By name, not by type.',
+    inputSchema: { type: 'object', properties: { name: { type: 'string' }, strings: { type: 'boolean', description: 'Also list mentions in comments/strings' } }, required: ['name'] },
     annotations: leitura,
   },
   {
@@ -103,7 +103,7 @@ export function callTool(name, args = {}, root = projectRoot()) {
     if (name === 'references') {
       const nome = texto(arg(args, 'name'));
       if (!nome) return { text: 'name is required', isError: true };
-      return { text: formatReferences(findReferences(root, nome, { cfg }), t).join('\n') };
+      return { text: formatReferences(findReferences(root, nome, { cfg, strings: Boolean(arg(args, 'strings')) }), t).join('\n') };
     }
     if (name === 'impact') {
       const alvo = texto(arg(args, 'target'));

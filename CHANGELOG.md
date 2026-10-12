@@ -8,6 +8,20 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **`ct ui <text on screen>`: from the words the user sees to the code (Delphi).** "Where in the
+  system do I enter X?" arrives with screen words, not a symbol name, and the screen text lives in
+  form strings that `find`/`refs` skip on purpose. `ui` searches captions, hints, texts, display
+  labels and list items of `.dfm`/`.fmx` forms (`#NNN` escapes decoded, accents and case ignored,
+  abbreviations accepted, words on no screen dropped and named), follows a label's `FocusControl` or
+  takes the nearest control and marks it *likely*, and answers with the place on screen (form › tab ›
+  group), data field, events and the lines of the unit that use the control, with their method.
+- **`refs --strings`.** Also lists the mentions inside comments and strings, apart from the uses,
+  with function and line text — where a Delphi database field name (`FieldByName('X')`, SQL) lives.
+  Without the flag the answer is the same as before; its count line now points to the flag. The MCP
+  `references` tool takes `strings: true`.
+
 ## [2.8.1] — 2026-10-12
 
 ### Added

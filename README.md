@@ -38,7 +38,8 @@ The individual scripts keep working exactly as before.
 | question | verb |
 |---|---|
 | where is X defined? | `ct find <name> [<name>…]` |
-| who uses X, and from which function? | `ct refs <name>` |
+| who uses X, and from which function? | `ct refs <name> [--strings]` |
+| where on screen is "Customer code", and what code reads it? (Delphi) | `ct ui <text on screen>` |
 | what is at stake before I change X? | `ct impact <symbol-or-file>` |
 | what does this project look like? | `ct overview` |
 | how do I navigate this huge file? | `ct outline <file> [filter]` |

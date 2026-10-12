@@ -325,8 +325,12 @@ async function executar(item, opts) {
     answer: anonimizar(resposta.slice(0, 2000), dir),
   };
   if (!opts.keep) {
-    rmSync(dir, { recursive: true, force: true });
-    rmSync(runDir, { recursive: true, force: true });
+    // No Windows, um processo que a ferramenta deixou vivo (servidor de linguagem, daemon) pode
+    // segurar arquivos da cópia: a limpeza falha com EPERM. Perder a medida por isso — e derrubar o
+    // worker, que deixava execuções sem começar — é pior que deixar a pasta para trás.
+    for (const p of [dir, runDir]) {
+      try { rmSync(p, { recursive: true, force: true, maxRetries: 3, retryDelay: 500 }); } catch (e) { out.cleanup = `not removed: ${e.code || e.message}`; }
+    }
   }
   return out;
 }

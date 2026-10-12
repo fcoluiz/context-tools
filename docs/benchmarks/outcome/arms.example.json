@@ -3,7 +3,9 @@
     "L": "<tools folder: bin/ (uv, jq), tbin/ (serena, token-savior), cbm/, fakehome-*/, arms/cbm-plugin>",
     "RO": "<clone of Bande-a-Bonnot/Boucle-framework>/tools/read-once",
     "COS": "<clone of sravan27/context-os>",
-    "PY": "<Python 3.12 folder with a python3 executable>"
+    "PY": "<Python 3.12 folder with a python3 executable>",
+    "UVPY": "<short folder outside a virtualized AppData where uv may install Python>",
+    "SH": "<short folder for SERENA_HOME (the C# server has paths near 260 chars on Windows)>"
   },
   "arms": {
     "read-once": {
@@ -53,8 +55,15 @@
               "{copy}"
             ],
             "env": {
-              "USERPROFILE": "{L}/fakehome-serena",
-              "SERENA_USAGE_REPORTING": "false"
+              "SERENA_HOME": "{SH}",
+              "SERENA_USAGE_REPORTING": "false",
+              "UV_PYTHON_INSTALL_DIR": "{UVPY}",
+              "UV_PYTHON_BIN_DIR": "{UVPY}/bin",
+              "UV_CACHE_DIR": "{L}/uvc",
+              "UV_TOOL_DIR": "{L}/uvt",
+              "DOTNET_ROOT": "{L}/dotnet",
+              "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+              "PATH": "{L}/dotnet{pathsep}{L}/bin{pathsep}{PATH}"
             }
           }
         }
@@ -67,7 +76,7 @@
               "hooks": [
                 {
                   "type": "command",
-                  "command": "USERPROFILE='{L}/fakehome-serena' SERENA_USAGE_REPORTING=false '{L}/tbin/serena-hooks.exe' remind --client=claude-code"
+                  "command": "SERENA_HOME='{SH}' SERENA_USAGE_REPORTING=false '{L}/tbin/serena-hooks.exe' remind --client=claude-code"
                 }
               ]
             }
@@ -78,7 +87,7 @@
               "hooks": [
                 {
                   "type": "command",
-                  "command": "USERPROFILE='{L}/fakehome-serena' SERENA_USAGE_REPORTING=false '{L}/tbin/serena-hooks.exe' activate --client=claude-code"
+                  "command": "SERENA_HOME='{SH}' SERENA_USAGE_REPORTING=false '{L}/tbin/serena-hooks.exe' activate --client=claude-code"
                 }
               ]
             }
@@ -89,7 +98,7 @@
               "hooks": [
                 {
                   "type": "command",
-                  "command": "USERPROFILE='{L}/fakehome-serena' SERENA_USAGE_REPORTING=false '{L}/tbin/serena-hooks.exe' cleanup --client=claude-code"
+                  "command": "SERENA_HOME='{SH}' SERENA_USAGE_REPORTING=false '{L}/tbin/serena-hooks.exe' cleanup --client=claude-code"
                 }
               ]
             }

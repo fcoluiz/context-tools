@@ -163,6 +163,59 @@ as a file, never presented as a definition.
 production code — about **9,000 files and 192,000 symbols** across Python, Go, Delphi/Pascal, Rust,
 TypeScript, C#, Java and PHP projects — with **zero symbols reported at the wrong line**.
 
+## What is proven, what is a signal, what is still a hypothesis
+
+The claims this project makes, sorted by how much evidence is behind them. "Proven" means measured
+with the raw data published; "signal" means there is evidence pointing that way but not a
+measurement that settles it; "hypothesis" means it is what the design is for, not yet measured.
+
+**Proven** — an agent finishing the same task, on public repositories, with and without the plugin
+([rounds 2–7](docs/benchmarks/)):
+
+- **It never made the agent solve fewer tasks.** In every round and model, at least as many answers
+  were right with the plugin as without it.
+- **Questions about the code are cheaper and more often right**: 15–36% cheaper in every round. The
+  gain is largest on "who uses X" and "where exactly": a hook tells which method or class each search
+  hit falls in, which is what an agent answering from bare `grep` lines gets wrong.
+- **It beat five tools with the same goal on questions** (round 7): the most accurate (21/22, tied with
+  Serena) and the cheapest of those that got the answers right (−26%), in half the turns.
+- **Hooks reach the agent; extra tools mostly do not.** In round 7 the agent called codebase-memory's
+  and token-savior's MCP tools zero times in 34 runs each, and those tools made bug fixes 25–46% more
+  expensive. That is why context-tools works through hooks and ships its MCP server off by default.
+- **The fixed costs are bounded:** the `SessionStart` note is ~175 tokens, the index takes ~1.75 s
+  from scratch and ~130 ms from its local cache, and each ceiling is enforced by a test
+  ([reference](docs/reference.md#tokens)).
+- **Token savings from navigation alone are small: 1–3%** of a real session's cost, because most of
+  the cost is context being re-read ([how it was measured](docs/reference.md#the-token-saving-measured--and-it-is-small)).
+  The value is in fewer wrong turns, not in fewer tokens per search.
+
+**Signal** — evidence points that way, but it is not settled:
+
+- **Bug fixes are cheaper, by an amount that varies.** Cheaper in 4 of 5 measurements (−11% to
+  −36%), and 19% more expensive in one (round 5, Haiku), which led to fixes. The same cases gave −34%
+  in round 6 and −11% in round 7: the effect is real in direction, unstable in size at 12 runs per arm.
+- **Saying less at session start and one working rule help on bug fixes** (2.7.7). Taken from the
+  round 7 traces, where the tool that told the agent "verify once, then stop" was the cheapest; not
+  re-measured yet.
+- **The same holds in Codex.** The hooks are the same and the Codex adapter is covered by end-to-end
+  tests, but every outcome round ran Claude Code (`claude -p`). Codex's models may also use MCP tools
+  more readily than Claude's did here.
+- **Splitting a long session pays off.** Cost per message grows 3.4× with session length (measured);
+  the "the split paid off, ~N%" note at session start counts real messages but takes the percentage
+  from a simulated curve, and says so.
+
+**Hypothesis** — what the design is for, not measured yet:
+
+- **Knowledge that survives sessions.** Every benchmark starts from a fresh clone: cold index, no
+  context maps, no `ai-context` documents, no handoff — the plugin's worst case. Whether a mapped area
+  is re-entered faster in the next session, and how much the warnings about stale maps and documents
+  prevent, has not been measured.
+- **Larger and private codebases, other models.** The rounds use public repositories of a few hundred
+  to a few thousand files, and Sonnet and Haiku. The design targets large multi-repository
+  workspaces, where re-exploration costs most.
+- **Teams.** The pull-request workflow that leaves knowledge behind for the next person is tested as
+  code, not measured as an outcome.
+
 ## Does it help? Measured
 
 A real agent (`claude -p`) does the same task on a clean copy of a public repository, once without

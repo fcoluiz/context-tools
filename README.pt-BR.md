@@ -203,6 +203,31 @@ como publicado depois da rodada 5; os dois braços medidos.
 - **O que ainda não mostra:** poucas execuções por braço, código público, trabalho real em várias
   sessões.
 
+### Comparado com outras ferramentas
+
+A rodada 7 pôs cinco ferramentas de terceiros com o mesmo propósito no mesmo harness, cada uma montada
+como o próprio instalador deixa o Claude Code (Haiku 4.5, mesmos casos):
+
+| braço | leitura e navegação (11 casos × 2) | correção de bug (3 casos × 4) |
+|---|---|---|
+| agente sozinho | 18/22 · $1.82 | 11/12 · $2.11 |
+| **context-tools** | **21/22 · $1.34 (−26%)** | **12/12** · $1.87 (−11%) |
+| [Serena](https://github.com/oraios/serena) (LSP, MCP) | 21/22 · $1.80 (−1%) | 11/12 · $2.96 (+40%) |
+| [read-once](https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/read-once) (guarda de releitura) | 20/22 · $1.67 (−8%) | 12/12 · $3.09 (+46%) |
+| [token-savior](https://github.com/Mibayy/token-savior) (MCP + hooks) | 19/22 · $1.78 (−2%) | 12/12 · $3.07 (+45%) |
+| [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) (grafo, MCP + hooks) | 18/22 · $1.66 (−9%) | 12/12 · $2.64 (+25%) |
+| [context-os](https://github.com/sravan27/context-os) (grafo antes do prompt + regras no CLAUDE.md) | 16/22 · $1.29 (−29%) | 11/12 · **$1.16 (−45%)** |
+
+- **Leitura e navegação:** o context-tools foi o mais preciso e o mais barato entre os que acertaram,
+  com menos da metade dos turnos de qualquer outro braço.
+- **Correção de bug:** o context-os saiu mais barato. A vantagem vem do CLAUDE.md que o instalador dele
+  grava ("ultra-concise", "run tests once to verify, not to explore"), não do grafo — e as mesmas regras
+  custam acerto nas perguntas (16/22, o pior).
+- **As ferramentas MCP quase não foram usadas:** em 34 execuções cada, o agente chamou as ferramentas do
+  codebase-memory e do token-savior zero vezes; as do Serena, 30. Pagam por estar ali sem colher o ganho.
+
+Montagem de cada braço, ajustes e dados por caso: [relatório da rodada 7](docs/benchmarks/outcome-round7-2026-10-12.pt-BR.md).
+
 Relatórios, casos e os dados brutos de cada execução: [docs/benchmarks](docs/benchmarks/).
 
 ## Quanto custa

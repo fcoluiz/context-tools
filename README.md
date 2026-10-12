@@ -198,6 +198,31 @@ plugin as released after round 5; both arms measured.
   from inside the class without the prefix.
 - **What it does not show yet:** few runs per arm, public code, real multi-session work.
 
+### Compared with other tools
+
+Round 7 put five third-party tools with the same goal in the same harness, each set up the way its own
+installer leaves Claude Code (Haiku 4.5, same cases):
+
+| arm | reading and navigation (11 cases × 2) | bug fixes (3 cases × 4) |
+|---|---|---|
+| agent alone | 18/22 · $1.82 | 11/12 · $2.11 |
+| **context-tools** | **21/22 · $1.34 (−26%)** | **12/12** · $1.87 (−11%) |
+| [Serena](https://github.com/oraios/serena) (LSP, MCP) | 21/22 · $1.80 (−1%) | 11/12 · $2.96 (+40%) |
+| [read-once](https://github.com/Bande-a-Bonnot/Boucle-framework/tree/main/tools/read-once) (re-read guard) | 20/22 · $1.67 (−8%) | 12/12 · $3.09 (+46%) |
+| [token-savior](https://github.com/Mibayy/token-savior) (MCP + hooks) | 19/22 · $1.78 (−2%) | 12/12 · $3.07 (+45%) |
+| [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) (graph, MCP + hooks) | 18/22 · $1.66 (−9%) | 12/12 · $2.64 (+25%) |
+| [context-os](https://github.com/sravan27/context-os) (graph before the prompt + CLAUDE.md rules) | 16/22 · $1.29 (−29%) | 11/12 · **$1.16 (−45%)** |
+
+- **Reading and navigation:** context-tools was the most accurate and the cheapest of those that got
+  the answers right, in less than half the turns of any other arm.
+- **Bug fixes:** context-os was cheaper. Its edge comes from the CLAUDE.md its installer writes
+  ("ultra-concise", "run tests once to verify, not to explore"), not from its graph — and the same
+  rules cost it accuracy on questions (16/22, the lowest).
+- **The MCP tools were barely used:** in 34 runs each, the agent called codebase-memory's and
+  token-savior's tools zero times, Serena's 30. They pay for being there without the gain.
+
+Setup of each arm, adjustments and per-case data: [round 7 report](docs/benchmarks/outcome-round7-2026-10-12.pt-BR.md).
+
 Reports, cases and every run's raw data: [docs/benchmarks](docs/benchmarks/).
 
 ## What it costs

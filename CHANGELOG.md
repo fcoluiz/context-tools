@@ -8,6 +8,32 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Outcome round 7: compared with five other tools.** read-once, Serena, codebase-memory-mcp,
+  token-savior and context-os, each set up the way its installer leaves Claude Code, on the same cases
+  with Haiku 4.5. Reading and navigation: context-tools solved 21/22 at −26% against the agent alone,
+  the most accurate and cheapest of those that got the answers right. Bug fixes: 12/12 at −11%;
+  context-os was cheaper (−45%, 11/12) thanks to the response rules in the CLAUDE.md it writes, which
+  cost it accuracy on questions (16/22). The MCP-based tools were barely called and came out 25–46%
+  more expensive than the agent alone on bug fixes
+  ([report](docs/benchmarks/outcome-round7-2026-10-12.pt-BR.md)).
+- **Outcome harness: other tools as arms.** `--arms-file` declares each arm the way a tool's installer
+  would set it up — plugin dir, settings with hooks, MCP config, env, extra allowed tools, per-copy
+  `prepare` commands, setting sources — with per-run `{copy}`/`{run}` placeholders so no state leaks
+  between runs or into the user's configuration ([example](docs/benchmarks/outcome/arms.example.json)).
+  `context-tools` is accepted as the name of the `with` arm.
+- **Outcome harness: what any tool's hooks injected.** `--include-hook-events` puts every hook response
+  in the trace; `injected` in `results.json` and the report's "median hook chars" now measure it the
+  same way for every arm, not only for context-tools.
+
+### Fixed
+
+- **Outcome harness: a run is no longer lost when its copy cannot be removed.** On Windows a process a
+  tool leaves running (a language server) can hold files in the copy, and the `EPERM` from the cleanup
+  discarded the run's result and stopped its worker, leaving later runs unstarted. The cleanup now
+  retries and, if it still fails, records `cleanup` in the result and moves on.
+
 ## [2.7.6] — 2026-10-11
 
 ### Added

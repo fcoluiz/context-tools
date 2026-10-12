@@ -89,8 +89,11 @@ function metricasCodex(usos, inicio, fim, turnos, compactacoes) {
   const ultimo = usos[usos.length - 1];
   const atual = ultimo.ultimo;
   const total = ultimo.total;
+  // Só o input da ÚLTIMA requisição mede a janela. O total é acumulado da sessão inteira (centenas de
+  // milhões numa sessão longa): usá-lo quando o evento vem sem `last_token_usage` inventava um pico
+  // maior que a própria janela.
   const contextos = usos
-    .map((u) => numero(u.ultimo.input_tokens) || numero(u.total.input_tokens))
+    .map((u) => numero(u.ultimo.input_tokens))
     .filter((n) => n > 0);
   const contexto = contextos.length ? Math.max(...contextos) : 0;
   const janela = ultimo.janela;

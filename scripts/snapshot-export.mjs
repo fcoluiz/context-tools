@@ -89,7 +89,8 @@ export function gitStateOf(root, paths) {
     porPasta.get(pasta).set(basename(abs), p);
   }
   for (const [pasta, nomes] of porPasta) {
-    const rodar = (args, input) => safe(() => spawnSync('git', args, {
+    // Nome com [ ] ou * é nome, não padrão.
+    const rodar = (args, input) => safe(() => spawnSync('git', ['--literal-pathspecs', ...args], {
       cwd: pasta, input, encoding: 'utf8', timeout: 5000, windowsHide: true, maxBuffer: 16 * 1024 * 1024,
     }), null);
     const ls = rodar(['ls-files', '-z', '--', ...nomes.keys()]);

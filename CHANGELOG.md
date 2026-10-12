@@ -8,6 +8,14 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **`ct snapshot` sessions carry token totals and the model.** Each session now has `tokens`
+  (`input`, `output`, `cacheRead`, `cacheWrite`) and `model` (the id with most answers), enough to
+  estimate cost with your own price table. Claude Code writes one transcript line per answer block,
+  all with the same usage, so totals count each message id once. Still only numbers and an id, never
+  text; the schema stays `context-tools/snapshot@1` (fields added, none changed).
+
 ## [2.8.0] — 2026-10-12
 
 ### Added

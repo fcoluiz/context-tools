@@ -80,7 +80,8 @@ estado de cada mapa de contexto e documento operacional (caminho e em dia/defasa
 os repositórios (`dono/repo` do GitHub, branch, `HEAD`; um token na URL do remote é removido), os
 números das sessões recentes do Claude Code e do Codex (mensagens, pico de contexto, reescritas de
 prefixo, duração, totais de tokens por categoria de cobrança — entrada, saída, cache lido, cache
-gravado — e o id do modelo mais usado; nunca o texto do transcript) e um id anônimo da máquina: um UUID aleatório gravado uma vez
+gravado — e o id do modelo mais usado; nunca o texto do transcript — as do Codex são reconhecidas pela pasta em
+que foram abertas, em `$CODEX_HOME/sessions`) e um id anônimo da máquina: um UUID aleatório gravado uma vez
 em `~/.context-tools/machine-id`, que não deriva de nome de usuário, hostname nem hardware. Não envia
 nada para lugar nenhum; só imprime. Um teste semeia marcadores no código, nos mapas, nos prompts e nas
 respostas e confere que nenhum chega à saída.

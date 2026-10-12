@@ -8,6 +8,15 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`ct snapshot` left Codex sessions out.** It only looked in the Claude Code transcript folder, so a
+  project worked on in Codex came out with no sessions (or only older Claude ones), even though the
+  metrics reader already understood the Codex format. Codex rollouts under `$CODEX_HOME/sessions`
+  are now matched by the folder in which each session was opened (read from the first line only) and
+  merged with the Claude sessions, most recent first. `CONTEXT_TOOLS_CODEX_SESSIONS` points straight
+  at that folder, as `CONTEXT_TOOLS_TRANSCRIPTS` does for Claude.
+
 ## [2.9.2] — 2026-10-12
 
 ### Fixed

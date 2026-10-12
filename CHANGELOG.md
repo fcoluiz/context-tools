@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.5] — 2026-10-12
+
 ### Added
 
 - **`ct snapshot` says whether git versions each map and document.** Every inventory item now has a

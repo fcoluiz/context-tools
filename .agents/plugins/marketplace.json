@@ -9,7 +9,7 @@
       "source": {
         "source": "url",
         "url": "https://github.com/fcoluiz/context-tools.git",
-        "ref": "v2.9.4"
+        "ref": "v2.9.5"
       },
       "policy": {
         "installation": "AVAILABLE",

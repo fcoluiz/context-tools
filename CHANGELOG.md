@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.1] — 2026-10-12
+
 ### Changed
 
 - **`ct ui` ranks better and helps narrow down.** A one-word query in a large project (a tax code

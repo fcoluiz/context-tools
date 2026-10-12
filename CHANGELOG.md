@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.4] — 2026-10-12
+
 ### Fixed
 
 - **A Codex session could report a peak context larger than its own window.** When a `token_count`

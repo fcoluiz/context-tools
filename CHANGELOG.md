@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.7.7] — 2026-10-12
+
 ### Added
 
 - **Outcome round 7: compared with five other tools.** read-once, Serena, codebase-memory-mcp,

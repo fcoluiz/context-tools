@@ -9,7 +9,7 @@ import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { localPath } from './paths.mjs';
-import { SNAPSHOT_SCHEMA, githubSlug, machineId, remoteSemCredencial } from '../scripts/snapshot-export.mjs';
+import { SNAPSHOT_SCHEMA, gitStateOf, githubSlug, machineId, remoteSemCredencial } from '../scripts/snapshot-export.mjs';
 
 const SCRIPT = localPath('../scripts/snapshot-export.mjs');
 const SEGREDO_CODIGO = 'MARCADOR_CODIGO_8f3a';
@@ -78,7 +78,7 @@ test('snapshot: schema versionado, repositório sem credencial, inventário e se
     assert.equal(repo.remote, 'https://github.com/dono/projeto.git', 'o token do remote não sai');
     assert.equal(repo.github, 'dono/projeto');
     assert.match(repo.head, /^[0-9a-f]{40}$/);
-    assert.deepEqual(json.knowledge.items.map((i) => [i.kind, i.path]), [['map', '.claude/context/area.md']]);
+    assert.deepEqual(json.knowledge.items.map((i) => [i.kind, i.path, i.git]), [['map', '.claude/context/area.md', 'untracked']]);
     assert.ok(['fresh', 'stale'].includes(json.knowledge.items[0].status));
     assert.equal(json.sessions.length, 1);
     const [s] = json.sessions;
@@ -137,6 +137,27 @@ test('snapshot: sessões do Codex desta pasta entram junto com as do Claude, as 
     assert.ok(!texto.includes(SEGREDO_PROMPT), 'o prompt do Codex não vaza');
   } finally {
     for (const d of [raiz, casa, transcritos, codex]) rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});
+
+test('snapshot: estado no git de cada item — versionado, ignorado, fora do índice ou sem git', () => {
+  const raiz = projeto();
+  const semGit = mkdtempSync(join(tmpdir(), 'ctx-snapshot-semgit-'));
+  try {
+    const g = (...a) => spawnSync('git', ['-C', raiz, ...a], { stdio: 'ignore' });
+    mkdirSync(join(raiz, 'docs'), { recursive: true });
+    writeFileSync(join(raiz, 'docs', 'guia.md'), 'x\n');
+    writeFileSync(join(raiz, '.claude', 'context', 'local.md'), 'x\n');
+    writeFileSync(join(raiz, '.gitignore'), '.claude/context/local.md\n');
+    g('add', 'docs/guia.md', '.gitignore');
+    g('commit', '-qm', 'docs');
+    const estado = gitStateOf(raiz, ['docs/guia.md', '.claude/context/local.md', '.claude/context/area.md', 'docs/sumiu.md']);
+    assert.deepEqual(Object.fromEntries(estado), {
+      'docs/guia.md': 'tracked', '.claude/context/local.md': 'ignored', '.claude/context/area.md': 'untracked', 'docs/sumiu.md': 'untracked',
+    });
+    assert.deepEqual(Object.fromEntries(gitStateOf(semGit, ['a.md'])), { 'a.md': null }, 'fora de repositório git o estado é desconhecido');
+  } finally {
+    for (const d of [raiz, semGit]) rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 

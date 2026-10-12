@@ -15,10 +15,10 @@
 //   (`ct snapshot` é o mesmo comando)
 
 import { randomUUID } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, posix, relative, resolve } from 'node:path';
 import { resolveRoot, findRepos, isMain, safe, sanitizeModelText, runtimeHost } from './lib/roots.mjs';
 import { buildReport } from './health.mjs';
 import { metricasDaSessao, transcriptsRecentes, transcriptsCodexRecentes } from './lib/sessao.mjs';
@@ -71,6 +71,44 @@ function repositorios(root) {
   });
 }
 
+/**
+ * Se cada mapa ou documento está versionado: `tracked` (no índice do git), `ignored` (barrado por um
+ * .gitignore), `untracked` (fora do índice, sem ser ignorado) ou null (fora de repositório git, ou o
+ * git não respondeu). Um mapa que não está no git só existe nesta máquina: quem clona não recebe.
+ * Um `git ls-files` e um `git check-ignore` por repositório, não um por arquivo.
+ */
+export function gitStateOf(root, paths) {
+  const estado = new Map(paths.map((p) => [p, null]));
+  const topoDaPasta = new Map();
+  const porTopo = new Map();
+  for (const p of paths) {
+    const pasta = dirname(resolve(root, p));
+    if (!topoDaPasta.has(pasta)) topoDaPasta.set(pasta, git(pasta, 'rev-parse', '--show-toplevel'));
+    const topo = topoDaPasta.get(pasta);
+    if (!topo) continue;
+    if (!porTopo.has(topo)) porTopo.set(topo, new Map());
+    porTopo.get(topo).set(relative(topo, resolve(root, p)).replace(/\\/g, '/'), p);
+  }
+  for (const [topo, relativos] of porTopo) {
+    const rodar = (args, input) => spawnSync('git', args, {
+      cwd: topo, input, encoding: 'utf8', timeout: 5000, windowsHide: true, maxBuffer: 16 * 1024 * 1024,
+    });
+    const pastas = [...new Set([...relativos.keys()].map((r) => posix.dirname(r)))];
+    const ls = rodar(['ls-files', '-z', '--', ...pastas]);
+    if (ls.status !== 0) continue;
+    const versionados = new Set(ls.stdout.split('\0').filter(Boolean));
+    const fora = [...relativos.keys()].filter((r) => !versionados.has(r));
+    // check-ignore sai com 0 se algum é ignorado e 1 se nenhum; outro código é erro: estado desconhecido.
+    const ign = fora.length ? rodar(['check-ignore', '-z', '--stdin'], `${fora.join('\0')}\0`) : { status: 1, stdout: '' };
+    const ignorados = new Set(ign.status === 0 ? ign.stdout.split('\0').filter(Boolean) : []);
+    for (const [r, p] of relativos) {
+      if (versionados.has(r)) estado.set(p, 'tracked');
+      else if (ign.status === 0 || ign.status === 1) estado.set(p, ignorados.has(r) ? 'ignored' : 'untracked');
+    }
+  }
+  return estado;
+}
+
 /** Id do modelo com mais respostas na sessão; só o formato de um id passa (nada de texto livre). */
 function modeloPrincipal(modelos) {
   const [id] = Object.entries(modelos || {}).sort((a, b) => b[1] - a[1])[0] || [];
@@ -116,8 +154,10 @@ function sessoes(root, limite, env) {
 export function buildSnapshot(root, { days = 30, sessions = 20, env = process.env } = {}) {
   const inventario = [];
   const report = buildReport(root, days, false, {
-    onKnowledgeStatus: (kind, path, status) => inventario.push({ kind, path: sanitizeModelText(path, 300), status }),
+    onKnowledgeStatus: (kind, path, status) => inventario.push({ kind, path, status }),
   });
+  const noGit = gitStateOf(root, inventario.map((i) => i.path));
+  for (const i of inventario) Object.assign(i, { path: sanitizeModelText(i.path, 300), git: noGit.get(i.path) });
   const { metrics, knowledge, documentation, reviewQueue } = report;
   return {
     schema: SNAPSHOT_SCHEMA,

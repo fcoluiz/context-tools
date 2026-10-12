@@ -76,8 +76,9 @@ usa o diário local de escritas observadas para atribuir alterações à sessão
 
 `snapshot-export.mjs` (`ct snapshot`) é o ponto de extensão para quem agrega vários projetos ou
 máquinas: um JSON com schema versionado (`context-tools/snapshot@1`) que traz o resumo do `health`, o
-estado de cada mapa de contexto e documento operacional (caminho e em dia/defasado, não o conteúdo),
-os repositórios (`dono/repo` do GitHub, branch, `HEAD`; um token na URL do remote é removido), os
+estado de cada mapa de contexto e documento operacional (caminho, em dia/defasado e se o git o
+versiona — `tracked`, `ignored`, `untracked`, ou `null` fora de repositório git —, não o conteúdo; um
+mapa que o git não versiona só existe naquela máquina), os repositórios (`dono/repo` do GitHub, branch, `HEAD`; um token na URL do remote é removido), os
 números das sessões recentes do Claude Code e do Codex (mensagens, pico de contexto, reescritas de
 prefixo, duração, totais de tokens por categoria de cobrança — entrada, saída, cache lido, cache
 gravado — e o id do modelo mais usado; nunca o texto do transcript — as do Codex são reconhecidas pela pasta em

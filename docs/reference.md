@@ -45,7 +45,7 @@ the same `grep`s repeated across sessions: knowledge derived, used, and thrown a
 |---|---|
 | where is X defined? | `symbols.mjs <name> [<name>…]` |
 | who uses X, and from which function? | `refs.mjs <name> [--all] [--strings] [--json]` |
-| which form control shows this text, and what code uses it? (Delphi) | `ui.mjs <text on screen> [--all] [--json]` |
+| which form control shows this text, and what code uses it? (Delphi) | `ui.mjs <text on screen> [--in=<form>] [--all] [--json]` |
 | what does this project look like? | `overview.mjs [--json] [--budget=N]` |
 | what is at stake before I change X? | `impact.mjs <symbol-or-file> [--budget=N] [--json]` |
 | how do I navigate this huge file? | `outline.mjs <file> [filter]` |
@@ -159,7 +159,10 @@ label it follows `FocusControl`, or else takes the nearest control to the right 
 it *likely*. Each answer says where it sits (form › tab › group), the data field and events, and the
 lines of the unit with the same name that use the control, with their method — the line usually
 shows the database field. Controls created in code, captions set at runtime and inherited forms are
-not seen, and the answer says so.
+not seen, and the answer says so. Ranking puts the whole query as a phrase first, then whole-word
+matches before abbreviations, then shorter captions. When there are more matches than shown, the
+answer first counts them per form so the next query can add a word or `--in=<form file name>`, which
+keeps only forms whose path contains that text.
 
 **`impact`** is the briefing before a change. For a symbol or a file it puts together, under an
 output budget, the uses from `refs`, what historically changes together with the definition file

@@ -6,7 +6,7 @@
 //   - o harness não registrava o que o agente consultou.
 
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -177,7 +177,7 @@ test('verify --session-start: o comando de teste e como rodar um arquivo só, ou
   const py = projeto({ 'pytest.ini': '[pytest]\n' });
   const nada = projeto({ 'LEIA.md': '# nada\n' });
   try {
-    assert.equal(sessionTestLine(nodeTest, {}, t), '🧪 Tests in this project: `npm test` (runs `node --test`); one file: `node --test <file>`.');
+    assert.equal(sessionTestLine(nodeTest, {}, t), '🧪 Tests in this project: `npm test` (runs `node --test`); one file: `node --test <file>`. Verify a change once; no scratch test files in the repo.');
     assert.deepEqual(testDetails(runner, 'npm test'), { script: 'node tests/run.mjs', single: 'node --test <file>' }, 'runner próprio com node:test');
     assert.equal(testDetails(vitest, 'npm test').single, 'npx vitest run <file>');
     assert.match(sessionTestLine(py, {}, t), /`pytest`; one file: `pytest <file>::<test>`/);
@@ -196,6 +196,23 @@ test('SessionStart da documentação: índice sem documentos não manda ler ante
     assert.match(primeira, /has no documents yet; nothing to read before exploring/);
     assert.doesNotMatch(primeira, /Read the index before broad exploration/);
     assert.match(primeira, /Created: ai-context\/00-index\.md/, 'o que foi escrito no projeto continua dito');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('SessionStart da documentação: sem documento, o hook não põe nada no contexto do agente', () => {
+  // Rodada 7: a linha "não há documentos; criei a estrutura" custava contexto e um turno do agente
+  // explorando a pasta nova. A estrutura continua sendo criada; o aviso vai só para o usuário.
+  const dir = projeto({ 'src/a.js': 'export const a = 1;\n' });
+  try {
+    const r = spawnSync(process.execPath, [S('context-docs.mjs'), '--session-start'], {
+      cwd: dir, input: '{}', encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: dir, CONTEXT_TOOLS_HOOK_DEDUPE: '0', CONTEXT_TOOLS_LANG: 'en' },
+    });
+    assert.equal(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout);
+    assert.equal(out.hookSpecificOutput.additionalContext, '');
+    assert.match(out.hookSpecificOutput._contextToolsNotice, /ai-context/);
+    assert.ok(existsSync(join(dir, 'ai-context', '00-index.md')), 'autoInit continua criando a estrutura');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 

@@ -708,7 +708,7 @@ function sanitizar(valor, max = MAX_CAMPO) {
 }
 
 function emitContext(eventName, text, notice = '') {
-  if (!text) return;
+  if (!text && !notice) return;
   // Teto do bloco inteiro: mesmo com cada campo limitado, muitos mapas somam. Truncar é
   // visível de propósito — silêncio aqui seria o modelo achar que viu a lista completa.
   const corte = text.length > MAX_BLOCO
@@ -791,7 +791,10 @@ function runSessionStart() {
   }
   const maps = loadMaps(root);
   if (!maps.length) {
-    const text = [t('map.noneSession'), ...baselineLines].join('\n');
+    // Sem mapa, o agente não tem o que ler: dizer "não há mapas" só gastava contexto e um turno
+    // (rodada 7 do benchmark de resultado). O aviso de criar um mapa é para quem usa — fica no
+    // `notice`, que o Codex mostra como systemMessage.
+    const text = baselineLines.join('\n');
     const notice = [shouldEmitSessionNotice(root, 'no-maps') ? t('map.noneNotice') : '', ...baselineLines].filter(Boolean).join('\n');
     emitContext('SessionStart', text, notice);
     return;

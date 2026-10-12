@@ -89,11 +89,11 @@ export function gitStateOf(root, paths) {
     porPasta.get(pasta).set(basename(abs), p);
   }
   for (const [pasta, nomes] of porPasta) {
-    // Nome com [ ] ou * é nome, não padrão.
-    const rodar = (args, input) => safe(() => spawnSync('git', ['--literal-pathspecs', ...args], {
+    const rodar = (args, input) => safe(() => spawnSync('git', args, {
       cwd: pasta, input, encoding: 'utf8', timeout: 5000, windowsHide: true, maxBuffer: 16 * 1024 * 1024,
     }), null);
-    const ls = rodar(['ls-files', '-z', '--', ...nomes.keys()]);
+    // Nome com [ ] ou * é nome, não padrão (check-ignore já trata o que recebe como caminho).
+    const ls = rodar(['--literal-pathspecs', 'ls-files', '-z', '--', ...nomes.keys()]);
     // Pasta inexistente ou fora de repositório git: o estado fica desconhecido.
     if (!ls || ls.status !== 0) continue;
     const versionados = new Set(ls.stdout.split('\0').filter(Boolean));

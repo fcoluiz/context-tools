@@ -18,7 +18,7 @@ import { randomUUID } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join, posix, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { resolveRoot, findRepos, isMain, safe, sanitizeModelText, runtimeHost } from './lib/roots.mjs';
 import { buildReport } from './health.mjs';
 import { metricasDaSessao, transcriptsRecentes, transcriptsCodexRecentes } from './lib/sessao.mjs';
@@ -75,35 +75,34 @@ function repositorios(root) {
  * Se cada mapa ou documento está versionado: `tracked` (no índice do git), `ignored` (barrado por um
  * .gitignore), `untracked` (fora do índice, sem ser ignorado) ou null (fora de repositório git, ou o
  * git não respondeu). Um mapa que não está no git só existe nesta máquina: quem clona não recebe.
- * Um `git ls-files` e um `git check-ignore` por repositório, não um por arquivo.
+ * O git roda DENTRO da pasta de cada item, com o nome do arquivo: comparar com `--show-toplevel`
+ * quebra quando a mesma pasta tem duas grafias (link simbólico no macOS, nome curto no Windows).
+ * Um `git ls-files` e um `git check-ignore` por pasta, não um por arquivo.
  */
 export function gitStateOf(root, paths) {
   const estado = new Map(paths.map((p) => [p, null]));
-  const topoDaPasta = new Map();
-  const porTopo = new Map();
+  const porPasta = new Map();
   for (const p of paths) {
-    const pasta = dirname(resolve(root, p));
-    if (!topoDaPasta.has(pasta)) topoDaPasta.set(pasta, git(pasta, 'rev-parse', '--show-toplevel'));
-    const topo = topoDaPasta.get(pasta);
-    if (!topo) continue;
-    if (!porTopo.has(topo)) porTopo.set(topo, new Map());
-    porTopo.get(topo).set(relative(topo, resolve(root, p)).replace(/\\/g, '/'), p);
+    const abs = resolve(root, p);
+    const pasta = dirname(abs);
+    if (!porPasta.has(pasta)) porPasta.set(pasta, new Map());
+    porPasta.get(pasta).set(basename(abs), p);
   }
-  for (const [topo, relativos] of porTopo) {
-    const rodar = (args, input) => spawnSync('git', args, {
-      cwd: topo, input, encoding: 'utf8', timeout: 5000, windowsHide: true, maxBuffer: 16 * 1024 * 1024,
-    });
-    const pastas = [...new Set([...relativos.keys()].map((r) => posix.dirname(r)))];
-    const ls = rodar(['ls-files', '-z', '--', ...pastas]);
-    if (ls.status !== 0) continue;
+  for (const [pasta, nomes] of porPasta) {
+    const rodar = (args, input) => safe(() => spawnSync('git', args, {
+      cwd: pasta, input, encoding: 'utf8', timeout: 5000, windowsHide: true, maxBuffer: 16 * 1024 * 1024,
+    }), null);
+    const ls = rodar(['ls-files', '-z', '--', ...nomes.keys()]);
+    // Pasta inexistente ou fora de repositório git: o estado fica desconhecido.
+    if (!ls || ls.status !== 0) continue;
     const versionados = new Set(ls.stdout.split('\0').filter(Boolean));
-    const fora = [...relativos.keys()].filter((r) => !versionados.has(r));
+    const fora = [...nomes.keys()].filter((n) => !versionados.has(n));
     // check-ignore sai com 0 se algum é ignorado e 1 se nenhum; outro código é erro: estado desconhecido.
     const ign = fora.length ? rodar(['check-ignore', '-z', '--stdin'], `${fora.join('\0')}\0`) : { status: 1, stdout: '' };
-    const ignorados = new Set(ign.status === 0 ? ign.stdout.split('\0').filter(Boolean) : []);
-    for (const [r, p] of relativos) {
-      if (versionados.has(r)) estado.set(p, 'tracked');
-      else if (ign.status === 0 || ign.status === 1) estado.set(p, ignorados.has(r) ? 'ignored' : 'untracked');
+    const ignorados = new Set(ign?.status === 0 ? ign.stdout.split('\0').filter(Boolean) : []);
+    for (const [n, p] of nomes) {
+      if (versionados.has(n)) estado.set(p, 'tracked');
+      else if (ign?.status === 0 || ign?.status === 1) estado.set(p, ignorados.has(n) ? 'ignored' : 'untracked');
     }
   }
   return estado;

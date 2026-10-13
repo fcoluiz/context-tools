@@ -15,6 +15,11 @@ reconstructed from git history.
   into PowerShell or cmd, a bare `.mjs` path is opened through its file association instead of being
   run, and Windows asks the user which app should open it. The skill now says, right after the prefix
   rules, to always run `node "<prefix>/ct.mjs" …` and never a `.mjs` file directly.
+- **In Codex, every Bash `PostToolUse` hook showed as failed.** `grep-context.mjs` (PostToolUse) and
+  `verify.mjs --session-start` were registered in the Codex hook manifests but missing from the
+  allowlist in `scripts/codex-hook.mjs`, so the adapter exited with code 1 on every call and the
+  grep context and session test-command line never ran under Codex. Both are now allowed, and a test
+  checks that every script in the Codex manifests passes the allowlist.
 
 ## [2.9.5] — 2026-10-12
 

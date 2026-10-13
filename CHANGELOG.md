@@ -8,6 +8,14 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The agent could run a script without `node` and pop up a Windows "open with" dialog.** The skill
+  tables and the hook hints abbreviate commands as `ct.mjs …` / `symbols.mjs …`; copied literally
+  into PowerShell or cmd, a bare `.mjs` path is opened through its file association instead of being
+  run, and Windows asks the user which app should open it. The skill now says, right after the prefix
+  rules, to always run `node "<prefix>/ct.mjs" …` and never a `.mjs` file directly.
+
 ## [2.9.5] — 2026-10-12
 
 ### Added

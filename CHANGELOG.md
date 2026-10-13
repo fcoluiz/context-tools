@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.6] — 2026-10-13
+
 ### Fixed
 
 - **The agent could run a script without `node` and pop up a Windows "open with" dialog.** The skill

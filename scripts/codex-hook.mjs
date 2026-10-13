@@ -20,8 +20,10 @@ const permitidos = new Set([
   'coupling.mjs',
   'handoff.mjs',
   'pre-tool.mjs',
+  'grep-context.mjs',
   'session-write-journal.mjs',
   'codex-md-hint.mjs',
+  'verify.mjs',
 ]);
 
 if (!permitidos.has(script)) {

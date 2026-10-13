@@ -116,6 +116,22 @@ test('os três manifestos de hooks cobrem o mesmo conjunto de scripts', () => {
   assert.deepEqual(faltando, [], 'ferramentas que o Claude roda em hook sem contrapartida no Codex');
 });
 
+// codex-hook.mjs recusa (exit 1) script fora da lista de permitidos. grep-context.mjs e
+// verify.mjs entraram nos manifestos Codex sem entrar na lista: todo PostToolUse de Bash
+// aparecia como "Falhou" no Codex e o contexto extra de grep nunca rodava.
+test('todo script dos manifestos Codex passa pela lista de permitidos do codex-hook', () => {
+  const fonte = readFileSync(join(ROOT, 'scripts', 'codex-hook.mjs'), 'utf8');
+  const lista = fonte.match(/const permitidos = new Set\(\[([\s\S]*?)\]\)/)?.[1] || '';
+  const permitidos = new Set([...lista.matchAll(/'([\w-]+\.mjs)'/g)].map((m) => m[1]));
+  for (const manifesto of [['hooks', 'codex-hooks.json'], ['.codex', 'hooks.json']]) {
+    const scripts = Object.values(readJson(...manifesto).hooks)
+      .flatMap((grupos) => grupos.flatMap((grupo) => grupo.hooks.map((hook) => hook.command)))
+      .map((comando) => comando.match(/codex-hook\.mjs"?\s+([\w-]+\.mjs)/)?.[1]);
+    const recusados = [...new Set(scripts.filter((script) => !script || !permitidos.has(script)))];
+    assert.deepEqual(recusados, [], `${manifesto.join('/')}: scripts que o codex-hook recusaria`);
+  }
+});
+
 // A divergência de matcher é INTENCIONAL e invisível no JSON (que não aceita comentário):
 // o Codex não expõe uma tool Grep, então o gatilho equivalente lá é Bash. Este teste é onde
 // essa decisão fica escrita — se alguém "corrigir" um dos dois para igualar o outro, quebra aqui.

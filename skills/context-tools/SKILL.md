@@ -11,6 +11,11 @@ Claude o prefixo é `${CLAUDE_PLUGIN_ROOT}/scripts/`; numa instalação standalo
 projeto. `ct.mjs help` lista os verbos; os scripts de antes (`symbols.mjs`, `outline.mjs`…) continuam
 valendo. A raiz vem do agente, do cwd ou do repositório acima; `--root=<dir>` força.
 
+⚠️ **Sempre `node` + prefixo completo.** As tabelas abaixo e os avisos dos hooks abreviam para
+`ct.mjs …`/`symbols.mjs …`; ao rodar, escreva `node "<prefixo>/ct.mjs" …`. Nunca execute um `.mjs`
+direto: no PowerShell/cmd do Windows isso não roda o script — abre a janela "Selecione um
+aplicativo para abrir este arquivo .mjs" e trava a tela do usuário.
+
 Tudo é **gerado na hora** (nunca defasa) e **falha visível**: sem resposta, diz e manda para
 `rg`/`grep` — siga o conselho em vez de insistir. Variável local, propriedade aninhada e coluna fora
 de `.sql` não estão no índice.

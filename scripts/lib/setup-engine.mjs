@@ -79,14 +79,16 @@ async function ensureMarketplace(adapter, ref, flags, root) {
     const replace = await confirm(t('setup.mkt.replaceAsk', { nome: adapter.marketplaceName, ref }), true, flags.yes);
     if (!replace) return false;
     // O Claude sobrescreve o marketplace ao adicioná-lo de novo, então não remove antes (é um passo
-    // a menos que pode falhar), mas antes a tag registrada no settings.json precisa ser a nova. O
-    // Codex exige a remoção para trocar de tag.
-    adapter.alignMarketplaceSource?.(ref, opts, root);
+    // a menos que pode falhar). O Codex exige a remoção para trocar de tag.
     if (!adapter.marketplaceAddReplaces) {
       const removed = run(adapter.bin, adapter.marketplaceRemoveArgs(adapter.marketplaceName, opts), { stdio: 'inherit' });
       if (removed.status !== 0) { explainFailure(t('setup.mkt.removeStep', { nome: adapter.marketplaceName }), removed); return false; }
     }
   }
+  // A tag registrada no settings.json precisa ser a nova antes do `add` — também quando o
+  // marketplace nem aparece na lista: um `add` recusado antes deixa a entrada com a tag antiga
+  // sem marketplace, e o próximo `add` cairia no mesmo erro.
+  adapter.alignMarketplaceSource?.(ref, opts, root);
   const added = run(adapter.bin, adapter.marketplaceAddArgs(adapter.repository, ref, opts), { stdio: 'inherit' });
   if (added.status !== 0) { explainFailure(t('setup.mkt.addStep', { nome: adapter.marketplaceName }), added); return false; }
   say(t('setup.mkt.done', { nome: adapter.marketplaceName, ref }));

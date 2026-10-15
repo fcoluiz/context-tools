@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.7] — 2026-10-15
+
 ### Changed
 
 - **The short install command now installs for both Claude Code and Codex.** `npx -y

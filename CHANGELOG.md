@@ -8,6 +8,14 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Updating the plugin for Claude Code no longer stops at "Failed to add marketplace".** Recent
+  Claude Code CLIs refuse to add the `context-tools` marketplace with a new tag while the
+  `extraKnownMarketplaces` entry in `settings.json` still lists the previous one. The setup now
+  moves that entry to the new tag first (only when it points to this repository), so the update
+  goes through without removing the marketplace or uninstalling the plugin.
+
 ## [2.9.7] — 2026-10-15
 
 ### Changed

@@ -158,6 +158,23 @@ test('setup --global atualiza uma instalação anterior (Claude via update, Code
   } finally { m.cleanup(); }
 });
 
+// Um `add` recusado antes (CLI recente, tag antiga no settings.json) deixa o plugin instalado e a
+// entrada em extraKnownMarketplaces, mas o marketplace some da lista. A tag ainda precisa ser trocada.
+test('setup --global atualiza o Claude mesmo com o marketplace fora da lista e a tag antiga no settings.json', () => {
+  const m = fakeMachine(['claude'], {
+    claude: { marketplace: { ref: 'v9.9.8', scope: 'user' }, plugin: { version: '9.9.8', scope: 'user' } },
+  });
+  try {
+    const s = m.state(); s.claude.marketplace = null; writeFileSync(join(m.dir, 'state.json'), JSON.stringify(s));
+    const r = m.run('--ref=v9.9.9', '--target=claude');
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    const { calls, claude } = m.state();
+    assert.equal(claude.plugin.version, '9.9.9', calls.join('\n'));
+    const entrada = JSON.parse(readFileSync(join(m.dir, 'claude-config', 'settings.json'), 'utf8')).extraKnownMarketplaces['context-tools'].source;
+    assert.equal(entrada.ref, 'v9.9.9');
+  } finally { m.cleanup(); }
+});
+
 // Sem --target, global é "para todos": o agente sem CLI ganha a CLI (via npm) e o plugin.
 test('setup --global sem --target instala a CLI que falta e configura os dois agentes', () => {
   const m = fakeMachine(['claude']);

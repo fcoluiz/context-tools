@@ -8,6 +8,13 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Claude Code update now also recovers after a failed attempt.** A refused `marketplace add`
+  leaves the plugin installed and the old tag in `extraKnownMarketplaces`, but the marketplace drops
+  out of the list; 2.9.8 only moved the tag when the marketplace was listed, so the update kept
+  failing. The tag is now moved before every `add`.
+
 ## [2.9.8] — 2026-10-15
 
 ### Fixed

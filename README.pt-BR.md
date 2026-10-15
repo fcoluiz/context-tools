@@ -64,8 +64,8 @@ plugin e uma cópia standalone instalados juntos.
 
 ## Instalar ou atualizar
 
-Um comando, sem nada para responder. Ele instala o context-tools para **todos os agentes que você
-tem** (Claude Code e/ou Codex), no seu usuário — vale para todos os projetos, não só o atual. Rode de
+Um comando, sem nada para responder. Ele instala o context-tools para **os dois agentes** (Claude
+Code e Codex), no seu usuário — vale para todos os projetos, não só o atual. Rode de
 novo para atualizar:
 
 ```bash
@@ -81,8 +81,8 @@ símbolo está definido, depois dele em qual função cai cada linha, e no iníc
 testes e quando sair uma versão nova (com este mesmo comando). No Codex, na primeira vez, abra
 `/hooks` e aprove os hooks do context-tools uma vez.
 
-Requer Node.js 18+ e o CLI de pelo menos um agente (`claude` ou `codex`). Ele nunca altera a pasta
-onde é executado e nunca instala o CLI de um agente que você ainda não usa.
+Requer Node.js 18+. O CLI de agente que faltar (`claude` ou `codex`) é instalado com o npm no
+caminho; para um agente só, acrescente `--target` (abaixo). Ele nunca altera a pasta onde é executado.
 
 | quer | acrescente ao comando |
 |---|---|

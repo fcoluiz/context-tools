@@ -10,13 +10,13 @@
 //
 // Sem --target, detecta o que já existe no projeto (.codex/AGENTS.md, .claude/CLAUDE.md); se
 // achar os dois ou nenhum e a sessão for interativa, pergunta; sem terminal (--yes ou não-TTY),
-// assume "both" quando nada foi detectado.
+// assume "both" quando nada foi detectado. Com --global e sem --target, é sempre "both".
 
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  say, isDir, isFile, ask, latestTag, parseArgs, detectProjectRoot, waitBeforeExit, t, run,
+  say, isDir, isFile, ask, latestTag, parseArgs, detectProjectRoot, waitBeforeExit, t,
 } from './scripts/lib/setup-shared.mjs';
 import { TARGETS, resolveTargets } from './scripts/lib/setup-targets.mjs';
 import { runSetup, chooseGuidedRoot } from './scripts/lib/setup-engine.mjs';
@@ -34,21 +34,11 @@ function detectExistingTargetIds(root) {
   return found;
 }
 
-// Global não olha projeto nenhum: instala para cada agente cuja CLI já existe na máquina. Nunca
-// instala a CLI de um agente que a pessoa não usa só porque pediu "global".
-function availableTargetIds() {
-  return Object.values(TARGETS)
-    .filter((adapter) => run(adapter.bin, ['--version']).status === 0)
-    .map((adapter) => adapter.id);
-}
-
 async function chooseTargetIds(root, flags) {
   if (flags.target) return String(flags.target).split(',').map((value) => value.trim()).filter(Boolean);
-  if (flags.global) {
-    const available = availableTargetIds();
-    if (!available.length) throw new Error(t('setup.global.noCli'));
-    return available;
-  }
+  // Global sem --target é o comando "para todos": instala Claude e Codex, inclusive a CLI que
+  // faltar (ensureCli). Quem quer um agente só usa --target ou o setup daquele agente.
+  if (flags.global) return ['both'];
   const detected = detectExistingTargetIds(root);
   if (detected.length === 1) return detected;
   if (flags.yes || !isInteractive()) return detected.length ? detected : ['both'];

@@ -704,8 +704,9 @@ npx -y github:fcoluiz/context-tools
 
 `context-tools-setup-all --global --yes` (the long form) does the same.
 
-Installs or updates the latest release for every agent whose CLI is on the machine (Claude Code in
-the `user` scope, Codex globally), without touching any project. Running it again updates: on
+Installs or updates the latest release for both agents (Claude Code in the `user` scope, Codex
+globally), without touching any project; an agent CLI missing from the machine is installed first
+with `npm install --global`. Running it again updates: on
 Claude it uses `claude plugin update` when the plugin is already installed; on Codex it re-adds the
 marketplace at the new tag, which the Codex CLI requires to change versions. `--target=claude|codex`
 limits it to one agent. The sections below describe the per-project and manual alternatives.

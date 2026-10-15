@@ -63,8 +63,8 @@ standalone copy are both installed.
 
 ## Install or update
 
-One command, nothing to answer. It installs context-tools for **every agent you have** (Claude Code
-and/or Codex), for your user — every project, not just the current one. Run it again to update:
+One command, nothing to answer. It installs context-tools for **both agents** (Claude Code and
+Codex), for your user — every project, not just the current one. Run it again to update:
 
 ```bash
 npx -y github:fcoluiz/context-tools
@@ -78,8 +78,8 @@ symbol is defined, after it which function each line falls in, and at the start 
 run the tests and when a newer release is out (with this same command). On Codex, the first time,
 open `/hooks` and trust the context-tools hooks once.
 
-Requires Node.js 18+ and the CLI of at least one agent (`claude` or `codex`). It never changes the
-folder you run it from, and never installs an agent CLI you do not already use.
+Requires Node.js 18+. An agent CLI that is missing (`claude` or `codex`) is installed with npm along
+the way; for a single agent, add `--target` (below). It never changes the folder you run it from.
 
 | want | add to the command |
 |---|---|

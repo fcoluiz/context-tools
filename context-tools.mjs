@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // `npx -y github:fcoluiz/context-tools`: o caminho padrão, sem perguntas. Instala ou atualiza o
-// context-tools para todo agente cuja CLI existe na máquina (Claude Code e/ou Codex), para o usuário
+// context-tools para Claude Code e Codex (instalando a CLI que faltar), para o usuário
 // inteiro. É o mesmo `setup.mjs`, com `--global --yes` quando a pessoa não pediu outra coisa:
 //   - `--project <dir>` ou `--guided` → por projeto, como `context-tools-setup-all`;
 //   - `status`, `doctor`, `latest`, `help`… → repassados como estão;

@@ -70,7 +70,7 @@ function installedHere(adapter, flags) {
   return installed;
 }
 
-async function ensureMarketplace(adapter, ref, flags) {
+async function ensureMarketplace(adapter, ref, flags, root) {
   const opts = scopeOpts(flags);
   if (installedRef(installedHere(adapter, flags)) === ref) return true;
 
@@ -79,7 +79,9 @@ async function ensureMarketplace(adapter, ref, flags) {
     const replace = await confirm(t('setup.mkt.replaceAsk', { nome: adapter.marketplaceName, ref }), true, flags.yes);
     if (!replace) return false;
     // O Claude sobrescreve o marketplace ao adicioná-lo de novo, então não remove antes (é um passo
-    // a menos que pode falhar). O Codex exige a remoção para trocar de tag.
+    // a menos que pode falhar), mas antes a tag registrada no settings.json precisa ser a nova. O
+    // Codex exige a remoção para trocar de tag.
+    adapter.alignMarketplaceSource?.(ref, opts, root);
     if (!adapter.marketplaceAddReplaces) {
       const removed = run(adapter.bin, adapter.marketplaceRemoveArgs(adapter.marketplaceName, opts), { stdio: 'inherit' });
       if (removed.status !== 0) { explainFailure(t('setup.mkt.removeStep', { nome: adapter.marketplaceName }), removed); return false; }
@@ -364,7 +366,7 @@ export async function runSetup(adapter, ctx, { command, root, flags }) {
   say(global ? t('setup.run.global', { agente: adapter.label }) : t('setup.run.detected', { agente: adapter.label, raiz: root }));
   say(t('setup.run.version', { agente: adapter.label, ref }));
   // Global não prepara nenhum projeto: nada é escrito na pasta onde o comando foi rodado.
-  if (!(await ensureMarketplace(adapter, ref, flags)) || !installPlugin(adapter, flags)
+  if (!(await ensureMarketplace(adapter, ref, flags, root)) || !installPlugin(adapter, flags)
     || (!global && !bootstrap(adapter, ctx, root, flags))) {
     say(t('setup.run.failed', { agente: adapter.label }));
     return 1;

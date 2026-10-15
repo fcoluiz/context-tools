@@ -8,6 +8,7 @@
 // de propósito — se a CLI real devolver outra coisa, o pior caso é reinstalar/re-adicionar em vez
 // de pular, nunca corromper configuração.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { t } from './setup-shared.mjs';
 
@@ -79,6 +80,29 @@ function removeManagedHooksFrom(path, isManaged) {
   }
   if (changed) writeJson(path, settings);
   return changed;
+}
+
+// `claude plugin marketplace add` grava a origem (com a tag) em `extraKnownMarketplaces` do
+// settings.json do escopo, e o CLI recente recusa adicionar o mesmo marketplace com outra tag
+// enquanto essa entrada aponta para a anterior ("its source doesn't match its
+// extraKnownMarketplaces entry"). Remover o marketplace resolveria, mas desinstala o plugin e apaga
+// os dados dele; trocar só a tag da entrada (quando ela é deste repositório) deixa o `add` passar
+// e o plugin segue instalado para o `update`.
+function claudeSettingsPath(opts, root) {
+  return opts.global
+    ? join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'settings.json')
+    : join(root, '.claude', 'settings.json');
+}
+
+export function alignClaudeMarketplaceRef(path, name, ref) {
+  if (!existsSync(path)) return false;
+  let settings;
+  try { settings = JSON.parse(readFileSync(path, 'utf8')); } catch { return false; }
+  const source = settings?.extraKnownMarketplaces?.[name]?.source;
+  if (source?.source !== 'github' || source.repo !== REPOSITORY || source.ref === ref) return false;
+  source.ref = ref;
+  writeJson(path, settings);
+  return true;
 }
 
 function removeManagedClaudeProjectHooks(root) {
@@ -179,6 +203,7 @@ export const TARGETS = {
     marketplaceAddArgs: (repo, ref, opts = {}) => ['plugin', 'marketplace', 'add', `${repo}@${ref}`, '--scope', claudeScope(opts)],
     marketplaceRemoveArgs: (name, opts = {}) => ['plugin', 'marketplace', 'remove', name, '--scope', claudeScope(opts)],
     marketplaceAddReplaces: true,
+    alignMarketplaceSource: (ref, opts, root) => alignClaudeMarketplaceRef(claudeSettingsPath(opts, root), 'context-tools', ref),
     pluginInstallArgs: (plugin, marketplace, opts = {}) => ['plugin', 'install', `${plugin}@${marketplace}`, '--scope', claudeScope(opts)],
     pluginUpdateArgs: (plugin, marketplace, opts = {}) => ['plugin', 'update', `${plugin}@${marketplace}`, '--scope', claudeScope(opts)],
     findInstalled: (data, plugin, marketplace) => findByNameAndMarketplace(pluginListArray(data), plugin, marketplace),

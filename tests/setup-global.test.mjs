@@ -42,7 +42,18 @@ if (args[0] === '--version') out('fake 1.0');
 if (agent === 'claude') {
   if (cmd === 'plugin list') out(me.plugin ? [{ id: 'context-tools@context-tools', version: me.plugin.version, scope: me.plugin.scope }] : []);
   if (cmd === 'plugin marketplace list') out(me.marketplace ? [{ name: 'context-tools', source: 'github', ref: me.marketplace.ref }] : []);
-  if (cmd.startsWith('plugin marketplace add ')) { me.marketplace = { ref: args[3].split('@')[1], scope }; out('added'); }
+  if (cmd.startsWith('plugin marketplace add ')) {
+    // Como o CLI real: a origem fica em extraKnownMarketplaces do settings.json do escopo, e outra
+    // tag com essa entrada apontando para a anterior é recusada.
+    const [repo, ref] = args[3].split('@');
+    const path = join(process.env.CLAUDE_CONFIG_DIR, 'settings.json');
+    const settings = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : {};
+    const entry = settings.extraKnownMarketplaces?.['context-tools']?.source;
+    if (entry && entry.ref !== ref) fail("Cannot add marketplace: its source doesn't match its extraKnownMarketplaces entry");
+    settings.extraKnownMarketplaces = { ...settings.extraKnownMarketplaces, 'context-tools': { source: { source: 'github', repo, ref } } };
+    writeFileSync(path, JSON.stringify(settings, null, 2));
+    me.marketplace = { ref, scope }; out('added');
+  }
   if (cmd.startsWith('plugin marketplace remove ')) { me.marketplace = null; out('removed'); }
   if (cmd.startsWith('plugin install ')) {
     if (me.plugin && me.plugin.scope === scope) out('already installed');
@@ -92,10 +103,15 @@ function fakeMachine(agents, initial = {}) {
   }
   const stateFile = join(dir, 'state.json');
   writeFileSync(stateFile, JSON.stringify(initial));
+  const claudeConfig = join(dir, 'claude-config');
+  spawnSync(process.execPath, ['-e', `require('fs').mkdirSync(${JSON.stringify(claudeConfig)}, { recursive: true })`]);
+  if (initial.claude?.marketplace) {
+    writeFileSync(join(claudeConfig, 'settings.json'), JSON.stringify({ extraKnownMarketplaces: { 'context-tools': { source: { source: 'github', repo: 'fcoluiz/context-tools', ref: initial.claude.marketplace.ref } } } }));
+  }
   const env = { ...process.env };
   for (const key of Object.keys(env)) if (key.toLowerCase() === 'path') delete env[key];
   env.PATH = [bin, dirname(process.execPath)].join(delimiter);
-  Object.assign(env, { FAKE_CLI_STATE: stateFile, FAKE_CLI_BIN: bin, FAKE_CLI_SCRIPT: script, CONTEXT_TOOLS_LANG: 'en' });
+  Object.assign(env, { CLAUDE_CONFIG_DIR: claudeConfig, FAKE_CLI_STATE: stateFile, FAKE_CLI_BIN: bin, FAKE_CLI_SCRIPT: script, CONTEXT_TOOLS_LANG: 'en' });
   delete env.CONTEXT_TOOLS_PROJECT_DIR;
   return {
     dir,
@@ -135,6 +151,8 @@ test('setup --global atualiza uma instalação anterior (Claude via update, Code
     assert.equal(claude.plugin.version, '9.9.9', `install sozinho não atualizaria o Claude\n${calls.join('\n')}\n${r.stdout}`);
     assert.ok(calls.includes('claude plugin update context-tools@context-tools --scope user'), calls.join('\n'));
     assert.ok(!calls.some((c) => c.startsWith('claude plugin marketplace remove')), 'o Claude sobrescreve o marketplace; não precisa remover');
+    const entrada = JSON.parse(readFileSync(join(m.dir, 'claude-config', 'settings.json'), 'utf8')).extraKnownMarketplaces['context-tools'].source;
+    assert.equal(entrada.ref, 'v9.9.9', 'a tag gravada no settings.json acompanha a nova (senão o CLI recusa o add)');
     assert.ok(calls.includes('codex plugin marketplace remove context-tools-codex'), calls.join('\n'));
     assert.equal(codex.plugin.version, '9.9.9');
   } finally { m.cleanup(); }

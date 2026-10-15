@@ -147,6 +147,18 @@ test('context-tools (comando curto): global e sem perguntas por padrão; o resto
   assert.deepEqual(defaultArgs(['status']), ['status'], 'status não vira instalação');
 });
 
+// O comando curto é "para todos": sem --target vai para os dois agentes, tenha a máquina a CLI de
+// um, dos dois ou de nenhum — a CLI que faltar é instalada pelo próprio setup.
+test('global sem --target instala Claude e Codex, mesmo sem nenhuma CLI no PATH', () => {
+  const r = spawnSync(process.execPath, [localPath('../context-tools.mjs'), '--dry-run'], {
+    encoding: 'utf8',
+    env: { ...process.env, CONTEXT_TOOLS_LANG: 'en', PATH: '', Path: '' },
+  });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /\[Codex\] Simulation: nothing was changed/, r.stdout);
+  assert.match(r.stdout, /\[Claude\] Simulation: nothing was changed/, r.stdout);
+});
+
 // No Linux/macOS o bin do npm é um symlink: `argv[1]` chega com o caminho do link e
 // `import.meta.url` com o real. A comparação direta fazia o instalador sair sem fazer nada.
 test('instalador roda quando chamado por um symlink, como o bin do npm', (t) => {

@@ -8,6 +8,15 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Changed
+
+- **The short install command now installs for both Claude Code and Codex.** `npx -y
+  github:fcoluiz/context-tools` (and `context-tools-setup-all --global` without `--target`) used to
+  install only for the agents whose CLI was already on `PATH`, and stopped with an error when neither
+  was: a machine with only one CLI ended up with only that agent. It now always targets both and
+  installs the missing CLI with npm, as `--target=both` already did. For a single agent, use
+  `--target=claude|codex` or that agent's own setup command.
+
 ## [2.9.6] — 2026-10-13
 
 ### Fixed

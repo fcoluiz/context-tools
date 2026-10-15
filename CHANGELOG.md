@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.9] — 2026-10-15
+
 ### Fixed
 
 - **The Claude Code update now also recovers after a failed attempt.** A refused `marketplace add`

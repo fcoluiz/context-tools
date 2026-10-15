@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.8] — 2026-10-15
+
 ### Fixed
 
 - **Updating the plugin for Claude Code no longer stops at "Failed to add marketplace".** Recent

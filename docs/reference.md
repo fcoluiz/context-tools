@@ -216,6 +216,13 @@ whoever comes back — and the only auto-generated handoff that ever existed on 
 **empty**. (Heuristic extraction was tried and discarded: detecting reversals by keyword was almost
 entirely false positives.)
 
+That request is lost when the turn ends on a tool that closes the turn (the desktop app's next-step
+box): Claude Code runs the `Stop` hook but drops its text, with no extra turn and no delivery later
+(measured on 2026-10-16 in local transcripts: 492 of 492 delivered after a closing assistant
+message, 3 of 3 dropped after that tool). So a `UserPromptSubmit` hook repeats the request **once**,
+on the next prompt, only if the block is still empty and the resume prompt has not gone out. After
+that it stays silent.
+
 **Once the block is filled, the `Stop` hook hands over the paste-ready prompt by itself** — no
 command to remember. It cannot do that alongside the warning: at that moment the volatile block has
 just been generated empty, and that block is the only part that makes the prompt worth pasting.
@@ -892,6 +899,7 @@ shows whether it is registered.
 | `UserPromptSubmit` (Codex) | locally checks each explicitly named file against its own context-map fingerprint; emits context only for stale, uncovered, or unverifiable files | no model call; one local hook process per prompt |
 | `Stop` | Claude warns when the session gets expensive and writes the handoff; Codex only records metrics | **once per session** |
 | `Stop` | hands over the resume prompt, once the volatile block is filled in | once per session |
+| `UserPromptSubmit` (Claude) | if the `Stop` warning went out and the volatile block is still empty, repeats the request to fill it in | **once per session**; otherwise reads one small state file and exits |
 | `SessionStart` | lists context maps and flags the stale ones; shows a visible notice when action is needed | ~175 tokens |
 | `SessionStart` | ensures the standard `ai-context` structure, points to its index, and announces first setup; while the index is the only document, says there is nothing to read yet instead of asking for it to be read | only when documentation is enabled |
 | `SessionStart` | one line with the project's test command, what `npm test` actually runs, and how to run a single test file when the runner tells; in a JavaScript project with dependencies declared and none installed, that the tests will fail until they are installed. In the outcome benchmark, agents spent 3–8 turns of a fix finding this out | ~30 tokens; silent when no test command is detectable or `verify.enabled` is false |

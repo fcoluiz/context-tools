@@ -192,6 +192,7 @@ const CAT = {
     // barato, e nenhuma heurística sem LLM consegue preenchê-lo — mas o agente já tem a sessão
     // inteira em contexto, então para ele custa um turno e nada mais.
     'ses.preencha': (p) => `   ↳ Before closing, fill in the four questions at the end of ${p.arq} from what actually happened; the resume prompt then arrives here on its own.`,
+    'ses.lembrete': (p) => `📝 One-time reminder: the four questions at the end of ${p.arq} are still blank. In this turn, alongside the user's request, fill them in from what actually happened; the resume prompt then arrives on its own.`,
     // O prompt só sai DEPOIS do bloco volátil preenchido: no momento do aviso ele acabaria de
     // ser gerado em branco, e é justamente esse bloco que faz o prompt valer a pena colar.
     'ses.promptPronto': (p) => `📋 Handoff prompt ready — hand the block below to the user VERBATIM, in a copyable form, and say it is for pasting into a fresh session.${p.arq ? " Also saved at " + p.arq + "." : ""}`,
@@ -597,6 +598,7 @@ ${p.opcoes}`,
     // barato, e nenhuma heurística sem LLM consegue preenchê-lo — mas o agente já tem a sessão
     // inteira em contexto, então para ele custa um turno e nada mais.
     'ses.preencha': (p) => `   ↳ Antes de fechar, preencha as quatro perguntas do fim de ${p.arq} com o que de fato aconteceu; o prompt de retomada chega aqui sozinho.`,
+    'ses.lembrete': (p) => `📝 Lembrete único: as quatro perguntas do fim de ${p.arq} seguem em branco. Neste turno, junto com o pedido do usuário, preencha-as com o que de fato aconteceu; o prompt de retomada chega sozinho.`,
     'ses.promptPronto': (p) => `📋 Prompt de handoff pronto — entregue o bloco abaixo ao usuário LITERALMENTE, em forma copiável, e diga que é para colar numa sessão nova.${p.arq ? " Também salvo em " + p.arq + "." : ""}`,
     'ses.verGanhou': (p) => `📊 A última divisão de sessão COMPENSOU: a sessão anterior a ela fechou com ${p.ctx}k de contexto, e a que veio depois voltou a produzir em ${p.msgs} mensagens (${p.razao}x o aquecimento típico de 52) — economia estimada de ~${p.eco}%.`,
     'ses.verEmpatou': (p) => `📊 A última divisão de sessão EMPATOU: a anterior fechou com ${p.ctx}k, e a que veio depois levou ${p.msgs} mensagens para voltar a produzir (${p.razao}x o aquecimento típico de 52). O ponto de equilíbrio é 1,75x.`,

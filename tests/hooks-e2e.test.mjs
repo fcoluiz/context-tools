@@ -1493,6 +1493,83 @@ test('E2E: o Stop entrega o prompt sozinho, mas SÓ depois do bloco preenchido',
   }
 });
 
+test('E2E: aviso perdido no Stop vira UM lembrete no prompt seguinte, e só um', () => {
+  // O `additionalContext` do Stop é descartado quando o turno acaba no resultado de uma
+  // ferramenta que encerra o turno (caixa de próximo passo do app desktop): o pedido de
+  // preencher sumia e a fase 2 nunca saía. O UserPromptSubmit lembra UMA vez; depois, silêncio.
+  const raiz = repo({ comMapa: false, comMudanca: true });
+  const transcritos = mkdtempSync(join(tmpdir(), 'ctx-transc-'));
+  const sid = 'sessao-lembrete';
+  const env = { CLAUDE_CODE_SESSION_ID: sid, CONTEXT_TOOLS_TRANSCRIPTS: transcritos };
+  const stop = () => rodar('handoff.mjs', ['--stop-report', `--root=${raiz}`], raiz, env);
+  const prompt = (e = env) => rodar('handoff-lembrete.mjs', [`--root=${raiz}`], raiz, e);
+  const doc = join(raiz, '.claude', `handoff-${sid.slice(0, 8)}.md`);
+  try {
+    const uso = (n) => JSON.stringify({
+      type: 'assistant', timestamp: new Date(17e11 + n * 60000).toISOString(),
+      message: { usage: { cache_read_input_tokens: 260000, cache_creation_input_tokens: 100 } },
+    });
+    writeFileSync(join(transcritos, `${sid}.jsonl`),
+      Array.from({ length: 40 }, (_, i) => uso(i)).join('\n') + '\n');
+
+    // Sessão sem aviso: nada, nem estado gravado.
+    assert.equal(prompt().stdout.trim(), '', 'sem aviso não há o que lembrar');
+    assert.ok(!existsSync(join(raiz, '.claude', '.handoff-aviso.json')), 'sem aviso, o prompt não grava estado');
+
+    assert.match(stop().stdout, /Session at \d+k tokens/, 'a fase 1 tinha de disparar');
+
+    // Aviso emitido (e, no caso real, perdido) com o bloco em branco: um lembrete.
+    const l1 = prompt();
+    assert.equal(l1.status, 0);
+    const out = JSON.parse(l1.stdout);
+    assert.equal(out.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+    assert.match(out.hookSpecificOutput.additionalContext, /One-time reminder/);
+    assert.match(out.hookSpecificOutput.additionalContext, /handoff-sessao-l\.md/);
+
+    // Segundo prompt, ainda em branco: silêncio para sempre.
+    assert.equal(prompt().stdout.trim(), '', 'o lembrete sai UMA vez');
+    assert.equal(stop().stdout.trim(), '', 'o Stop segue calado com o bloco em branco');
+
+    // Preenchido, a fase 2 continua como antes: o prompt de retomada sai no Stop.
+    writeFileSync(doc, readFileSync(doc, 'utf8')
+      .replace(/^(- \*\*.+?\*\*)\s*$/m, '$1 parou no lembrete'));
+    const f2 = stop();
+    assert.match(f2.stdout, /Continuing work from a previous session/, `esperava o prompt, veio: ${f2.stdout}`);
+    assert.match(f2.stdout, /parou no lembrete/);
+    assert.equal(prompt().stdout.trim(), '', 'depois do prompt entregue, nada a lembrar');
+
+    // Outra sessão no mesmo projeto, sem aviso próprio: nada.
+    assert.equal(prompt({ ...env, CLAUDE_CODE_SESSION_ID: 'outra-sessao' }).stdout.trim(), '');
+  } finally {
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(transcritos, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});
+
+test('E2E: aviso que chegou e foi preenchido não gera lembrete', () => {
+  // Caso comum: o aviso do Stop chega, o agente preenche no turno extra, e o prompt seguinte
+  // já encontra o bloco preenchido. Lembrar ali seria ruído.
+  const raiz = repo({ comMapa: false, comMudanca: true });
+  const transcritos = mkdtempSync(join(tmpdir(), 'ctx-transc-'));
+  const sid = 'sessao-preenchida';
+  const env = { CLAUDE_CODE_SESSION_ID: sid, CONTEXT_TOOLS_TRANSCRIPTS: transcritos };
+  const doc = join(raiz, '.claude', `handoff-${sid.slice(0, 8)}.md`);
+  try {
+    writeFileSync(join(transcritos, `${sid}.jsonl`), Array.from({ length: 40 }, (_, n) => JSON.stringify({
+      type: 'assistant', timestamp: new Date(17e11 + n * 60000).toISOString(),
+      message: { usage: { cache_read_input_tokens: 260000, cache_creation_input_tokens: 100 } },
+    })).join('\n') + '\n');
+    rodar('handoff.mjs', ['--stop-report', `--root=${raiz}`], raiz, env);
+    writeFileSync(doc, readFileSync(doc, 'utf8').replace(/^(- \*\*.+?\*\*)\s*$/m, '$1 feito'));
+    const r = rodar('handoff-lembrete.mjs', [`--root=${raiz}`], raiz, env);
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout.trim(), '', 'bloco preenchido: não há o que lembrar');
+  } finally {
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(transcritos, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});
+
 test('--prompt corta o cabeçalho por ESTRUTURA, em idioma que o i18n nem conhece', () => {
   // O corte era regex de texto traduzido (`^Esta sessão:|^This session:`). Modo de falha:
   // idioma novo no i18n — ou handoff gerado por outra versão — e o bloco de métricas vazava

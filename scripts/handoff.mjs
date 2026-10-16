@@ -29,6 +29,7 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveRoot, findRepos, safe, loadConfig, isMain, relPath, stateDir, statePath, stateRelPrefix, runtimeHost } from './lib/roots.mjs';
 import { writeHookOutput } from './lib/hook-output.mjs';
+import { sessionId, caminhoDoHandoff, estadoDoAviso, blocoVolatilPreenchido } from './lib/handoff-estado.mjs';
 import { buildIndex } from './symbols.mjs';
 import {
   transcriptDaSessao, metricasDaSessao, multiplicadorDeCusto,
@@ -86,13 +87,6 @@ function semSujeiraHerdada(arquivos, repoPath, entrada) {
  * esses são conteúdo de verdade, e mexer neles é trabalho real.
  */
 const ESTADO_DO_PLUGIN = /^\.claude\/(?!context\/)|\.symbols-cache\.json$|\.context-maps-|\.pre-tool-state|\.stop-|\.mtime-probe|\.context-tools-metrics/;
-
-function sessionId() {
-  return process.env.CONTEXT_TOOLS_SESSION_ID
-    || process.env.CLAUDE_CODE_SESSION_ID
-    || process.env.CLAUDE_SESSION_ID
-    || null;
-}
 
 function isPluginState(root, rel) {
   if (ESTADO_DO_PLUGIN.test(rel)) return true;
@@ -253,11 +247,6 @@ const LIMIAR_CONTEXTO = 200000;
 // No Codex, tempo Ã© apenas um sinal operacional para sugerir uma nova sessÃ£o. NÃ£o Ã© um
 // multiplicador de cobranÃ§a: a mÃ©trica de crÃ©ditos depende dos tokens e do modelo ativo.
 
-/** Onde o handoff desta sessão mora. Um por sessão, para não colidir entre janelas abertas. */
-function caminhoDoHandoff(root, sid) {
-  return statePath(root, `handoff-${String(sid || 'sem-sessao').slice(0, 8)}.md`);
-}
-
 /**
  * Modo hook (`--stop-report`): avisa UMA VEZ por sessão e já deixa o handoff pronto em disco.
  *
@@ -272,13 +261,6 @@ function caminhoDoHandoff(root, sid) {
  * gerar depois custaria uma volta inteira. Se o trabalho continuar e ele quiser um atualizado,
  * `--salvar` regrava sob demanda — nunca automaticamente, senão o arquivo mudaria sozinho
  * embaixo de quem já o estava lendo.
- */
-/**
- * O bloco volátil já foi preenchido, ou continua o formulário em branco?
- *
- * Estrutural, como todo o resto que lê este documento: as perguntas saem de `montar` como
- * `- **pergunta** ` e o que vier depois do `**` é a resposta. Nada de reconhecer texto
- * traduzido — o documento pode ter sido gravado em outro idioma ou por outra versão.
  */
 /**
  * Onde começa o bloco volátil: o ÚLTIMO cabeçalho `##` do documento, por construção de `montar`.
@@ -305,14 +287,6 @@ function comVolatilDe(fresco, salvo) {
   return [...lf.slice(0, iF), ...ls.slice(iS)].join('\n');
 }
 
-function blocoVolatilPreenchido(doc) {
-  if (!doc) return false;
-  return doc.split('\n').some((l) => {
-    const m = l.match(/^-\s+\*\*.+?\*\*(.*)$/);
-    return Boolean(m && m[1].trim());
-  });
-}
-
 function stopReport(root, t) {
   const sid = sessionId();
   const m = metricasDaSessao(transcriptDaSessao(root, sid));
@@ -323,17 +297,7 @@ function stopReport(root, t) {
   const elegivel = m && m.contexto >= LIMIAR_CONTEXTO;
   if (!elegivel) return;
 
-  const arq = statePath(root, '.handoff-aviso.json');
-  const store = safe(() => JSON.parse(readFileSync(arq, 'utf8')), null) || {};
-  // Versões até 1.3.1 gravavam um timestamp solto aqui. Ler os dois formatos evita que uma
-  // atualização do plugin faça o aviso disparar de novo numa sessão que já foi avisada.
-  const bruto = store[sid];
-  const estado = typeof bruto === 'number' ? { aviso: bruto } : (bruto || null);
-
-  const salvar = (novo) => {
-    store[sid] = novo;
-    safe(() => { mkdirSync(stateDir(root), { recursive: true }); writeFileSync(arq, JSON.stringify(store)); }, null);
-  };
+  const { estado, salvar } = estadoDoAviso(root, sid);
   const emitir = (texto, opts = {}) => writeHookOutput(root, {
     hookSpecificOutput: { hookEventName: 'Stop', additionalContext: texto },
   }, opts);

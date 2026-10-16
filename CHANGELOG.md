@@ -8,6 +8,17 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The request to fill in the handoff now survives a lost `Stop` message.** When a turn ends on a
+  tool that closes the turn (the desktop app's next-step box), Claude Code runs the `Stop` hook but
+  drops its text: no extra turn, no delivery later (3 of 3 such cases in local transcripts, against
+  492 of 492 delivered after an assistant message). The volatile block then stayed empty and the
+  resume prompt never came. A new `UserPromptSubmit` hook (`handoff-lembrete.mjs`)
+  repeats the request once, on the next prompt, only while the block is still empty; after that it
+  stays silent. It is its own small script because it runs on every prompt: the common path reads
+  one state file and exits, without loading the symbol index or the transcript.
+
 ## [2.9.9] — 2026-10-15
 
 ### Fixed

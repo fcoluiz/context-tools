@@ -110,7 +110,8 @@ test('os três manifestos de hooks cobrem o mesmo conjunto de scripts', () => {
   // `verify.mjs` também: ele lê a sequência edição → comando do transcript do Claude, e o
   // rollout do Codex não tem formato estável para isso. No Codex o `verify` segue disponível
   // como comando sob demanda; registrá-lo como hook só gastaria uma partida de Node por turno.
-  const ferramentas = (mapa) => new Set(Object.values(mapa).flat().filter((s) => !/md-hint\.mjs$|^verify\.mjs$/.test(s)));
+  // `handoff-lembrete.mjs` repete o aviso de handoff do Stop, que o Codex não emite.
+  const ferramentas = (mapa) => new Set(Object.values(mapa).flat().filter((s) => !/md-hint\.mjs$|^verify\.mjs$|^handoff-lembrete\.mjs$/.test(s)));
   const noCodex = ferramentas(codexPlugin);
   const faltando = [...ferramentas(claude)].filter((script) => !noCodex.has(script));
   assert.deepEqual(faltando, [], 'ferramentas que o Claude roda em hook sem contrapartida no Codex');

@@ -205,6 +205,13 @@ mais. Depender de alguém lembrar era apostar o ganho de 19-27% na memória de q
 handoff auto-gerado que existiu em disco tinha o bloco **em branco**. (Extração por heurística já
 foi tentada e descartada: detectar reversão por palavra-chave dava quase só falso positivo.)
 
+Esse pedido se perde quando o turno acaba numa ferramenta que encerra o turno (a caixa de próximo
+passo do app desktop): o Claude Code roda o hook de `Stop`, mas descarta o texto, sem turno extra e
+sem entrega depois (medido em 2026-10-16 nos transcripts locais: 492 de 492 entregues depois de uma
+mensagem do assistente, 3 de 3 perdidos depois dessa ferramenta). Por isso um hook de
+`UserPromptSubmit` repete o pedido **uma vez**, no prompt seguinte, só se o bloco segue em branco e
+o prompt de retomada ainda não saiu. Depois disso, cala.
+
 **`--prompt` devolve o handoff como texto para colar numa sessão nova**, com o enquadramento que
 falta no arquivo ("continuando o trabalho de uma sessão anterior; não refaça o que já está feito").
 O arquivo serve a quem abre o repositório; o prompt serve a quem abre uma sessão — que é o momento
@@ -881,6 +888,7 @@ registrado.
 | `UserPromptSubmit` (Codex) | confere cada arquivo citado contra o fingerprint próprio no mapa; só injeta contexto se estiver defasado, sem cobertura ou sem verificação possível | sem chamada a modelo; um processo local por prompt |
 | `Stop` | Claude avisa quando a sessão fica cara e grava o handoff; Codex apenas registra métricas | **uma vez por sessão** |
 | `Stop` | entrega o prompt de retomada, assim que o bloco volátil é preenchido | uma vez por sessão |
+| `UserPromptSubmit` (Claude) | se o aviso do `Stop` saiu e o bloco volátil segue em branco, repete o pedido de preenchê-lo | **uma vez por sessão**; no resto, lê um arquivo de estado pequeno e sai |
 | `SessionStart` | lista mapas de contexto e marca os defasados; mostra aviso visível quando há ação necessária | ~175 tokens |
 | `SessionStart` | garante a estrutura padrão do `ai-context`, aponta o índice e avisa a primeira configuração; enquanto o índice for o único documento, diz que ainda não há o que ler em vez de mandar lê-lo | só quando a documentação está habilitada |
 | `SessionStart` | uma linha com o comando de teste do projeto, o que o `npm test` roda de fato e como rodar um arquivo de teste só, quando o runner diz; num projeto JavaScript com dependências declaradas e nenhuma instalada, que os testes vão falhar até instalá-las. No benchmark de resultado, os agentes gastavam de 3 a 8 turnos de uma correção descobrindo isso | ~30 tokens; calado quando não há comando detectável ou `verify.enabled` é falso |

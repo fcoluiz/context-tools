@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.10] — 2026-10-16
+
 ### Fixed
 
 - **The request to fill in the handoff now survives a lost `Stop` message.** When a turn ends on a

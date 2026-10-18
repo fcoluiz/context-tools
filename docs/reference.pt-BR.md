@@ -212,11 +212,30 @@ mensagem do assistente, 3 de 3 perdidos depois dessa ferramenta). Por isso um ho
 `UserPromptSubmit` repete o pedido **uma vez**, no prompt seguinte, só se o bloco segue em branco e
 o prompt de retomada ainda não saiu. Depois disso, cala.
 
+**Com o bloco preenchido, o `Stop` oferece uma sessão nova sozinho** — sem comando para lembrar.
+O prompt de retomada é gravado ao lado do handoff (`handoff-<id>.prompt.md`) e **não** vai para o
+chat: a sessão cara é o último lugar onde gastar mais contexto. Em vez disso o agente pergunta ao
+usuário, com uma pergunta de múltipla escolha — "Nova sessão a partir do handoff" ou "Continuar
+aqui" — e registra a resposta com `handoff.mjs --resposta=sim|nao --sessao=<id>`. Se essa oferta se
+perder como o pedido acima, o `UserPromptSubmit` a repete **uma vez** enquanto não houver resposta.
+
+No **sim**, o handoff fica *pendente* e o agente abre a sessão nova:
+
+- no app desktop, ele mesmo inicia uma sessão nova, cujo prompt é rodar
+  `handoff.mjs --retomar=<id>` — que imprime exatamente aquele handoff e o apaga;
+- no terminal, o usuário digita `/clear` (ou abre `claude` na mesma pasta): o `SessionStart`
+  seguinte (`startup` ou `clear`, nunca a sessão de origem, até 2 h depois da resposta) carrega o
+  handoff pendente no contexto e o apaga. O arquivo do prompt também fica lá para colar.
+
+Handoff usado é apagado, para não ser retomado de novo por engano numa terceira sessão. O que nunca
+foi usado é apagado depois de 7 dias; só os nomes que o hook gera são tocados. O arquivo do handoff
+começa com um cabeçalho curto — versão do formato, id da sessão de origem, data, branch e commit — e
+o prompt de retomada diz de que sessão veio.
+
 **`--prompt` devolve o handoff como texto para colar numa sessão nova**, com o enquadramento que
 falta no arquivo ("continuando o trabalho de uma sessão anterior; não refaça o que já está feito").
-O arquivo serve a quem abre o repositório; o prompt serve a quem abre uma sessão — que é o momento
-em que o handoff vale alguma coisa. Ele **prefere o arquivo já salvo**: regenerar apagaria o bloco
-volátil que alguém acabou de preencher.
+Ele **prefere o arquivo já salvo**: regenerar apagaria o bloco volátil que alguém acabou de
+preencher.
 
 ### O laço que faltava: dividir a sessão compensou?
 
@@ -570,6 +589,13 @@ janela ainda rodando.
 injetado um dia, o desenho que os números sustentam é o mínimo: só o bloco volátil, só quando
 preenchido, só quando a sessão anterior fechou de verdade. O bloco mecânico não entra.
 
+> **O que foi construído depois não é isto.** O fluxo de retomada acima nunca injeta por padrão.
+> Ele só carrega um handoff depois que o usuário respondeu **sim** a seguir numa sessão nova, com o
+> bloco volátil preenchido, numa sessão aberta em até 2 h, uma vez — e depois o apaga. Cada objeção
+> daqui é respondida por esse opt-in: nenhuma sessão paga por ele sem o usuário ter escolhido, e o
+> caso das janelas simultâneas não pega o handoff errado porque o pendente nomeia a sessão de
+> origem. Ele carrega o mesmo prompt que o usuário colava à mão, bloco mecânico incluído.
+
 > **Duas economias de tamanhos muito diferentes — não confunda as duas.** Navegar melhor
 > (`symbols`, `outline`, `coupling`) rende **1-3%**, e isso sozinho não justificaria ferramenta
 > nenhuma; o que justifica esse lado é **0 linha errada em 9.000 arquivos**, os **183 round-trips**
@@ -887,8 +913,9 @@ registrado.
 | `PostToolUse` (Grep / Bash) | depois de um Grep, ou de um `grep`/`rg`, que devolveu número de linha: diz em qual função, método ou classe cai cada linha encontrada, com o intervalo dela e, quando cabe, a linha da declaração (os parâmetros), a partir do outline dos arquivos que apareceram (sem índice). Código de produção primeiro, testes no fim; até 20 arquivos, e os que ficam de fora são nomeados como não anotados — nunca corta em silêncio. O Grep mostra `356: if (_maxDepth …` sem o método em volta; no benchmark de resultado, um agente respondeu só com isso e nomeou o método errado | só quando algum arquivo encontrado tem parser; no máximo 2.000 caracteres |
 | `UserPromptSubmit` (Codex) | confere cada arquivo citado contra o fingerprint próprio no mapa; só injeta contexto se estiver defasado, sem cobertura ou sem verificação possível | sem chamada a modelo; um processo local por prompt |
 | `Stop` | Claude avisa quando a sessão fica cara e grava o handoff; Codex apenas registra métricas | **uma vez por sessão** |
-| `Stop` | entrega o prompt de retomada, assim que o bloco volátil é preenchido | uma vez por sessão |
-| `UserPromptSubmit` (Claude) | se o aviso do `Stop` saiu e o bloco volátil segue em branco, repete o pedido de preenchê-lo | **uma vez por sessão**; no resto, lê um arquivo de estado pequeno e sai |
+| `Stop` | assim que o bloco volátil é preenchido, grava o prompt de retomada em disco e pede ao agente que ofereça ao usuário uma sessão nova | uma vez por sessão |
+| `UserPromptSubmit` (Claude) | se o aviso do `Stop` saiu e o bloco volátil segue em branco, repete o pedido de preenchê-lo; se a oferta de sessão nova saiu sem resposta, repete a oferta | **uma vez cada, por sessão**; no resto, lê um arquivo de estado pequeno e sai |
+| `SessionStart` (Claude) | carrega o handoff que o usuário escolheu retomar (em `startup`/`clear`, até 2 h depois) e o apaga; apaga handoffs gerados e não usados com mais de 7 dias | só depois de um **sim** à oferta de sessão nova |
 | `SessionStart` | lista mapas de contexto e marca os defasados; mostra aviso visível quando há ação necessária | ~175 tokens |
 | `SessionStart` | garante a estrutura padrão do `ai-context`, aponta o índice e avisa a primeira configuração; enquanto o índice for o único documento, diz que ainda não há o que ler em vez de mandar lê-lo | só quando a documentação está habilitada |
 | `SessionStart` | uma linha com o comando de teste do projeto, o que o `npm test` roda de fato e como rodar um arquivo de teste só, quando o runner diz; num projeto JavaScript com dependências declaradas e nenhuma instalada, que os testes vão falhar até instalá-las. No benchmark de resultado, os agentes gastavam de 3 a 8 turnos de uma correção descobrindo isso | ~30 tokens; calado quando não há comando detectável ou `verify.enabled` é falso |

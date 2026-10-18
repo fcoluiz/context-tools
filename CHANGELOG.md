@@ -8,6 +8,32 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Changed
+
+- **A filled-in handoff now ends in a question, not in a block to copy.** The `Stop` hook used to
+  paste the whole resume prompt into the expensive session for the user to copy. It now writes the
+  prompt to disk and asks the agent to offer, with a multiple-choice question, "Fresh session from
+  the handoff" or "Keep going here". The answer is recorded with
+  `handoff.mjs --resposta=sim|nao --sessao=<id>`. If the offer is lost the same way the fill-in
+  request was (a turn ending on the desktop app's next-step box), the `UserPromptSubmit` hook
+  repeats it once while there is no answer.
+- **On yes, the new session starts from the right handoff and uses it up.** In the desktop app the
+  agent starts the new session itself, telling it to run `handoff.mjs --retomar=<id>`, which prints
+  that handoff and deletes it. In the terminal, `/clear` (or a new `claude` in the same folder) is
+  enough: `SessionStart` loads the accepted handoff, only on `startup`/`clear`, never in the origin
+  session, at most 2 h after the answer, and deletes it. The prompt file is still there to paste.
+- **Handoffs carry their origin.** The file starts with a header (format version, origin session id,
+  creation time, branch and commit), and the resume prompt names the session it came from.
+
+### Fixed
+
+- **Generated handoffs no longer pile up.** Unused ones are deleted after 7 days, at `SessionStart`;
+  only the names the hook generates are touched.
+- **The test suite no longer writes to the developer's Claude settings.** `tests/mcp.test.mjs` ran
+  the global setup without its own `CLAUDE_CONFIG_DIR`, so it set the `context-tools` entry in
+  `~/.claude/settings.json` to the test tag `v9.9.9`. With that tag the next plugin update could
+  not move to the real release.
+
 ## [2.9.10] — 2026-10-16
 
 ### Fixed

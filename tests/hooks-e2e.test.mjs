@@ -43,11 +43,12 @@ function repo({ comMapa = true, comMudanca = false } = {}) {
   return raiz;
 }
 
-function rodar(script, args, raiz, env = {}) {
+function rodar(script, args, raiz, env = {}, input) {
   return spawnSync(process.execPath, [S(script), ...args], {
     env: { ...process.env, CONTEXT_TOOLS_HOST: 'claude', CONTEXT_MAPS_ROOT: raiz, CLAUDE_PROJECT_DIR: raiz, CONTEXT_TOOLS_LANG: 'en', ...env },
     encoding: 'utf8',
     cwd: raiz,
+    ...(input === undefined ? {} : { input }),
   });
 }
 
@@ -1443,11 +1444,11 @@ test('E2E: símbolo grande demais não é atribuído — o nome não diria nada'
   } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
-test('E2E: o Stop entrega o prompt sozinho, mas SÓ depois do bloco preenchido', () => {
-  // O prompt não pode sair junto do aviso: naquele instante o bloco volátil acabou de ser
-  // gerado EM BRANCO, e é ele que faz o prompt valer a pena colar. Entregá-lo ali seria
-  // entregar a versão inútil — a mesma que já existiu em disco e não ajudou ninguém. Então o
-  // hook espera o preenchimento e entrega no turno seguinte, sem ninguém lembrar de comando.
+test('E2E: o Stop oferece a sessão nova sozinho, mas SÓ depois do bloco preenchido', () => {
+  // A oferta não pode sair junto do aviso: naquele instante o bloco volátil acabou de ser
+  // gerado EM BRANCO, e é ele que faz a retomada valer a pena. Então o hook espera o
+  // preenchimento e oferece no turno seguinte, sem ninguém lembrar de comando. O prompt vai para
+  // disco, não para o chat: quem o lê é a sessão nova.
   const raiz = repo({ comMapa: false, comMudanca: true });
   const transcritos = mkdtempSync(join(tmpdir(), 'ctx-transc-'));
   const sid = 'sessao-duas-fases';
@@ -1478,15 +1479,22 @@ test('E2E: o Stop entrega o prompt sozinho, mas SÓ depois do bloco preenchido',
     writeFileSync(doc, readFileSync(doc, 'utf8')
       .replace(/^(- \*\*.+?\*\*)\s*$/m, '$1 estava no parser de Pascal'));
 
-    // FASE 2 — o prompt sai sozinho, sem ninguém lembrar de comando, e vai também para disco.
+    // FASE 2 — a oferta sai sozinha, com o comando de resposta amarrado a esta sessão.
     const f2 = stop();
     assert.equal(f2.status, 0);
-    assert.match(f2.stdout, /Continuing work from a previous session/, `esperava o prompt, veio: ${f2.stdout}`);
-    assert.match(f2.stdout, /estava no parser de Pascal/, 'o bloco preenchido tem de ir junto');
-    assert.ok(existsSync(doc.replace(/\.md$/, '.prompt.md')), 'o prompt também vai para disco');
+    assert.match(f2.stdout, /Handoff ready/, `esperava a oferta, veio: ${f2.stdout}`);
+    assert.match(f2.stdout, /AskUserQuestion/);
+    assert.match(f2.stdout, /--sessao=sessao-duas-fases --resposta=sim/);
+    assert.doesNotMatch(f2.stdout, /estava no parser de Pascal/, 'o handoff não vai para o chat da sessão cara');
+    const prompt = readFileSync(doc.replace(/\.md$/, '.prompt.md'), 'utf8');
+    assert.match(prompt, /Continuing work from a previous session/);
+    assert.match(prompt, /estava no parser de Pascal/, 'o bloco preenchido vai no prompt');
+    assert.match(prompt, /Origin: session `sessao-duas-fases`/, 'o prompt diz de que sessão veio');
+    assert.doesNotMatch(prompt, /^handoff: 1/m, 'o cabeçalho fica no arquivo, não no prompt');
+    assert.match(readFileSync(doc, 'utf8'), /^---\nhandoff: 1\nsession: sessao-duas-fases\n/, 'o arquivo carrega a versão do formato e a sessão de origem');
 
     // E uma vez só.
-    assert.equal(stop().stdout.trim(), '', 'o prompt sai UMA vez por sessão');
+    assert.equal(stop().stdout.trim(), '', 'a oferta sai UMA vez por sessão');
   } finally {
     rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     rmSync(transcritos, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
@@ -1530,13 +1538,17 @@ test('E2E: aviso perdido no Stop vira UM lembrete no prompt seguinte, e só um',
     assert.equal(prompt().stdout.trim(), '', 'o lembrete sai UMA vez');
     assert.equal(stop().stdout.trim(), '', 'o Stop segue calado com o bloco em branco');
 
-    // Preenchido, a fase 2 continua como antes: o prompt de retomada sai no Stop.
+    // Preenchido, a fase 2 sai no Stop: a oferta de sessão nova.
     writeFileSync(doc, readFileSync(doc, 'utf8')
       .replace(/^(- \*\*.+?\*\*)\s*$/m, '$1 parou no lembrete'));
     const f2 = stop();
-    assert.match(f2.stdout, /Continuing work from a previous session/, `esperava o prompt, veio: ${f2.stdout}`);
-    assert.match(f2.stdout, /parou no lembrete/);
-    assert.equal(prompt().stdout.trim(), '', 'depois do prompt entregue, nada a lembrar');
+    assert.match(f2.stdout, /Handoff ready/, `esperava a oferta, veio: ${f2.stdout}`);
+
+    // A oferta também pode se perder no Stop: sem resposta, o prompt seguinte a repete UMA vez.
+    const l2 = JSON.parse(prompt().stdout).hookSpecificOutput.additionalContext;
+    assert.match(l2, /handoff at \.claude\/handoff-sessao-l\.prompt\.md is ready/);
+    assert.match(l2, /--sessao=sessao-lembrete --resposta=sim/);
+    assert.equal(prompt().stdout.trim(), '', 'a oferta é lembrada UMA vez');
 
     // Outra sessão no mesmo projeto, sem aviso próprio: nada.
     assert.equal(prompt({ ...env, CLAUDE_CODE_SESSION_ID: 'outra-sessao' }).stdout.trim(), '');
@@ -1544,6 +1556,114 @@ test('E2E: aviso perdido no Stop vira UM lembrete no prompt seguinte, e só um',
     rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     rmSync(transcritos, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
+});
+
+/** Sessão cara já na fase 2: aviso dado, bloco preenchido, oferta emitida. */
+function sessaoComOferta(sid) {
+  const raiz = repo({ comMapa: false, comMudanca: true });
+  const transcritos = mkdtempSync(join(tmpdir(), 'ctx-transc-'));
+  const env = { CLAUDE_CODE_SESSION_ID: sid, CONTEXT_TOOLS_TRANSCRIPTS: transcritos };
+  const uso = (n) => JSON.stringify({
+    type: 'assistant', timestamp: new Date(17e11 + n * 60000).toISOString(),
+    message: { usage: { cache_read_input_tokens: 260000, cache_creation_input_tokens: 100 } },
+  });
+  writeFileSync(join(transcritos, `${sid}.jsonl`), Array.from({ length: 40 }, (_, i) => uso(i)).join('\n') + '\n');
+  const doc = join(raiz, '.claude', `handoff-${sid.slice(0, 8)}.md`);
+  rodar('handoff.mjs', ['--stop-report', `--root=${raiz}`], raiz, env);
+  writeFileSync(doc, readFileSync(doc, 'utf8').replace(/^(- \*\*.+?\*\*)\s*$/m, '$1 faltava o teste do parser'));
+  const oferta = rodar('handoff.mjs', ['--stop-report', `--root=${raiz}`], raiz, env);
+  assert.match(oferta.stdout, /Handoff ready/, `a oferta tinha de sair: ${oferta.stdout}`);
+  return {
+    raiz, env, doc,
+    // Como o agente roda: no Bash dele, com a sessão vinda do `--sessao` da oferta.
+    handoff: (args, e = {}) => rodar('handoff.mjs', [`--root=${raiz}`, ...args], raiz, { ...env, ...e }),
+    lembrete: () => rodar('handoff-lembrete.mjs', [`--root=${raiz}`], raiz, env),
+    inicio: (evento) => rodar('handoff.mjs', ['--session-start', `--root=${raiz}`], raiz,
+      { CLAUDE_CODE_SESSION_ID: evento.session_id }, JSON.stringify(evento)),
+    estado: () => JSON.parse(readFileSync(join(raiz, '.claude', '.handoff-aviso.json'), 'utf8')),
+    limpar: () => {
+      rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+      rmSync(transcritos, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    },
+  };
+}
+
+test('E2E: "sim" deixa o handoff pendente, a sessão nova o carrega sozinha e ele some do disco', () => {
+  const s = sessaoComOferta('sessao-sim-origem');
+  const prompt = s.doc.replace(/\.md$/, '.prompt.md');
+  try {
+    const r = s.handoff(['--sessao=sessao-sim-origem', '--resposta=sim']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /--retomar=sessao-s/, 'o prompt da sessão nova referencia ESTE handoff');
+    assert.match(r.stdout, /\/clear/, 'no terminal: /clear basta');
+    assert.equal(s.estado()._pendente.origem, 'sessao-sim-origem');
+    assert.equal(s.lembrete().stdout.trim(), '', 'respondido: nada a lembrar');
+
+    // `resume`/`compact` continuam uma sessão com contexto próprio: não consomem.
+    assert.doesNotMatch(s.inicio({ session_id: 'outra', source: 'resume' }).stdout, /continues session/);
+    // A própria sessão de origem também não.
+    assert.doesNotMatch(s.inicio({ session_id: 'sessao-sim-origem', source: 'startup' }).stdout, /continues session/);
+    assert.ok(existsSync(s.doc));
+
+    // `/clear`: a sessão nova recebe o handoff no contexto, e os arquivos somem.
+    const nova = s.inicio({ session_id: 'sessao-nova', source: 'clear' });
+    assert.equal(nova.status, 0, nova.stderr);
+    const ctx = JSON.parse(nova.stdout).hookSpecificOutput.additionalContext;
+    assert.match(ctx, /continues session `sessao-s`/);
+    assert.match(ctx, /faltava o teste do parser/);
+    assert.match(ctx, /Origin: session `sessao-sim-origem`/);
+    assert.ok(!existsSync(s.doc) && !existsSync(prompt), 'handoff usado é apagado');
+    assert.equal(s.estado()._pendente, undefined);
+
+    // O app desktop manda a sessão nova rodar `--retomar`: já carregado, não "nada pendente".
+    const de_novo = s.handoff(['--retomar=sessao-s'], { CLAUDE_CODE_SESSION_ID: 'sessao-nova' });
+    assert.match(de_novo.stdout, /already loaded/);
+    // Uma terceira sessão não recebe nada.
+    assert.doesNotMatch(s.inicio({ session_id: 'terceira', source: 'startup' }).stdout, /continues session/);
+  } finally { s.limpar(); }
+});
+
+test('E2E: --retomar imprime o handoff certo e o apaga (sessão nova aberta pelo app)', () => {
+  const s = sessaoComOferta('sessao-app-origem');
+  try {
+    s.handoff(['--sessao=sessao-app-origem', '--resposta=sim']);
+    // Sessão aberta noutra pasta (worktree): o SessionStart dali não vê o pendente; o comando, sim.
+    const r = s.handoff(['--retomar=sessao-a'], { CLAUDE_CODE_SESSION_ID: 'sessao-do-app' });
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /Continuing work from a previous session/);
+    assert.match(r.stdout, /faltava o teste do parser/);
+    assert.ok(!existsSync(s.doc), 'consumido');
+    assert.match(s.handoff(['--retomar'], { CLAUDE_CODE_SESSION_ID: 'mais-uma' }).stdout, /No pending handoff/);
+  } finally { s.limpar(); }
+});
+
+test('E2E: "nao" mantém a sessão, cala o lembrete e não deixa nada pendente', () => {
+  const s = sessaoComOferta('sessao-nao-origem');
+  try {
+    const r = s.handoff(['--sessao=sessao-nao-origem', '--resposta=nao']);
+    assert.match(r.stdout, /Keeping this session/);
+    assert.equal(s.lembrete().stdout.trim(), '');
+    assert.equal(s.estado()._pendente, undefined);
+    assert.doesNotMatch(s.inicio({ session_id: 'nova', source: 'clear' }).stdout, /continues session/);
+    assert.ok(existsSync(s.doc), 'sem "sim", o handoff fica para quem quiser usar');
+  } finally { s.limpar(); }
+});
+
+test('E2E: SessionStart apaga handoffs gerados com mais de 7 dias, e só os gerados', () => {
+  const raiz = repo({ comMapa: false });
+  const dir = join(raiz, '.claude');
+  try {
+    mkdirSync(dir, { recursive: true });
+    const velho = Date.now() / 1000 - 8 * 24 * 3600;
+    const arqs = { velho: 'handoff-abcdef12.md', velhoPrompt: 'handoff-abcdef12.prompt.md', novo: 'handoff-12345678.md', manual: 'handoff-notas-do-time.md' };
+    for (const nome of Object.values(arqs)) writeFileSync(join(dir, nome), 'x\n');
+    for (const nome of [arqs.velho, arqs.velhoPrompt, arqs.manual]) utimesSync(join(dir, nome), velho, velho);
+    const r = rodar('handoff.mjs', ['--session-start', `--root=${raiz}`], raiz, { CLAUDE_CODE_SESSION_ID: 'limpeza' }, '{}');
+    assert.equal(r.status, 0, r.stderr);
+    assert.ok(!existsSync(join(dir, arqs.velho)) && !existsSync(join(dir, arqs.velhoPrompt)), 'gerado e velho: apagado');
+    assert.ok(existsSync(join(dir, arqs.novo)), 'gerado e recente: fica');
+    assert.ok(existsSync(join(dir, arqs.manual)), 'escrito à mão: nunca é tocado');
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
 test('E2E: aviso que chegou e foi preenchido não gera lembrete', () => {

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// 📝 Hook `UserPromptSubmit` (Claude): o pedido de preencher o handoff, lembrado UMA vez.
+// 📝 Hook `UserPromptSubmit` (Claude): o pedido de preencher o handoff e a oferta de sessão nova,
+// cada um lembrado UMA vez quando a mensagem do `Stop` se perdeu.
 //
 // Por que a fase 1 do `handoff.mjs --stop-report` não basta. Medido em 2026-10-16 nos transcripts
 // locais do Claude Code, em 495 `Stop` que emitiram `additionalContext`: quando o turno acaba num
@@ -24,7 +25,22 @@
 
 import { readFileSync } from 'node:fs';
 import { resolveRoot, safe, isMain, relPath, runtimeHost, loadConfig } from './lib/roots.mjs';
-import { sessionId, caminhoDoHandoff, estadoDoAviso, blocoVolatilPreenchido } from './lib/handoff-estado.mjs';
+import { sessionId, caminhoDoHandoff, estadoDoAviso, blocoVolatilPreenchido, comandoDoHandoff } from './lib/handoff-estado.mjs';
+
+/**
+ * Qual lembrete cabe agora, se algum. Cada um sai UMA vez por sessão:
+ * - `lembrete`: a fase 1 avisou, mas o bloco volátil segue em branco;
+ * - `ofertaLembrete`: a fase 2 ofereceu a sessão nova, e ninguém respondeu (`--resposta`).
+ *   A oferta perdida é o mesmo descarte do aviso perdido: o turno que preenche o bloco costuma
+ *   acabar na caixa de próximo passo, e o `Stop` seguinte fala sozinho.
+ */
+function lembreteDevido(root, sid, estado) {
+  if (!estado || !estado.aviso || estado.resposta || estado.consumido) return null;
+  if (estado.prompt) return estado.ofertaLembrete ? null : 'oferta';
+  if (estado.lembrete) return null;
+  const doc = safe(() => readFileSync(caminhoDoHandoff(root, sid), 'utf8'), null);
+  return doc && !blocoVolatilPreenchido(doc) ? 'preencher' : null;
+}
 
 async function main() {
   if (runtimeHost() === 'codex') return;
@@ -32,17 +48,19 @@ async function main() {
   if (!sid) return;
   const root = resolveRoot(process.argv.slice(2));
   const { estado, salvar } = estadoDoAviso(root, sid);
-  if (!estado || !estado.aviso || estado.prompt || estado.lembrete) return;
+  const devido = lembreteDevido(root, sid, estado);
+  if (!devido) return;
   const destino = caminhoDoHandoff(root, sid);
-  const doc = safe(() => readFileSync(destino, 'utf8'), null);
-  if (!doc || blocoVolatilPreenchido(doc)) return;
-  salvar({ ...estado, lembrete: Date.now() });
+  salvar({ ...estado, [devido === 'oferta' ? 'ofertaLembrete' : 'lembrete']: Date.now() });
   const [{ writeHookOutput }, { makeT, detectLang }] = await Promise.all([
     import('./lib/hook-output.mjs'), import('./lib/i18n.mjs'),
   ]);
   const t = makeT(detectLang(loadConfig(root)));
+  const texto = devido === 'oferta'
+    ? t('ses.ofertaLembrete', { arq: relPath(root, destino.replace(/\.md$/, '.prompt.md')), cmd: comandoDoHandoff(root, sid) })
+    : t('ses.lembrete', { arq: relPath(root, destino) });
   writeHookOutput(root, {
-    hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: t('ses.lembrete', { arq: relPath(root, destino) }) },
+    hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: texto },
   });
 }
 

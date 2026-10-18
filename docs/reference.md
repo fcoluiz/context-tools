@@ -205,8 +205,8 @@ is not silently rewritten afterwards (it would change under whoever is reading i
 
 For Codex, the handoff records the normalized transcript metrics (input, cached input, output,
 model context window, rate-limit data, and compactions) for future analysis, but it does **not**
-reuse Claude's measured cost curve or emit a context/time warning at `Stop`. The handoff and
-paste-ready prompt follow the same two-phase flow, and the user can still request them manually.
+reuse Claude's measured cost curve or emit a context/time warning at `Stop`, so it does not offer a
+fresh session either. The handoff and the resume prompt can still be requested manually.
 
 **The same warning asks the AGENT to fill in the volatile block** — not the human. That part is not
 automatable without an LLM: "what was tried and failed" is not in git, it is in the head of whoever
@@ -223,11 +223,29 @@ message, 3 of 3 dropped after that tool). So a `UserPromptSubmit` hook repeats t
 on the next prompt, only if the block is still empty and the resume prompt has not gone out. After
 that it stays silent.
 
-**Once the block is filled, the `Stop` hook hands over the paste-ready prompt by itself** — no
-command to remember. It cannot do that alongside the warning: at that moment the volatile block has
-just been generated empty, and that block is the only part that makes the prompt worth pasting.
-`--prompt` still produces it on demand, and **prefers the already-saved file**: regenerating would
-erase the block someone just filled in.
+**Once the block is filled, the `Stop` hook offers a fresh session by itself** — no command to
+remember. It cannot do that alongside the warning: at that moment the volatile block has just been
+generated empty, and that block is the only part that makes resuming worth it. The resume prompt is
+written next to the handoff (`handoff-<id>.prompt.md`) and is **not** pasted into the chat: the
+expensive session is the last place to spend more context. Instead the agent asks the user with a
+multiple-choice question — "Fresh session from the handoff" or "Keep going here" — and records the
+answer with `handoff.mjs --resposta=sim|nao --sessao=<id>`. If that offer is dropped like the
+request above, the `UserPromptSubmit` hook repeats it **once** while there is no answer.
+
+On **yes**, the handoff becomes *pending* and the agent opens the new session:
+
+- in the desktop app, it starts a new session itself, whose prompt is to run
+  `handoff.mjs --retomar=<id>` — which prints that exact handoff and deletes it;
+- in the terminal, the user types `/clear` (or opens `claude` in the same folder): the next
+  `SessionStart` (`startup` or `clear`, never the origin session, at most 2 h after the answer)
+  loads the pending handoff into context and deletes it. The prompt file is also there to paste.
+
+A handoff that was used is deleted, so it cannot be resumed again by mistake in a third session.
+One that was never used is deleted after 7 days; only the names the hook generates are touched. The
+handoff file starts with a small header — format version, origin session id, creation time, branch
+and commit — and the resume prompt names the session it came from. `--prompt` still produces the
+prompt on demand, and **prefers the already-saved file**: regenerating would erase the block
+someone just filled in.
 
 ### The loop that was missing: did splitting the session pay off?
 
@@ -586,6 +604,13 @@ anything is ever injected, the design the numbers support is the minimum: only t
 only when filled in, only when the previous session actually closed. The mechanical block does not
 enter.
 
+> **What was later built is not this.** The resume flow above never injects by default. It loads a
+> handoff only after the user answered **yes** to moving on, with the volatile block filled, into a
+> session started within 2 h, once — and then deletes it. Each objection here is addressed by that
+> opt-in: no session pays for it unless the user chose it, and the simultaneous-window case cannot
+> pick the wrong handoff because the pending one names its origin session. It loads the same prompt
+> the user used to paste by hand, mechanical block included.
+
 > **Two savings of very different sizes — do not confuse them.** Navigating better (`symbols`,
 > `outline`, `coupling`) yields **1–3%**, and that alone would not justify any tool; what justifies
 > that side is **0 wrong lines across 9,000 files**, the **183 round-trips** the Grep hook would have
@@ -898,8 +923,9 @@ shows whether it is registered.
 | `PostToolUse` (Grep / Bash) | after a Grep, or a `grep`/`rg` command, that returned line numbers: names the function, method or class each matched line falls in, with its line range and, when it fits, its declaration line (the parameters), from the outline of the files that matched (no index). Production files first, tests last; up to 20 files, and the files left out are named as not annotated — never cut silently. Grep shows `356: if (_maxDepth …` without the method around it; in the outcome benchmark an agent answered from that alone and named the wrong method | only when a matched file has a parser; at most 2,000 characters |
 | `UserPromptSubmit` (Codex) | locally checks each explicitly named file against its own context-map fingerprint; emits context only for stale, uncovered, or unverifiable files | no model call; one local hook process per prompt |
 | `Stop` | Claude warns when the session gets expensive and writes the handoff; Codex only records metrics | **once per session** |
-| `Stop` | hands over the resume prompt, once the volatile block is filled in | once per session |
-| `UserPromptSubmit` (Claude) | if the `Stop` warning went out and the volatile block is still empty, repeats the request to fill it in | **once per session**; otherwise reads one small state file and exits |
+| `Stop` | once the volatile block is filled in, writes the resume prompt to disk and asks the agent to offer the user a fresh session | once per session |
+| `UserPromptSubmit` (Claude) | if the `Stop` warning went out and the volatile block is still empty, repeats the request to fill it in; if the fresh-session offer went out with no answer, repeats the offer | **once each per session**; otherwise reads one small state file and exits |
+| `SessionStart` (Claude) | loads the handoff the user chose to resume (on `startup`/`clear`, within 2 h) and deletes it; deletes unused generated handoffs older than 7 days | only after a **yes** to the fresh-session offer |
 | `SessionStart` | lists context maps and flags the stale ones; shows a visible notice when action is needed | ~175 tokens |
 | `SessionStart` | ensures the standard `ai-context` structure, points to its index, and announces first setup; while the index is the only document, says there is nothing to read yet instead of asking for it to be read | only when documentation is enabled |
 | `SessionStart` | one line with the project's test command, what `npm test` actually runs, and how to run a single test file when the runner tells; in a JavaScript project with dependencies declared and none installed, that the tests will fail until they are installed. In the outcome benchmark, agents spent 3–8 turns of a fix finding this out | ~30 tokens; silent when no test command is detectable or `verify.enabled` is false |

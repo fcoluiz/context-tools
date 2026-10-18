@@ -20,7 +20,13 @@
 //
 // Uso:
 //   handoff.mjs                → imprime o handoff
-//   handoff.mjs --salvar       → grava em .claude/handoff-<data>.md
+//   handoff.mjs --salvar       → grava em .claude/handoff-<sessão>.md
+//   handoff.mjs --prompt       → o handoff como prompt para colar numa sessão nova
+//   handoff.mjs --resposta=sim|nao [--sessao=<id>]
+//                              → registra a resposta do usuário à oferta de sessão nova; `sim`
+//                                deixa o handoff pendente e diz como abrir a sessão nova
+//   handoff.mjs --retomar[=<id>]
+//                              → imprime o handoff (o pendente, ou o da sessão <id>) e o apaga
 //   handoff.mjs --root=<dir>
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -29,7 +35,11 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveRoot, findRepos, safe, loadConfig, isMain, relPath, stateDir, statePath, stateRelPrefix, runtimeHost } from './lib/roots.mjs';
 import { writeHookOutput } from './lib/hook-output.mjs';
-import { sessionId, caminhoDoHandoff, estadoDoAviso, blocoVolatilPreenchido } from './lib/handoff-estado.mjs';
+import {
+  sessionId, caminhoDoHandoff, estadoDoAviso, blocoVolatilPreenchido, lerPendente, gravarPendente,
+  consumirHandoff, jaConsumidoPor, origemPorPrefixo, limparHandoffsAntigos, comandoDoHandoff,
+  DIAS_RETENCAO, JANELA_AUTO_MS,
+} from './lib/handoff-estado.mjs';
 import { buildIndex } from './symbols.mjs';
 import {
   transcriptDaSessao, metricasDaSessao, multiplicadorDeCusto,
@@ -315,19 +325,28 @@ function stopReport(root, t) {
   // ao preenchimento é o momento certo: o dado existe, e ninguém precisou lembrar de nada.
   // Mesma doutrina do veredito de divisão, que julga o par anterior porque é o único completo.
   if (estado) {
-    if (estado.prompt) return;                               // já entregue: silêncio
+    if (estado.prompt || estado.resposta) return;            // já ofertado ou respondido: silêncio
     const doc = safe(() => readFileSync(destino, 'utf8'), null);
     // Ainda em branco: cala. Insistir a cada turno ensinaria a ignorar a categoria inteira,
     // que é a mesma assimetria que faz o aviso de "sem mapa" ser generoso ao calar.
     if (!blocoVolatilPreenchido(doc)) return;
     const prompt = safe(() => montarPrompt(root, sid, t), null);
     if (!prompt) return;
-    // Também vai para disco: entregar só pelo contexto faria o prompt depender de alguém
-    // repassá-lo. O nome cai no `handoff-*.md` que o `.gitignore` já cobre.
+    // Vai para disco, e NÃO para o chat. Antes o prompt inteiro saía aqui para o usuário copiar;
+    // agora sai só a oferta de abrir a sessão nova, e quem lê o prompt é a sessão nova
+    // (`--retomar` ou o SessionStart). Colar o handoff nesta sessão gastaria contexto justamente
+    // na sessão que já ficou cara. O nome cai no `handoff-*.md` que o `.gitignore` já cobre.
     const pArq = destino.replace(/\.md$/, '.prompt.md');
     const salvo = safe(() => { writeFileSync(pArq, prompt); return true; }, false);
     salvar({ ...estado, prompt: Date.now() });
-    emitir(`${t('ses.promptPronto', { arq: salvo ? relPath(root, pArq) : null })}\n\n${prompt}`, { cap: false });
+    // `cap: false`: cortar a oferta no meio de um comando deixaria o agente sem como responder.
+    // Se esta mensagem se perder (turno que acaba numa ferramenta que encerra o turno), o
+    // `handoff-lembrete.mjs` repete a oferta uma vez no prompt seguinte, enquanto não houver resposta.
+    emitir(t('ses.oferta', {
+      arq: relPath(root, salvo ? pArq : destino),
+      mult: multiplicadorDeCusto(m.contexto).toFixed(1),
+      cmd: comandoDoHandoff(root, sid),
+    }), { cap: false });
     return;
   }
 
@@ -423,13 +442,46 @@ function relatorioDeDivisao(root, t) {
   return texto;
 }
 
+/** Evento do hook no stdin (`session_id`, `source`). Vazio quando rodado à mão. */
+function eventoDoHook() {
+  if (process.stdin.isTTY) return {};
+  return safe(() => JSON.parse(readFileSync(0, 'utf8') || '{}'), {}) || {};
+}
+
 /**
- * Saída única do `SessionStart` deste script: o veredito da divisão vai para o AGENTE
- * (`additionalContext`) e o aviso de versão nova vai para o USUÁRIO (`systemMessage`) — quem
+ * SessionStart: a sessão nova carrega sozinha o handoff que o usuário aceitou retomar.
+ *
+ * É o caminho do terminal: o usuário responde `sim`, digita `/clear` (ou abre outra sessão nesta
+ * pasta) e não precisa colar nada. No app desktop o agente abre a sessão nova mandando-a rodar
+ * `--retomar`; se ela abrir nesta mesma pasta, este hook já carregou, e o `--retomar` responde
+ * "já carregado". Consumir apaga o handoff: carregado uma vez, ele não volta em outra sessão.
+ *
+ * Só em `startup`/`clear`: `resume` e `compact` continuam uma sessão que já tem o próprio contexto.
+ * E nunca na própria sessão de origem, nem depois de `JANELA_AUTO_MS`.
+ */
+function retomadaAutomatica(root, t, evento) {
+  if (runtimeHost() === 'codex') return '';
+  const pendente = lerPendente(root);
+  if (!pendente) return '';
+  const atual = evento.session_id || sessionId();
+  if (!atual || atual === pendente.origem) return '';
+  if (evento.source && !['startup', 'clear'].includes(evento.source)) return '';
+  if (!(Date.now() - pendente.em <= JANELA_AUTO_MS)) return '';
+  const texto = consumirHandoff(root, pendente.origem, atual);
+  if (!texto) { gravarPendente(root, null); return ''; }
+  return `${t('ho.retomadaAuto', { sid: String(pendente.origem).slice(0, 8) })}\n\n${texto.trim()}`;
+}
+
+/**
+ * Saída única do `SessionStart` deste script: a retomada aceita e o veredito da divisão vão para o
+ * AGENTE (`additionalContext`) e o aviso de versão nova vai para o USUÁRIO (`systemMessage`) — quem
  * atualiza o plugin é a pessoa, não o modelo. Uma escrita só, porque duas no stdout não são JSON.
  */
 function sessionStart(root, cfg, t) {
-  const texto = relatorioDeDivisao(root, t);
+  const evento = eventoDoHook();
+  safe(() => limparHandoffsAntigos(root), 0);
+  const retomada = safe(() => retomadaAutomatica(root, t, evento), '');
+  const texto = [retomada, relatorioDeDivisao(root, t)].filter(Boolean).join('\n\n');
   const aviso = safe(() => updateNotice(cfg, { lang: detectLang(cfg) }), '');
   if (!texto && !aviso) return;
   writeHookOutput(root, {
@@ -494,7 +546,44 @@ function montarPrompt(root, sid, t) {
   // projeto é errar para o lado de MOSTRAR.
   const iPrimeiraSecao = linhas.findIndex((l) => l.startsWith('## '));
   const corpo = (iPrimeiraSecao >= 0 ? linhas.slice(iPrimeiraSecao) : linhas).join('\n').trim();
-  return [t('ho.promptCabecalho'), '', corpo, '', t('ho.promptRodape')].join('\n');
+  // A origem vem do arquivo SALVO quando há um: é ele que diz quando e sobre qual commit o bloco
+  // volátil foi escrito. O cabeçalho fresco só cobre o caso de quem pede o prompt sem ter salvado.
+  const meta = metaDoHandoff(salvo) || metaDoHandoff(doc);
+  const origem = meta && meta.session ? t('ho.promptOrigem', {
+    sid: meta.session, quando: meta.created, branch: meta.branch, head: meta.head,
+  }) : null;
+  return [t('ho.promptCabecalho'), '', ...(origem ? [origem, ''] : []), corpo, '', t('ho.promptRodape')].join('\n');
+}
+
+/**
+ * Cabeçalho do handoff: a que sessão ele pertence, quando foi escrito e sobre qual commit.
+ *
+ * Frontmatter YAML no topo, antes do título. Fica fora do prompt sem nenhum código novo, porque o
+ * corte do `montarPrompt` já descarta tudo antes do primeiro `##`. `handoff: 1` é a versão do
+ * formato, para uma versão futura reconhecer um arquivo antigo em vez de adivinhar.
+ */
+function cabecalhoDoHandoff(root, sid) {
+  const branch = git(root, ['-C', root, 'rev-parse', '--abbrev-ref', 'HEAD']).trim();
+  const head = git(root, ['-C', root, 'rev-parse', '--short', 'HEAD']).trim();
+  return [
+    '---',
+    'handoff: 1',
+    `session: ${sid || 'unknown'}`,
+    `created: ${new Date().toISOString().replace(/\.\d+Z$/, 'Z')}`,
+    ...(branch && head ? [`branch: ${branch}`, `head: ${head}`] : []),
+    '---',
+  ];
+}
+
+function metaDoHandoff(doc) {
+  const bloco = doc && doc.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!bloco) return null;
+  const meta = {};
+  for (const l of bloco[1].split(/\r?\n/)) {
+    const m = l.match(/^(\w+):\s*(.*)$/);
+    if (m) meta[m[1]] = m[2].trim();
+  }
+  return meta;
 }
 
 /**
@@ -502,7 +591,7 @@ function montarPrompt(root, sid, t) {
  * versões diferentes do mesmo documento seria pior que não ter nenhuma.
  */
 function montar(root, sid, t) {
-  const linhas = [];
+  const linhas = [...cabecalhoDoHandoff(root, sid)];
   linhas.push(`# ${t('ho.titulo')} — ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`);
 
   const m = metricasDaSessao(transcriptDaSessao(root, sid));
@@ -586,6 +675,39 @@ function montar(root, sid, t) {
   return linhas.join('\n') + '\n';
 }
 
+/**
+ * `--resposta=sim|nao`: o que o usuário escolheu na pergunta que a oferta do `Stop` pede.
+ *
+ * Gravar a resposta é o que cala o lembrete do `UserPromptSubmit`: sem ela, o hook não tem como
+ * saber se a oferta chegou ao usuário. `sim` deixa o handoff pendente para a sessão nova e
+ * imprime como abri-la; o prompt é regravado do arquivo atual, porque o bloco volátil pode ter
+ * mudado desde a oferta.
+ */
+function responder(root, sid, resposta, t) {
+  const { estado, salvar } = estadoDoAviso(root, sid);
+  const destino = caminhoDoHandoff(root, sid);
+  const sim = /^(s|sim|y|yes)$/i.test(String(resposta).trim());
+  salvar({ ...(estado || {}), resposta: sim ? 'sim' : 'nao', respondido: Date.now() });
+  if (!sim) { console.log(t('ho.respNao', { arq: relPath(root, destino), dias: DIAS_RETENCAO })); return; }
+  if (!existsSync(destino)) { console.log(t('ho.retomarNada')); return; }
+  const pArq = destino.replace(/\.md$/, '.prompt.md');
+  safe(() => writeFileSync(pArq, montarPrompt(root, sid, t)), null);
+  gravarPendente(root, { origem: sid, em: Date.now() });
+  console.log(t('ho.respSim', {
+    cmd: `${comandoDoHandoff(root)} --retomar=${String(sid).slice(0, 8)}`,
+    prompt: relPath(root, pArq),
+  }));
+}
+
+/** `--retomar[=<id>]`: imprime o handoff para a sessão nova e o apaga do disco. */
+function retomar(root, id, t) {
+  const atual = sessionId();
+  const origem = id ? origemPorPrefixo(root, id) : (lerPendente(root) || {}).origem;
+  const texto = origem ? consumirHandoff(root, origem, atual) : null;
+  if (texto) { console.log(texto.trim()); return; }
+  console.log(jaConsumidoPor(root, atual) ? t('ho.retomarJa') : t('ho.retomarNada'));
+}
+
 function main() {
   const args = process.argv.slice(2);
   const root = resolveRoot(args);
@@ -593,9 +715,15 @@ function main() {
   const t = makeT(detectLang(cfg));
   if (args.includes('--stop-report')) { stopReport(root, t); return; }
   if (args.includes('--session-start')) { sessionStart(root, cfg, t); return; }
-  const sid = sessionId();
+  const valor = (nome) => {
+    const a = args.find((x) => x === nome || x.startsWith(`${nome}=`));
+    return a === undefined ? undefined : (a.includes('=') ? a.slice(a.indexOf('=') + 1) : '');
+  };
+  const sid = valor('--sessao') || sessionId();
 
   if (args.includes('--prompt')) { console.log(montarPrompt(root, sid, t)); return; }
+  if (valor('--resposta') !== undefined) { responder(root, sid, valor('--resposta'), t); return; }
+  if (valor('--retomar') !== undefined) { retomar(root, valor('--retomar'), t); return; }
 
   const texto = montar(root, sid, t);
   if (args.includes('--salvar')) {
@@ -614,7 +742,9 @@ if (isMain(import.meta.url)) {
   finally {
     const args = process.argv.slice(2);
     recordMetric(root, 'handoff', {
-      mode: args.includes('--stop-report') ? 'stop-report' : args.includes('--session-start') ? 'session-start' : args.includes('--prompt') ? 'prompt' : args.includes('--salvar') ? 'save' : 'preview',
+      mode: args.includes('--stop-report') ? 'stop-report' : args.includes('--session-start') ? 'session-start'
+        : args.includes('--prompt') ? 'prompt' : args.some((a) => a.startsWith('--resposta')) ? 'answer'
+          : args.some((a) => a.startsWith('--retomar')) ? 'resume' : args.includes('--salvar') ? 'save' : 'preview',
       durationMs: Date.now() - started,
     });
   }

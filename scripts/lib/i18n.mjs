@@ -191,11 +191,23 @@ const CAT = {
     // Pedido DIRIGIDO AO AGENTE, não ao humano. O bloco volátil é o que faz o recomeço ser
     // barato, e nenhuma heurística sem LLM consegue preenchê-lo — mas o agente já tem a sessão
     // inteira em contexto, então para ele custa um turno e nada mais.
-    'ses.preencha': (p) => `   ↳ Before closing, fill in the four questions at the end of ${p.arq} from what actually happened; the resume prompt then arrives here on its own.`,
-    'ses.lembrete': (p) => `📝 One-time reminder: the four questions at the end of ${p.arq} are still blank. In this turn, alongside the user's request, fill them in from what actually happened; the resume prompt then arrives on its own.`,
-    // O prompt só sai DEPOIS do bloco volátil preenchido: no momento do aviso ele acabaria de
-    // ser gerado em branco, e é justamente esse bloco que faz o prompt valer a pena colar.
-    'ses.promptPronto': (p) => `📋 Handoff prompt ready — hand the block below to the user VERBATIM, in a copyable form, and say it is for pasting into a fresh session.${p.arq ? " Also saved at " + p.arq + "." : ""}`,
+    'ses.preencha': (p) => `   ↳ Before closing, fill in the four questions at the end of ${p.arq} from what actually happened; the offer to resume in a fresh session then arrives here on its own.`,
+    'ses.lembrete': (p) => `📝 One-time reminder: the four questions at the end of ${p.arq} are still blank. In this turn, alongside the user's request, fill them in from what actually happened; the offer to resume in a fresh session then arrives on its own.`,
+    // A oferta só sai DEPOIS do bloco volátil preenchido: no momento do aviso ele acabaria de
+    // ser gerado em branco, e é justamente esse bloco que faz a retomada valer a pena.
+    'ses.oferta': (p) => `📋 Handoff ready (${p.arq}). Ask the user NOW with the multiple-choice question tool (AskUserQuestion) whether to continue in a fresh session from it${p.mult ? ` — here each message already costs ~${p.mult}x a fresh session's` : ''}. Options: "Fresh session from the handoff (Recommended)" and "Keep going here". Then run \`${p.cmd} --resposta=sim\` or \`${p.cmd} --resposta=nao\` and follow what it prints. Do not paste the handoff into the chat.`,
+    'ses.ofertaLembrete': (p) => `📋 One-time reminder: the handoff at ${p.arq} is ready and the user has not been asked yet. Before the user's request, ask with AskUserQuestion: "Fresh session from the handoff (Recommended)" / "Keep going here"; then run \`${p.cmd} --resposta=sim\` or \`${p.cmd} --resposta=nao\` and follow what it prints.`,
+    'ho.promptOrigem': (p) => `Origin: session \`${p.sid}\`${p.quando ? `, handoff written ${p.quando}` : ''}${p.branch ? ` on branch \`${p.branch}\` at \`${p.head}\`` : ''}.`,
+    'ho.respSim': (p) => [
+      'Handoff marked for resuming. Do ONE of these, by what you have:',
+      `- A tool to start a new session (desktop app): start it now, in this same folder, with fresh context and this prompt: "Resume the previous session's work: run \`${p.cmd}\` and follow the handoff it prints." Then tell the user the new session is open and this one can be archived.`,
+      `- No such tool (terminal): tell the user to type /clear (or open \`claude\` in this folder); the next session loads the handoff by itself. If they prefer to paste it, the prompt is in ${p.prompt}.`,
+      'The handoff is deleted from disk once it is used.',
+    ].join('\n'),
+    'ho.respNao': (p) => `Keeping this session. The handoff stays at ${p.arq} and is deleted automatically after ${p.dias} days.`,
+    'ho.retomarNada': () => 'No pending handoff to resume here.',
+    'ho.retomarJa': () => 'The handoff was already loaded at the start of this session; continue from it.',
+    'ho.retomadaAuto': (p) => `🔀 This session continues session \`${p.sid}\`, as the user chose. The handoff below was consumed (deleted from disk) when it was loaded.`,
     'ses.verGanhou': (p) => `📊 The previous split PAID OFF: the session before it closed at ${p.ctx}k of context, and the one that followed was producing again after ${p.msgs} messages (${p.razao}x the typical 52-message warm-up) — estimated saving ~${p.eco}%.`,
     'ses.verEmpatou': (p) => `📊 The previous split roughly BROKE EVEN: the session before it closed at ${p.ctx}k, and the one that followed took ${p.msgs} messages to produce again (${p.razao}x the typical 52-message warm-up). Break-even is 1.75x.`,
     'ses.verPerdeu': (p) => `📊 The previous split did NOT pay off: the session before it closed at ${p.ctx}k, but the one that followed needed ${p.msgs} messages to produce again (${p.razao}x the typical 52-message warm-up) — estimated ~${p.eco}%. Above 1.75x, splitting costs more than it saves; a fuller handoff is what shortens this.`,
@@ -597,9 +609,21 @@ ${p.opcoes}`,
     // Pedido DIRIGIDO AO AGENTE, não ao humano. O bloco volátil é o que faz o recomeço ser
     // barato, e nenhuma heurística sem LLM consegue preenchê-lo — mas o agente já tem a sessão
     // inteira em contexto, então para ele custa um turno e nada mais.
-    'ses.preencha': (p) => `   ↳ Antes de fechar, preencha as quatro perguntas do fim de ${p.arq} com o que de fato aconteceu; o prompt de retomada chega aqui sozinho.`,
-    'ses.lembrete': (p) => `📝 Lembrete único: as quatro perguntas do fim de ${p.arq} seguem em branco. Neste turno, junto com o pedido do usuário, preencha-as com o que de fato aconteceu; o prompt de retomada chega sozinho.`,
-    'ses.promptPronto': (p) => `📋 Prompt de handoff pronto — entregue o bloco abaixo ao usuário LITERALMENTE, em forma copiável, e diga que é para colar numa sessão nova.${p.arq ? " Também salvo em " + p.arq + "." : ""}`,
+    'ses.preencha': (p) => `   ↳ Antes de fechar, preencha as quatro perguntas do fim de ${p.arq} com o que de fato aconteceu; a oferta de retomar numa sessão nova chega aqui sozinha.`,
+    'ses.lembrete': (p) => `📝 Lembrete único: as quatro perguntas do fim de ${p.arq} seguem em branco. Neste turno, junto com o pedido do usuário, preencha-as com o que de fato aconteceu; a oferta de retomar numa sessão nova chega sozinha.`,
+    'ses.oferta': (p) => `📋 Handoff pronto (${p.arq}). Pergunte AGORA ao usuário, com a ferramenta de pergunta de múltipla escolha (AskUserQuestion), se quer continuar numa sessão nova a partir dele${p.mult ? ` — aqui cada mensagem já custa ~${p.mult}x a de uma sessão nova` : ''}. Opções: "Nova sessão a partir do handoff (Recomendado)" e "Continuar aqui". Depois rode \`${p.cmd} --resposta=sim\` ou \`${p.cmd} --resposta=nao\` e siga o que ele imprimir. Não cole o handoff no chat.`,
+    'ses.ofertaLembrete': (p) => `📋 Lembrete único: o handoff em ${p.arq} está pronto e o usuário ainda não foi perguntado. Antes do pedido do usuário, pergunte com AskUserQuestion: "Nova sessão a partir do handoff (Recomendado)" / "Continuar aqui"; depois rode \`${p.cmd} --resposta=sim\` ou \`${p.cmd} --resposta=nao\` e siga o que ele imprimir.`,
+    'ho.promptOrigem': (p) => `Origem: sessão \`${p.sid}\`${p.quando ? `, handoff gravado em ${p.quando}` : ''}${p.branch ? ` na branch \`${p.branch}\` em \`${p.head}\`` : ''}.`,
+    'ho.respSim': (p) => [
+      'Handoff marcado para retomada. Faça UMA destas, conforme o que você tem:',
+      `- Ferramenta de iniciar nova sessão (app desktop): inicie-a agora, nesta mesma pasta, com contexto novo e este prompt: "Retome o trabalho da sessão anterior: rode \`${p.cmd}\` e siga o handoff que ele imprimir." Depois diga ao usuário que a nova sessão foi aberta e que esta pode ser arquivada.`,
+      `- Sem essa ferramenta (terminal): diga ao usuário para digitar /clear (ou abrir \`claude\` nesta pasta); a próxima sessão carrega o handoff sozinha. Se ele preferir colar, o prompt está em ${p.prompt}.`,
+      'O handoff é apagado do disco depois de usado.',
+    ].join('\n'),
+    'ho.respNao': (p) => `Seguimos nesta sessão. O handoff fica em ${p.arq} e é apagado sozinho depois de ${p.dias} dias.`,
+    'ho.retomarNada': () => 'Nenhum handoff pendente para retomar aqui.',
+    'ho.retomarJa': () => 'O handoff já foi carregado no início desta sessão; continue a partir dele.',
+    'ho.retomadaAuto': (p) => `🔀 Esta sessão continua a sessão \`${p.sid}\`, por escolha do usuário. O handoff abaixo foi consumido (apagado do disco) ao ser carregado.`,
     'ses.verGanhou': (p) => `📊 A última divisão de sessão COMPENSOU: a sessão anterior a ela fechou com ${p.ctx}k de contexto, e a que veio depois voltou a produzir em ${p.msgs} mensagens (${p.razao}x o aquecimento típico de 52) — economia estimada de ~${p.eco}%.`,
     'ses.verEmpatou': (p) => `📊 A última divisão de sessão EMPATOU: a anterior fechou com ${p.ctx}k, e a que veio depois levou ${p.msgs} mensagens para voltar a produzir (${p.razao}x o aquecimento típico de 52). O ponto de equilíbrio é 1,75x.`,
     'ses.verPerdeu': (p) => `📊 A última divisão de sessão NÃO compensou: a anterior fechou com ${p.ctx}k, mas a que veio depois precisou de ${p.msgs} mensagens para voltar a produzir (${p.razao}x o aquecimento típico de 52) — estimativa de ~${p.eco}%. Acima de 1,75x, dividir custa mais do que economiza; o que encurta isso é um handoff mais completo.`,

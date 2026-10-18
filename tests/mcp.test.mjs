@@ -124,9 +124,15 @@ function maquina() {
   writeFileSync(state, '{}');
   const env = { ...process.env };
   for (const key of Object.keys(env)) if (key.toLowerCase() === 'path') delete env[key];
-  Object.assign(env, { PATH: [bin, dirname(process.execPath)].join(delimiter), FAKE_CLI_STATE: state, CONTEXT_TOOLS_LANG: 'en', CONTEXT_TOOLS_HOME: join(dir, 'home dir') });
+  // O setup global alinha a tag em `extraKnownMarketplaces` do settings.json do Claude. Sem pasta
+  // própria, ele cai em `~/.claude/settings.json` e grava a tag de teste no settings da máquina.
+  const claudeConfig = join(dir, 'claude-config');
+  mkdirSync(claudeConfig, { recursive: true });
+  writeFileSync(join(claudeConfig, 'settings.json'), JSON.stringify({ extraKnownMarketplaces: { 'context-tools': { source: { source: 'github', repo: 'fcoluiz/context-tools', ref: 'v1.0.0' } } } }));
+  Object.assign(env, { PATH: [bin, dirname(process.execPath)].join(delimiter), FAKE_CLI_STATE: state, CONTEXT_TOOLS_LANG: 'en', CONTEXT_TOOLS_HOME: join(dir, 'home dir'), CLAUDE_CONFIG_DIR: claudeConfig });
   return {
     dir,
+    claudeRef: () => JSON.parse(readFileSync(join(claudeConfig, 'settings.json'), 'utf8')).extraKnownMarketplaces['context-tools'].source.ref,
     run: (...extra) => spawnSync(process.execPath, [SETUP, '--global', '--yes', '--target=claude', '--ref=v9.9.9', ...extra], { cwd: project, env, encoding: 'utf8' }),
     state: () => JSON.parse(readFileSync(state, 'utf8')),
     cleanup: () => rmSync(dir, { recursive: true, force: true }),
@@ -140,6 +146,7 @@ test('setup: MCP só com --mcp; atualização renova a cópia estável; --remove
   try {
     let r = m.run();
     assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.equal(m.claudeRef(), 'v9.9.9', 'a tag de teste vai para o settings.json temporário, nunca para o da máquina');
     assert.ok(!m.state().calls.some((c) => c.startsWith('claude mcp add')), 'sem --mcp, nenhum registro');
     assert.equal(existsSync(servidor), false);
 

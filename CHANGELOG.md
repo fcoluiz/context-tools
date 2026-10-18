@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.11] — 2026-10-18
+
 ### Changed
 
 - **A filled-in handoff now ends in a question, not in a block to copy.** The `Stop` hook used to

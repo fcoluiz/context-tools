@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
-import { safe, statePath } from './roots.mjs';
+import { loadConfig, resolveExtraRepos, safe, statePath } from './roots.mjs';
 import { transactState } from './state-store.mjs';
 
 const STATE_FILE = '.source-fingerprints.json';
@@ -97,8 +97,9 @@ export function sameSource(current, id, stored) {
 export function fingerprintSourcesInRoot(root, paths, cache = null) {
   const allowed = [];
   const markers = [];
+  const roots = allowedSourceRoots(root);
   for (const path of paths) {
-    const checked = checkedSourcePath(root, path);
+    const checked = checkedSourcePath(root, path, roots);
     if (checked.path) allowed.push({ path: checked.path, id: relative(resolve(root), checked.path).replace(/\\/g, '/') });
     else markers.push(`outside:${String(path)}`);
   }
@@ -108,8 +109,11 @@ export function fingerprintSourcesInRoot(root, paths, cache = null) {
 export function fingerprintSourcesInRoots(sources, cache = null) {
   const allowed = [];
   const markers = [];
+  const rootsByRoot = new Map();
   for (const source of sources) {
-    const checked = checkedSourcePath(source.root, source.path);
+    const key = pathKey(source.root);
+    if (!rootsByRoot.has(key)) rootsByRoot.set(key, allowedSourceRoots(source.root));
+    const checked = checkedSourcePath(source.root, source.path, rootsByRoot.get(key));
     if (checked.path) {
       const id = source.id || relative(resolve(source.root), checked.path).replace(/\\/g, '/');
       allowed.push({ path: checked.path, id });
@@ -119,16 +123,27 @@ export function fingerprintSourcesInRoots(sources, cache = null) {
   return fingerprintSources(allowed, markers, cache);
 }
 
-function checkedSourcePath(root, path) {
-  const base = resolve(root);
-  const realBase = safe(() => realpathSync(base), base);
-  const absolute = resolve(base, path);
-  const lexical = relative(base, absolute);
+/**
+ * Onde uma fonte pode morar: a raiz e as `extraRepos` declaradas nela. Mapa de fluxo que cruza
+ * projetos (`covers: ../shared/...`) e pasta do projeto que é junction/symlink para um
+ * `extraRepos` ficavam com marca `outside:` e, portanto, defasados para sempre.
+ */
+function allowedSourceRoots(root) {
+  const paths = [resolve(root), ...resolveExtraRepos(root, loadConfig(root), { quiet: true })];
+  return paths.map((path) => ({ path, real: safe(() => realpathSync(path), path) }));
+}
+
+const strictlyInside = (parent, child) => {
+  const rel = relative(parent, child);
+  return Boolean(rel) && rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
+};
+
+// O caminho escrito e o caminho real precisam, cada um, cair dentro de alguma raiz permitida.
+function checkedSourcePath(root, path, roots = allowedSourceRoots(root)) {
+  const absolute = resolve(root, path);
   const real = safe(() => realpathSync(absolute), absolute);
-  const resolved = relative(realBase, real);
-  const outside = !lexical || lexical === '..' || lexical.startsWith(`..${sep}`) || isAbsolute(lexical)
-    || !resolved || resolved === '..' || resolved.startsWith(`..${sep}`) || isAbsolute(resolved);
-  return outside ? { path: null } : { path: absolute };
+  const inside = roots.some((r) => strictlyInside(r.path, absolute)) && roots.some((r) => strictlyInside(r.real, real));
+  return inside ? { path: absolute } : { path: null };
 }
 
 function statePathFor(root) {

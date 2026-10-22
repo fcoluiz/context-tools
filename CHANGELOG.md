@@ -10,6 +10,17 @@ reconstructed from git history.
 
 ### Fixed
 
+- **A project without `.git` is no longer swapped for the folder that holds it.** Commands the agent
+  runs in its shell (no `CLAUDE_PROJECT_DIR`) climbed from the project to the first parent folder
+  with any `.git` child: `extraRepos` was ignored, searches scanned unrelated projects, and `ack`
+  failed with "document unavailable". A folder with its own `.claude/context-tools.json`,
+  `.codex/context-tools.json` or `context-tools.json` is now the root, checked before `.git` at
+  each level (the home folder excepted).
+- **Sources in `extraRepos` count as sources.** A map covering `../shared/...` was marked
+  `outside:` and stayed stale forever, with `ack` refusing it ("source verification
+  unavailable"); a project folder that is a junction/symlink to an `extraRepos` folder was refused
+  as "source outside allowed roots". Source checks now accept the project plus its declared
+  `extraRepos`, by written and real path; undeclared siblings are still refused.
 - **The new-release notice no longer disappears when two copies run.** With a plugin and an old
   per-project copy both active, the copy without the notice could win the de-duplication of the
   `SessionStart` output and drop it, while the notice was already recorded as shown — so it stayed

@@ -2,7 +2,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
-import { loadConfig, resolveExtraRepos, statePath } from './roots.mjs';
+import { loadConfig, resolveExtraRepos, safe, statePath } from './roots.mjs';
 import { readState, transactState } from './state-store.mjs';
 
 const RETENTION_MS = 90 * 86400000;
@@ -42,8 +42,10 @@ export function safeEditTarget(root, inputPath) {
       existing = up;
     }
     const actual = resolve(realpathSync(existing), ...suffix);
-    const realParent = realpathSync(parent);
-    if (!within(realParent, actual) || actual === realParent) return null;
+    // O caminho real pode cair em OUTRA raiz permitida: pasta do projeto que é junction/symlink
+    // para um extraRepos declarado.
+    const realAllowed = allowed.map((path) => safe(() => realpathSync(path), null)).filter(Boolean);
+    if (!realAllowed.some((realParent) => actual !== realParent && within(realParent, actual))) return null;
     if (existsSync(candidate) && !statSync(candidate).isFile()) return null;
     return candidate;
   } catch { return null; }

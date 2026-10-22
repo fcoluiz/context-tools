@@ -13,6 +13,7 @@ import { readdirSync, existsSync, readFileSync, statSync, realpathSync } from 'n
 import { execFileSync } from 'node:child_process';
 import { join, dirname, resolve, sep, basename, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
 
 export const safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 
@@ -203,6 +204,11 @@ export function isMain(importMetaUrl) {
 /**
  * Raiz do trabalho. Ordem: --root= > CLAUDE_PROJECT_DIR > cwd que contenha repo >
  * dois níveis acima do script (layout standalone .claude/scripts) > cwd.
+ *
+ * Em cada nível, pasta com `context-tools.json` próprio vale como raiz ANTES do teste de `.git`.
+ * Sem isto, o comando rodado pelo agente no shell (sem CLAUDE_PROJECT_DIR) num projeto sem `.git`
+ * subia até a pasta que agrupa vários projetos, porque ela tem algum irmão com `.git`: o
+ * `extraRepos` do projeto era ignorado e a busca varria projetos fora do escopo.
  */
 export function resolveRoot(argv = process.argv) {
   const flag = argv.find((a) => a.startsWith('--root='));
@@ -217,7 +223,7 @@ export function resolveRoot(argv = process.argv) {
   }
 
   const cwd = process.cwd();
-  if (looksLikeRoot(cwd)) return cwd;
+  if (hasProjectConfig(cwd) || looksLikeRoot(cwd)) return cwd;
 
   // standalone: <raiz>/.claude/scripts/lib/roots.mjs  →  sobe até <raiz>
   const standalone = dirname(dirname(scriptDir()));
@@ -228,10 +234,18 @@ export function resolveRoot(argv = process.argv) {
   for (let i = 0; i < 6; i++) {
     const up = dirname(cur);
     if (up === cur) break;
-    if (looksLikeRoot(up)) return up;
+    if (hasProjectConfig(up) || looksLikeRoot(up)) return up;
     cur = up;
   }
   return cwd;
+}
+
+/** A pasta tem configuração do context-tools (os mesmos arquivos que `loadConfig` lê)? */
+function hasProjectConfig(dir) {
+  // `~/.claude` e `~/.codex` são as pastas globais dos agentes, não um projeto.
+  if (pathKey(dir) === pathKey(homedir())) return false;
+  return [join(dir, '.claude', 'context-tools.json'), join(dir, '.codex', 'context-tools.json'), join(dir, 'context-tools.json')]
+    .some((path) => safe(() => statSync(path).isFile(), false));
 }
 
 function looksLikeRoot(dir) {
@@ -308,18 +322,18 @@ export function samePath(a, b) {
  * PRESENTE (mesmo vazia) desliga a detecção automática — é a forma de dizer "decidi não usar
  * nenhum" sem que o `.code-workspace` volte a valer.
  */
-export function resolveExtraRepos(root, cfg = {}) {
+export function resolveExtraRepos(root, cfg = {}, { quiet = false } = {}) {
   if (Array.isArray(cfg.extraRepos)) {
     const pai = resolve(root, '..');
     const out = [];
     for (const d of cfg.extraRepos) {
       const abs = resolve(root, String(d));
       if (abs !== pai && !abs.startsWith(pai + sep)) {
-        process.stderr.write(`context-tools: extraRepos "${d}" sai de mais de um nível acima da raiz — ignorado\n`);
+        if (!quiet) process.stderr.write(`context-tools: extraRepos "${d}" sai de mais de um nível acima da raiz — ignorado\n`);
         continue;
       }
       if (!safe(() => statSync(abs).isDirectory(), false)) {
-        process.stderr.write(`context-tools: extraRepos "${d}" não existe ou não é uma pasta — ignorado\n`);
+        if (!quiet) process.stderr.write(`context-tools: extraRepos "${d}" não existe ou não é uma pasta — ignorado\n`);
         continue;
       }
       out.push(abs);

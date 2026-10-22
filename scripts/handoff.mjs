@@ -48,6 +48,7 @@ import {
 import { makeT, detectLang } from './lib/i18n.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
 import { updateNotice } from './update-check.mjs';
+import { localCopyNotice } from './lib/local-migration.mjs';
 import { fingerprintSourcesInRoot, parseSourceFingerprints, sameDigest, sameSource } from './lib/source-fingerprints.mjs';
 
 const git = (repo, args) => safe(() => execFileSync('git', args, {
@@ -474,15 +475,18 @@ function retomadaAutomatica(root, t, evento) {
 
 /**
  * Saída única do `SessionStart` deste script: a retomada aceita e o veredito da divisão vão para o
- * AGENTE (`additionalContext`) e o aviso de versão nova vai para o USUÁRIO (`systemMessage`) — quem
- * atualiza o plugin é a pessoa, não o modelo. Uma escrita só, porque duas no stdout não são JSON.
+ * AGENTE (`additionalContext`) e os avisos de versão nova e de cópia local antiga vão para o USUÁRIO
+ * (`systemMessage`) — quem atualiza ou migra a instalação é a pessoa, não o modelo. Uma escrita só, porque duas no stdout não são JSON.
  */
 function sessionStart(root, cfg, t) {
   const evento = eventoDoHook();
   safe(() => limparHandoffsAntigos(root), 0);
   const retomada = safe(() => retomadaAutomatica(root, t, evento), '');
   const texto = [retomada, relatorioDeDivisao(root, t)].filter(Boolean).join('\n\n');
-  const aviso = safe(() => updateNotice(cfg, { lang: detectLang(cfg) }), '');
+  const aviso = [
+    safe(() => updateNotice(cfg, { lang: detectLang(cfg) }), ''),
+    safe(() => localCopyNotice(root, { host: runtimeHost(), t }), ''),
+  ].filter(Boolean).join('\n');
   if (!texto && !aviso) return;
   writeHookOutput(root, {
     ...(texto ? { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: texto } } : {}),

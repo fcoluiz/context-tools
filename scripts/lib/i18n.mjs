@@ -353,6 +353,19 @@ const CAT = {
     'setup.issue.hooksUnreadable': () => 'Local hooks could not be analyzed.',
     'setup.issue.duplicateHooks': () => 'Local context-tools hooks coexist with the global plugin.',
     'setup.status.hookTrustUnknown': () => 'Hook trust: not verified; check /hooks in Codex.',
+    'setup.migrate.found': (p) => `[${p.agente}] ${p.n} project(s) still have an old local context-tools copy running alongside the global plugin (hooks run twice):`,
+    'setup.migrate.item': (p) => `  • ${p.raiz} — ${p.detalhe}`,
+    'setup.migrate.hooks': (p) => `${p.n} local hook(s)`,
+    'setup.migrate.legacyPlugin': (p) => `old plugin ${p.id} enabled`,
+    'setup.migrate.skill': () => 'duplicate local skill',
+    'setup.migrate.noGlobal': (p) => `[${p.agente}] The global plugin is not installed and enabled: install it first (setup --global), or the project would be left without context-tools.`,
+    'setup.migrate.ask': () => 'Disable those local copies now? Settings, maps and docs stay; every changed file is backed up first.',
+    'setup.migrate.done': (p) => `  ✓ ${p.raiz} (backup: ${p.backup})`,
+    'setup.migrate.userLegacy': (p) => `[${p.agente}] Old plugin ${p.id} disabled in your user settings (backup: ${p.backup}).`,
+    'setup.migrate.skipped': (p) => `Local copies left untouched. To migrate later: ${p.comando}`,
+    'setup.migrate.none': (p) => `[${p.agente}] No old local copy found.`,
+    'setup.migrate.dry': (p) => `[${p.agente}] Simulation: nothing was changed.`,
+    'ho.localCopy': (p) => `⚠️ This project still has an old local context-tools copy (${p.detalhe}) running alongside the global plugin — hooks run twice. To disable it (a backup is kept): ${p.comando}`,
     'setup.mkt.legacy': (p) => `Warning: the old marketplace ${p.nome} is still configured. Remove it so hooks do not run twice:`,
     'setup.status.agent': (p) => `Agent: ${p.agente}`,
     'setup.status.project': (p) => `Project: ${p.raiz}`,
@@ -414,6 +427,7 @@ ${p.opcoes}`,
   --mcp                 also register the optional MCP server (its tool definitions add about
                         500 tokens to every request of a client that loads them)
   --remove-mcp          unregister the MCP server
+  --no-migrate          with --global, leave old local copies in other projects untouched
 
 The language of these messages follows CONTEXT_TOOLS_LANG, then "lang" in
 <state-dir>/context-tools.json, then the system locale, defaulting to English.
@@ -426,6 +440,7 @@ Usage:
   node setup.mjs doctor [--project <directory>] [--json] [--target=...]
   node setup.mjs latest
   node setup.mjs configure [--project <directory>] [--target=...]
+  node setup.mjs migrate [--project <directory> | --all] [--dry-run] [--target=...]
 
 Without --target, the agent is detected from the project (.codex/AGENTS.md, .claude/CLAUDE.md);
 if both or neither are found and the terminal is interactive, you are asked to choose.
@@ -762,6 +777,19 @@ ${p.opcoes}`,
     'setup.issue.hooksUnreadable': () => 'Hooks locais não puderam ser analisados.',
     'setup.issue.duplicateHooks': () => 'Hooks locais context-tools coexistem com o plugin global.',
     'setup.status.hookTrustUnknown': () => 'Confiança dos hooks: não verificada; confira /hooks no Codex.',
+    'setup.migrate.found': (p) => `[${p.agente}] ${p.n} projeto(s) ainda têm uma cópia local antiga do context-tools rodando junto com o plugin global (hooks em dobro):`,
+    'setup.migrate.item': (p) => `  • ${p.raiz} — ${p.detalhe}`,
+    'setup.migrate.hooks': (p) => `${p.n} hook(s) local(is)`,
+    'setup.migrate.legacyPlugin': (p) => `plugin antigo ${p.id} ligado`,
+    'setup.migrate.skill': () => 'skill local duplicada',
+    'setup.migrate.noGlobal': (p) => `[${p.agente}] O plugin global não está instalado e ativo: instale-o antes (setup --global), senão o projeto ficaria sem context-tools.`,
+    'setup.migrate.ask': () => 'Desativar essas cópias locais agora? Configuração, mapas e documentação ficam; todo arquivo alterado ganha cópia antes.',
+    'setup.migrate.done': (p) => `  ✓ ${p.raiz} (cópia: ${p.backup})`,
+    'setup.migrate.userLegacy': (p) => `[${p.agente}] Plugin antigo ${p.id} desligado nas configurações do usuário (cópia: ${p.backup}).`,
+    'setup.migrate.skipped': (p) => `Cópias locais mantidas. Para migrar depois: ${p.comando}`,
+    'setup.migrate.none': (p) => `[${p.agente}] Nenhuma cópia local antiga encontrada.`,
+    'setup.migrate.dry': (p) => `[${p.agente}] Simulação: nada foi alterado.`,
+    'ho.localCopy': (p) => `⚠️ Este projeto ainda tem uma cópia local antiga do context-tools (${p.detalhe}) rodando junto com o plugin global — os hooks rodam em dobro. Para desativá-la (com cópia de segurança): ${p.comando}`,
     'setup.mkt.legacy': (p) => `Aviso: o marketplace antigo ${p.nome} ainda está configurado. Para não rodar os hooks em dobro, remova-o:`,
     'setup.status.agent': (p) => `Agente: ${p.agente}`,
     'setup.status.project': (p) => `Projeto: ${p.raiz}`,
@@ -823,6 +851,7 @@ ${p.opcoes}`,
   --mcp                 registra também o servidor MCP opcional (a definição das ferramentas soma
                         cerca de 500 tokens a cada requisição do cliente que as carrega)
   --remove-mcp          remove o registro do servidor MCP
+  --no-migrate          com --global, não mexe nas cópias locais antigas de outros projetos
 
 O idioma destas mensagens segue CONTEXT_TOOLS_LANG, depois "lang" em
 <state-dir>/context-tools.json, depois o locale do sistema, com inglês como padrão.
@@ -835,6 +864,7 @@ Uso:
   node setup.mjs doctor [--project <diretório>] [--json] [--target=...]
   node setup.mjs latest
   node setup.mjs configure [--project <diretório>] [--target=...]
+  node setup.mjs migrate [--project <diretório> | --all] [--dry-run] [--target=...]
 
 Sem --target, o agente é detectado pelo projeto (.codex/AGENTS.md, .claude/CLAUDE.md); se achar
 os dois ou nenhum e o terminal for interativo, a escolha é perguntada.

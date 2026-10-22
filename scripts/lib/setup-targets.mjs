@@ -53,13 +53,15 @@ function marketplaceListArray(data) {
 // fornecer os mesmos hooks, o setup guiado limpa a cópia local para não rodar tudo duas vezes —
 // o dobro de partidas de Node e, sem a deduplicação de saída, o dobro de contexto.
 // Só sai o que o próprio instalador escreveu: hook do usuário ou de outra ferramenta fica.
-const CLAUDE_STANDALONE_HOOK = /^node\s+"?\$(?:\{CLAUDE_PROJECT_DIR\}|CLAUDE_PROJECT_DIR)\/\.claude\/scripts\/(?:context-maps|context-docs|coupling|handoff|pre-tool|verify|claude-md-hint)\.mjs"?(?:\s|$)/;
+// A lista cobre todo script que um hook standalone já chamou, inclusive em versões antigas:
+// `grep-context` e `handoff-lembrete` ficavam de fora e seguiam rodando junto com o plugin.
+const CLAUDE_STANDALONE_HOOK = /^node\s+"?\$(?:\{CLAUDE_PROJECT_DIR\}|CLAUDE_PROJECT_DIR)\/\.claude\/scripts\/(?:context-maps|context-docs|coupling|handoff|handoff-lembrete|pre-tool|verify|claude-md-hint|grep-context|audit-docs|context-pack|health|metrics|providers|symbols)\.mjs"?(?:\s|$)/;
 
 export function isManagedClaudeHook(command) {
   return typeof command === 'string' && CLAUDE_STANDALONE_HOOK.test(command.trim());
 }
 
-function removeManagedHooksFrom(path, isManaged) {
+export function removeManagedHooksFrom(path, isManaged) {
   if (!existsSync(path)) return false;
   let settings;
   try { settings = JSON.parse(readFileSync(path, 'utf8')); } catch { return false; }

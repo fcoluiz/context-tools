@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.12] — 2026-10-22
+
 ### Fixed
 
 - **A project without `.git` is no longer swapped for the folder that holds it.** Commands the agent

@@ -111,11 +111,12 @@ function fakeMachine(agents, initial = {}) {
   const env = { ...process.env };
   for (const key of Object.keys(env)) if (key.toLowerCase() === 'path') delete env[key];
   env.PATH = [bin, dirname(process.execPath)].join(delimiter);
-  Object.assign(env, { CLAUDE_CONFIG_DIR: claudeConfig, FAKE_CLI_STATE: stateFile, FAKE_CLI_BIN: bin, FAKE_CLI_SCRIPT: script, CONTEXT_TOOLS_LANG: 'en' });
+  Object.assign(env, { CLAUDE_CONFIG_DIR: claudeConfig, CODEX_HOME: join(dir, 'codex-home'), CONTEXT_TOOLS_HOME: join(dir, 'ct-home'), FAKE_CLI_STATE: stateFile, FAKE_CLI_BIN: bin, FAKE_CLI_SCRIPT: script, CONTEXT_TOOLS_LANG: 'en' });
   delete env.CONTEXT_TOOLS_PROJECT_DIR;
   return {
     dir,
     project,
+    claudeConfig,
     run: (...extra) => spawnSync(process.execPath, [SETUP, '--global', '--yes', ...extra], { cwd: project, env, encoding: 'utf8' }),
     state: () => JSON.parse(readFileSync(stateFile, 'utf8')),
     cleanup: () => rmSync(dir, { recursive: true, force: true }),
@@ -136,6 +137,31 @@ test('setup --global instala nos dois agentes, no escopo do usuário, sem tocar 
     assert.equal(codex.plugin.version, '9.9.9');
     assert.deepEqual(readdirSync(m.project), [], 'global não escreve nada na pasta onde rodou');
     assert.match(r.stdout, /Global installation/);
+  } finally { m.cleanup(); }
+});
+
+test('setup --global desativa a cópia local antiga dos projetos que o agente conhece; --no-migrate não', () => {
+  const m = fakeMachine(['claude']);
+  try {
+    const old = join(m.dir, 'old-project');
+    const settings = join(old, '.claude', 'settings.json');
+    const hook = { type: 'command', command: 'node "$CLAUDE_PROJECT_DIR/.claude/scripts/handoff.mjs" --session-start' };
+    const write = () => {
+      spawnSync(process.execPath, ['-e', `require('fs').mkdirSync(${JSON.stringify(join(old, '.claude'))}, { recursive: true })`]);
+      writeFileSync(settings, JSON.stringify({ hooks: { SessionStart: [{ matcher: '', hooks: [hook] }] } }));
+    };
+    write();
+    writeFileSync(join(m.claudeConfig, '.claude.json'), JSON.stringify({ projects: { [old]: {} } }));
+
+    const skipped = m.run('--ref=v9.9.9', '--target=claude', '--no-migrate');
+    assert.equal(skipped.status, 0, skipped.stdout + skipped.stderr);
+    assert.equal(JSON.parse(readFileSync(settings, 'utf8')).hooks.SessionStart[0].hooks.length, 1);
+
+    const r = m.run('--ref=v9.9.9', '--target=claude');
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, /old local context-tools copy/);
+    assert.deepEqual(JSON.parse(readFileSync(settings, 'utf8')).hooks, {});
+    assert.deepEqual(readdirSync(m.project), [], 'a pasta onde rodou continua intocada');
   } finally { m.cleanup(); }
 });
 

@@ -80,6 +80,31 @@ test('saída só com aviso interno (sem additionalContext) também é deduplicad
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
+test('aviso em systemMessage não some quando a cópia sem ele vence a disputa pelo contexto', () => {
+  const root = tempProject();
+  try {
+    const lib = pathToFileURL(join(SCRIPTS, 'lib', 'hook-output.mjs')).href;
+    const code = `import { writeHookOutput } from ${JSON.stringify(lib)};
+      const chunks = []; const write = process.stdout.write.bind(process.stdout);
+      process.stdout.write = (s) => { chunks.push(String(s)); return true; };
+      const ctx = { hookEventName: 'SessionStart', additionalContext: 'mapas' };
+      const r = [
+        writeHookOutput(process.argv[1], { hookSpecificOutput: ctx }),
+        writeHookOutput(process.argv[1], { hookSpecificOutput: ctx, systemMessage: 'versão nova' }),
+        writeHookOutput(process.argv[1], { hookSpecificOutput: ctx, systemMessage: 'versão nova' }),
+      ];
+      process.stdout.write = write;
+      process.stderr.write(JSON.stringify({ r, chunks }));`;
+    const r = spawnSync(process.execPath, ['--input-type=module', '-e', code, root], {
+      encoding: 'utf8', env: { ...process.env, CONTEXT_TOOLS_SESSION_ID: 'msg-split', CONTEXT_TOOLS_HOOK_DEDUPE: '' },
+    });
+    assert.equal(r.status, 0, r.stderr);
+    const { r: emitted, chunks } = JSON.parse(r.stderr);
+    assert.deepEqual(emitted, [true, true, false]);
+    assert.deepEqual(JSON.parse(chunks[1]), { systemMessage: 'versão nova' }, 'segunda cópia: só o aviso, sem repetir o contexto');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
 test('duas instalações do mesmo hook rodando em paralelo entregam o contexto uma vez só', async () => {
   const root = tempProject();
   try {

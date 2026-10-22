@@ -6,6 +6,9 @@ import { dirname, join, resolve } from 'node:path';
 import { installedRef, isManagedClaudeHook, isManagedCodexHook } from './setup-targets.mjs';
 import { installRuntime, mcpAddArgs, mcpGetArgs, mcpRemoveArgs, runtimeInstalled } from './setup-mcp.mjs';
 import {
+  describeLocalCopy, detectLocalCopy, disableUserLegacyPlugins, knownProjects, migrateCommand, migrateLocalCopy, userLegacyPlugins,
+} from './local-migration.mjs';
+import {
   say, isDir, isFile, run, jsonOutput, latestTag, relativeExtra, parseExtraSelection, t, useSetupConfigLang,
   normalizeSetupLanguage, ask, confirm, explainFailure, workspaceCandidates,
 } from './setup-shared.mjs';
@@ -154,6 +157,40 @@ async function handleMcp(adapter, ctx, flags) {
   const added = run(adapter.bin, mcpAddArgs(adapter.id, path, opts), { stdio: 'inherit' });
   if (added.status !== 0) { explainFailure(t('setup.mcp.step'), added); return false; }
   say(t('setup.mcp.done', { agente: adapter.label, caminho: path }));
+  return true;
+}
+
+/**
+ * Desativa cópias locais antigas (scripts/lib/local-migration.mjs) nos projetos dados. Mostra o que
+ * achou, pergunta uma vez (com `--yes`, aceita) e diz onde ficou a cópia de segurança de cada um.
+ * Sem nada para migrar, cala — exceto no comando `migrate`, que sempre responde.
+ */
+async function migrateLocalCopies(adapter, roots, flags, { quiet = false } = {}) {
+  const unique = [...new Map(roots.map((root) => [process.platform === 'win32' ? resolve(root).toLowerCase() : resolve(root), resolve(root)])).values()];
+  const found = unique.map((root) => detectLocalCopy(root, adapter.id)).filter((detected) => detected.found);
+  const userLegacy = adapter.id === 'claude' ? userLegacyPlugins() : [];
+  if (!found.length && !userLegacy.length) {
+    if (!quiet) say(t('setup.migrate.none', { agente: adapter.label }));
+    return true;
+  }
+  if (found.length) {
+    say(t('setup.migrate.found', { agente: adapter.label, n: found.length }));
+    for (const detected of found) say(t('setup.migrate.item', { raiz: detected.root, detalhe: describeLocalCopy(detected, t) }));
+  }
+  for (const id of userLegacy) say(t('setup.migrate.item', { raiz: '~/.claude/settings.json', detalhe: t('setup.migrate.legacyPlugin', { id }) }));
+  if (flags['dry-run']) { say(t('setup.migrate.dry', { agente: adapter.label })); return true; }
+  if (!(await confirm(t('setup.migrate.ask'), true, flags.yes))) {
+    say(t('setup.migrate.skipped', { comando: migrateCommand({ all: true, target: adapter.id }) }));
+    return true;
+  }
+  for (const detected of found) {
+    const result = migrateLocalCopy(detected.root, adapter.id);
+    if (result.backup) say(t('setup.migrate.done', { raiz: detected.root, backup: result.backup }));
+  }
+  if (userLegacy.length) {
+    const result = disableUserLegacyPlugins();
+    for (const id of result.ids) say(t('setup.migrate.userLegacy', { agente: adapter.label, id, backup: result.backup }));
+  }
   return true;
 }
 
@@ -351,6 +388,16 @@ export async function runSetup(adapter, ctx, { command, root, flags }) {
     return 0;
   }
   if (command === 'configure') { await configure(adapter, root, flags, true); return 0; }
+  if (command === 'migrate') {
+    // Sem o plugin global ativo, tirar os hooks locais deixaria o projeto sem context-tools nenhum.
+    const installed = pluginInfo(adapter).installed;
+    if (!installed || installed.enabled === false || (installed.scope && installed.scope !== 'user' && adapter.id === 'claude')) {
+      say(t('setup.migrate.noGlobal', { agente: adapter.label }));
+      return 1;
+    }
+    await migrateLocalCopies(adapter, flags.all ? [root, ...knownProjects()] : [root], flags);
+    return 0;
+  }
   if (flags['remove-mcp'] && !flags.mcp) { await handleMcp(adapter, ctx, flags); return 0; }
   if (flags['dry-run']) {
     say(flags.global ? t('setup.run.global', { agente: adapter.label }) : t('setup.run.detected', { agente: adapter.label, raiz: root }));
@@ -374,6 +421,9 @@ export async function runSetup(adapter, ctx, { command, root, flags }) {
     return 1;
   }
   if (!global && !flags['no-workspace']) await configure(adapter, root, flags);
+  // Global novo + cópia local antiga em algum projeto = hooks em dobro lá. Os projetos vêm da lista
+  // que o próprio agente guarda; `--no-migrate` deixa tudo como está.
+  if (global && !flags['no-migrate']) await migrateLocalCopies(adapter, knownProjects(), flags, { quiet: true });
   if (!(await handleMcp(adapter, ctx, flags))) say(t('setup.mcp.failedOptional', { agente: adapter.label }));
   say(t('setup.run.done', { agente: adapter.label }));
   say(t('setup.run.newSession', { agente: adapter.label }));

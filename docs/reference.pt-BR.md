@@ -730,6 +730,21 @@ Claude usa `claude plugin update` quando o plugin já está instalado; no Codex 
 marketplace na tag nova, o que o CLI do Codex exige para trocar de versão. `--target=claude|codex`
 limita a um agente. As seções abaixo descrevem as alternativas por projeto e manuais.
 
+**Migrando uma cópia antiga por projeto.** Depois de uma instalação global, o setup procura projetos
+que ainda rodam uma cópia standalone: os listados em `~/.claude.json` e em `[projects]` de
+`~/.codex/config.toml`. Tira só os hooks que o instalador standalone escreveu
+(comandos que apontam para `.claude/scripts/` ou `.codex/scripts/`), põe `false` no plugin do
+marketplace antigo (`context-tools@luiz-context-tools`) em `enabledPlugins` (configuração do projeto e
+do usuário), remove uma `.agents/skills/context-tools/` duplicada e marca `context-tools-install.json`
+como `global`. Todo arquivo alterado é copiado antes para `~/.context-tools/migrations/<data>/`, fora
+do projeto. `context-tools.json`, `.claude/context/` e `ai-context/` não são tocados. No modo
+interativo pergunta uma vez; `--yes` aceita; `--no-migrate` pula. Para fazer depois:
+`context-tools-setup-all migrate --all` (ou `--project <pasta>`; `--dry-run` lista sem mudar). O
+`migrate` recusa quando o plugin global não está instalado e ativo, porque o projeto ficaria sem
+context-tools. Nos projetos que o setup não alcançou, o `SessionStart` do plugin global mostra uma
+linha, uma vez por dia por projeto, com o comando `migrate` exato (`CONTEXT_TOOLS_LOCAL_COPY_CHECK=0`
+desliga).
+
 ### Como plugin (recomendado)
 
 ```bash

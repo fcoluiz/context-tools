@@ -743,6 +743,20 @@ Claude it uses `claude plugin update` when the plugin is already installed; on C
 marketplace at the new tag, which the Codex CLI requires to change versions. `--target=claude|codex`
 limits it to one agent. The sections below describe the per-project and manual alternatives.
 
+**Migrating an old per-project copy.** After a global install, the setup looks for projects that still
+run a standalone copy: the projects listed in `~/.claude.json` and in `[projects]` of
+`~/.codex/config.toml`. It removes only the hooks the standalone installer
+wrote (commands pointing at `.claude/scripts/` or `.codex/scripts/`), sets the old-marketplace plugin
+(`context-tools@luiz-context-tools`) to `false` in `enabledPlugins` (project and user settings), removes
+a duplicate `.agents/skills/context-tools/`, and marks `context-tools-install.json` as `global`.
+Every file it changes is copied first to `~/.context-tools/migrations/<date>/`, outside the project.
+`context-tools.json`, `.claude/context/` and `ai-context/` are not touched. Interactive runs ask once;
+`--yes` accepts; `--no-migrate` skips. Run it later with `context-tools-setup-all migrate --all`
+(or `--project <dir>`; `--dry-run` lists without changing). `migrate` refuses when the global plugin
+is not installed and enabled, since the project would be left without context-tools. For projects the
+setup did not reach, the global plugin's `SessionStart` shows one line, once a day per project, with
+the exact `migrate` command (`CONTEXT_TOOLS_LOCAL_COPY_CHECK=0` turns it off).
+
 ### As a plugin (recommended)
 
 ```bash

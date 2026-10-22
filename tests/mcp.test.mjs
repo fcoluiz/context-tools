@@ -129,7 +129,7 @@ function maquina() {
   const claudeConfig = join(dir, 'claude-config');
   mkdirSync(claudeConfig, { recursive: true });
   writeFileSync(join(claudeConfig, 'settings.json'), JSON.stringify({ extraKnownMarketplaces: { 'context-tools': { source: { source: 'github', repo: 'fcoluiz/context-tools', ref: 'v1.0.0' } } } }));
-  Object.assign(env, { PATH: [bin, dirname(process.execPath)].join(delimiter), FAKE_CLI_STATE: state, CONTEXT_TOOLS_LANG: 'en', CONTEXT_TOOLS_HOME: join(dir, 'home dir'), CLAUDE_CONFIG_DIR: claudeConfig });
+  Object.assign(env, { PATH: [bin, dirname(process.execPath)].join(delimiter), FAKE_CLI_STATE: state, CONTEXT_TOOLS_LANG: 'en', CONTEXT_TOOLS_HOME: join(dir, 'home dir'), CLAUDE_CONFIG_DIR: claudeConfig, CODEX_HOME: join(dir, 'codex-home') });
   return {
     dir,
     claudeRef: () => JSON.parse(readFileSync(join(claudeConfig, 'settings.json'), 'utf8')).extraKnownMarketplaces['context-tools'].source.ref,

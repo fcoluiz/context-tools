@@ -21,6 +21,22 @@ reconstructed from git history.
   unavailable"); a project folder that is a junction/symlink to an `extraRepos` folder was refused
   as "source outside allowed roots". Source checks now accept the project plus its declared
   `extraRepos`, by written and real path; undeclared siblings are still refused.
+- **The new-release notice no longer disappears when two copies run.** With a plugin and an old
+  per-project copy both active, the copy without the notice could win the de-duplication of the
+  `SessionStart` output and drop it, while the notice was already recorded as shown — so it stayed
+  hidden for a week. `systemMessage` now has its own de-duplication key, separate from the context.
+- **Standalone hooks for `grep-context.mjs` and `handoff-lembrete.mjs` are now recognized** as
+  managed, so the per-project setup removes them when the plugin takes over instead of running them
+  twice.
+
+### Added
+
+- **Global install migrates old per-project copies.** After `--global`, the setup finds projects that
+  still run a standalone copy (from the project lists in `~/.claude.json` and `~/.codex/config.toml`),
+  removes only the hooks it wrote, disables the old-marketplace plugin and a duplicate local skill,
+  and backs up every changed file to `~/.context-tools/migrations/`. `--no-migrate` skips it;
+  `setup migrate [--project <dir> | --all] [--dry-run]` runs it later. The global plugin's
+  `SessionStart` names the exact command, once a day, in a project it finds still doubled.
 
 ## [2.9.11] — 2026-10-18
 

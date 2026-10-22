@@ -82,7 +82,14 @@ testes e quando sair uma versão nova (com este mesmo comando). No Codex, na pri
 `/hooks` e aprove os hooks do context-tools uma vez.
 
 Requer Node.js 18+. O CLI de agente que faltar (`claude` ou `codex`) é instalado com o npm no
-caminho; para um agente só, acrescente `--target` (abaixo). Ele nunca altera a pasta onde é executado.
+caminho; para um agente só, acrescente `--target` (abaixo). Ele não altera nenhum projeto, exceto para
+desligar uma cópia antiga por projeto (abaixo).
+
+Vindo de uma cópia antiga instalada **dentro do projeto** (hooks em `.claude/settings.json` ou
+`.codex/hooks.json`)? A instalação global acha esses projetos na lista que o próprio agente guarda,
+desliga os hooks antigos e guarda uma cópia em `~/.context-tools/migrations/` — senão todo hook
+rodaria em dobro. Configuração, mapas e documentação ficam. `--no-migrate` pula; `migrate --all`
+faz depois.
 
 | quer | acrescente ao comando |
 |---|---|
@@ -90,6 +97,7 @@ caminho; para um agente só, acrescente `--target` (abaixo). Ele nunca altera a 
 | só o projeto atual, não o seu usuário | `--project .` |
 | o servidor MCP também (veja abaixo) | `--mcp` (e `--remove-mcp` para tirar) |
 | ver o que ele faria, sem mudar nada | `--dry-run` |
+| deixar as cópias antigas por projeto como estão | `--no-migrate` |
 
 ### Servidor MCP (opcional, desligado por padrão)
 

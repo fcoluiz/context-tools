@@ -30,7 +30,7 @@ export function useSetupConfigLang(config = {}) {
   return lang;
 }
 
-const KNOWN_COMMANDS = new Set(['install', 'update', 'status', 'doctor', 'latest', 'configure', 'help']);
+const KNOWN_COMMANDS = new Set(['install', 'update', 'status', 'doctor', 'latest', 'configure', 'migrate', 'help']);
 // No Windows, estas CLIs são chamadas pelo nome via cmd.exe, que resolve a extensão pelo PATHEXT:
 // o npm instala `claude.cmd`/`codex.cmd`, mas o instalador nativo do Claude Code instala
 // `claude.exe` — forçar ".cmd" quebrava nesse caso.
@@ -54,7 +54,7 @@ export function parseArgs(argv = process.argv.slice(2)) {
       continue;
     }
     const body = token.slice(2);
-    if (body === 'help' || body === 'yes' || body === 'json' || body === 'guided' || body === 'no-workspace' || body === 'no-bootstrap' || body === 'skip-cli-install' || body === 'skip-codex-install' || body === 'dry-run' || body === 'keep-open' || body === 'global' || body === 'mcp' || body === 'remove-mcp') {
+    if (body === 'help' || body === 'yes' || body === 'json' || body === 'guided' || body === 'no-workspace' || body === 'no-bootstrap' || body === 'skip-cli-install' || body === 'skip-codex-install' || body === 'dry-run' || body === 'keep-open' || body === 'global' || body === 'mcp' || body === 'remove-mcp' || body === 'no-migrate' || body === 'all') {
       flags[body] = true;
       continue;
     }

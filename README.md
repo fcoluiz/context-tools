@@ -79,7 +79,13 @@ run the tests and when a newer release is out (with this same command). On Codex
 open `/hooks` and trust the context-tools hooks once.
 
 Requires Node.js 18+. An agent CLI that is missing (`claude` or `codex`) is installed with npm along
-the way; for a single agent, add `--target` (below). It never changes the folder you run it from.
+the way; for a single agent, add `--target` (below). It changes no project, except to turn off an old
+per-project copy (below).
+
+Upgrading from an old copy installed **inside a project** (hooks in `.claude/settings.json` or
+`.codex/hooks.json`)? The global install finds those projects in the list your agent keeps, turns the
+old hooks off and keeps a backup in `~/.context-tools/migrations/` — otherwise every hook would run
+twice. Settings, maps and docs stay. `--no-migrate` skips it; `migrate --all` runs it later.
 
 | want | add to the command |
 |---|---|
@@ -87,6 +93,7 @@ the way; for a single agent, add `--target` (below). It never changes the folder
 | only the current project, not your user | `--project .` |
 | the MCP server too (see below) | `--mcp` (and `--remove-mcp` to take it out) |
 | to see what it would do, changing nothing | `--dry-run` |
+| to leave old per-project copies alone | `--no-migrate` |
 
 ### MCP server (optional, off by default)
 

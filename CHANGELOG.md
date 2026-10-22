@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.13] — 2026-10-22
+
 ### Fixed
 
 - **`ack` of a document citing a source that another `extraRepos` reaches through a link.** When

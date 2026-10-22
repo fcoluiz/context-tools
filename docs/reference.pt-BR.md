@@ -1137,7 +1137,11 @@ pasta PAI da raiz — `../vizinho` é aceito, `../../mais-fundo` é recusado (me
 Sem configurar nada, deriva sozinho de um `.code-workspace` do VS Code (na raiz ou na pasta
 pai) — `extraRepos: []` explícito desliga essa detecção automática. O projeto raiz continua
 sempre no índice, inclusive quando não tem `.git` e usa `extraRepos` explícito; os irmãos nunca
-substituem o projeto analisado.
+substituem o projeto analisado. `covers` de mapa e fontes de documentação podem apontar para uma
+pasta de `extraRepos` (`../shared/u.js`), direto ou por junction/symlink dentro do projeto, e o
+`ack` as aceita. Comando rodado numa pasta com `context-tools.json` próprio usa essa pasta como
+raiz mesmo sem `CLAUDE_PROJECT_DIR`, em vez de subir para uma pasta pai que agrupa outros
+repositórios.
 
 **Idioma**: o fallback da biblioteca é inglês. O instalador guiado grava português por padrão em
 projetos novos; use `--lang=en` ou `{ "lang": "en" }` (por projeto) para escolher inglês.

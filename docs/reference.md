@@ -1154,7 +1154,11 @@ the subtree of the root's PARENT folder — `../neighbor` is accepted, `../../de
 bounded). With nothing configured, it's derived automatically from a VS Code `.code-workspace`
 file (in the root or its parent) — an explicit `extraRepos: []` turns off that auto-detection. The
 root project itself is always retained in the index, including a git-less root with explicit
-`extraRepos`; the sibling list never replaces the project being analyzed.
+`extraRepos`; the sibling list never replaces the project being analyzed. Map `covers` and
+documentation sources may point into an `extraRepos` folder (`../shared/u.js`), directly or
+through a junction/symlink inside the project, and `ack` accepts them. A command run from a
+folder that has its own `context-tools.json` uses that folder as the root even without
+`CLAUDE_PROJECT_DIR`, instead of climbing to a parent folder that holds other repositories.
 
 **Language**: the library fallback is English. The guided installer writes Portuguese by default
 for a new project; use `--lang=en` or `{ "lang": "en" }` (per project) to choose English.

@@ -8,6 +8,18 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`ack` of a document citing a source that another `extraRepos` reaches through a link.** When
+  one `extraRepos` folder holds a junction/symlink to another (`b/shared` → `shared`), the source
+  was found twice, and the copy seen through the link left its repository's real path, was marked
+  `outside:` and made `ack` fail with "source verification unavailable". Only the verifiable copy
+  is kept now; when there is none, the source moves to the repository that really holds it.
+  Sources with no known owner are still refused.
+- **Sources cited only by file name get relative keys again.** With the root spelled differently
+  from the scanned paths (forward slashes, another drive-letter case), they were recorded with an
+  absolute path (`./C:/.../src/a.ts`) instead of `./src/a.ts`, which is not portable.
+
 ## [2.9.12] — 2026-10-22
 
 ### Fixed

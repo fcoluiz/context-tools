@@ -1154,7 +1154,8 @@ pai) — `extraRepos: []` explícito desliga essa detecção automática. O proj
 sempre no índice, inclusive quando não tem `.git` e usa `extraRepos` explícito; os irmãos nunca
 substituem o projeto analisado. `covers` de mapa e fontes de documentação podem apontar para uma
 pasta de `extraRepos` (`../shared/u.js`), direto ou por junction/symlink dentro do projeto, e o
-`ack` as aceita. Comando rodado numa pasta com `context-tools.json` próprio usa essa pasta como
+`ack` as aceita. Quando uma pasta de `extraRepos` tem link para outra, a fonte do documento é
+gravada uma vez só, no repositório onde ela mora de fato. Comando rodado numa pasta com `context-tools.json` próprio usa essa pasta como
 raiz mesmo sem `CLAUDE_PROJECT_DIR`, em vez de subir para uma pasta pai que agrupa outros
 repositórios.
 

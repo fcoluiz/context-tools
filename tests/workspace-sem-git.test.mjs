@@ -74,3 +74,19 @@ test('pasta do projeto ligada (junction/symlink) a um extraRepos vale como fonte
   writeFileSync(join(app, 'ai-context', 'doc.md'), '# Doc\n\nUses `lib/shared/u.js`.\n');
   assert.deepEqual(acknowledgeDocument(app, 'ai-context/doc.md').acknowledged, ['./lib/shared/u.js']);
 }));
+
+test('documento cita fonte que outro extraRepos alcança por junction: ack usa a fonte canônica', () => workspace((app, ws) => {
+  mkdirSync(join(ws, 'client'));
+  symlinkSync(join(ws, 'shared'), join(ws, 'client', 'shared'), 'junction');
+  const config = JSON.stringify({ extraRepos: ['../shared', '../client'] });
+  writeFileSync(join(app, '.claude', 'context-tools.json'), config);
+  writeFileSync(join(app, '.codex', 'context-tools.json'), config);
+  writeFileSync(join(app, 'ai-context', 'doc.md'), '# Doc\n\nUses `shared/u.js`.\n');
+  assert.deepEqual(acknowledgeDocument(app, 'ai-context/doc.md').acknowledged, ['shared/u.js']);
+}));
+
+test('documento que cita só o nome do arquivo grava chave relativa mesmo com a raiz em outra grafia', () => workspace((app) => {
+  writeFileSync(join(app, 'ai-context', 'doc.md'), '# Doc\n\nUses `a.js`.\n');
+  const raiz = process.platform === 'win32' ? app.replace(/\\/g, '/').replace(/^[a-z]/i, (d) => d === d.toUpperCase() ? d.toLowerCase() : d.toUpperCase()) : app;
+  assert.deepEqual(acknowledgeDocument(raiz, 'ai-context/doc.md').acknowledged, ['./src/a.js']);
+}));

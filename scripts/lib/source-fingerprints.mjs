@@ -138,6 +138,17 @@ const strictlyInside = (parent, child) => {
   return Boolean(rel) && rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
 };
 
+/**
+ * A fonte passa na verificação de `fingerprintSourcesInRoots` com esta raiz? `rootsCache`
+ * (Map) evita reler a config de cada raiz quando a mesma lista de fontes é conferida várias vezes.
+ */
+export function sourceVerifiable(root, path, rootsCache = null) {
+  const key = pathKey(root);
+  let roots = rootsCache?.get(key);
+  if (!roots) { roots = allowedSourceRoots(root); rootsCache?.set(key, roots); }
+  return Boolean(checkedSourcePath(root, path, roots).path);
+}
+
 // O caminho escrito e o caminho real precisam, cada um, cair dentro de alguma raiz permitida.
 function checkedSourcePath(root, path, roots = allowedSourceRoots(root)) {
   const absolute = resolve(root, path);

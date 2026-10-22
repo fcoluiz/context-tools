@@ -10,6 +10,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   statSync,
   unlinkSync,
@@ -17,7 +18,7 @@ import {
 } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { lerDocumento } from './md-hint.mjs';
-import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import {
   HISTORY_CODE_RE,
   findRepos,
@@ -33,7 +34,7 @@ import {
   walk,
 } from './roots.mjs';
 import { currentSessionId, sessionChangedFiles, sessionStartedAt, sinceRef } from '../context-maps.mjs';
-import { compareReviewedSources, fingerprintKey, fingerprintSourcesInRoots, loadFingerprintState, parseSourceFingerprints, rememberFingerprint, sameDigest, saveFingerprintState } from './source-fingerprints.mjs';
+import { compareReviewedSources, fingerprintKey, fingerprintSourcesInRoots, loadFingerprintState, parseSourceFingerprints, rememberFingerprint, sameDigest, saveFingerprintState, sourceVerifiable } from './source-fingerprints.mjs';
 import { markdownSectionsForSources } from './markdown-sections.mjs';
 import { selectAutomaticReviewCandidates } from './auto-review-candidates.mjs';
 import { reviewFinding } from './review-findings.mjs';
@@ -539,7 +540,39 @@ function referencedCodeFiles(document, root, repos, findByBasename) {
       }
     }
   }
-  return [...found.values()];
+  return canonicalSources([...found.values()], repos);
+}
+
+/**
+ * Uma pasta de um extraRepo pode ser junction/symlink para outro extraRepo (`b/shared` → `shared`):
+ * a mesma fonte aparece por dois caminhos e a cópia vista pelo link sai da raiz do repositório que
+ * a contém, vira `outside:` e trava o ack. Fica só a cópia verificável; sem nenhuma, a fonte passa
+ * para o repositório onde ela mora de fato. Sem dono conhecido, nada muda (falha fechada).
+ */
+function canonicalSources(sources, repos) {
+  const rootsCache = new Map();
+  const realOf = (path) => safe(() => realpathSync(path), resolve(path));
+  const groups = new Map();
+  for (const source of sources) {
+    const path = resolve(source.repo.path, source.file);
+    const real = source.exists ? realOf(path) : path;
+    const key = process.platform === 'win32' ? real.toLowerCase() : real;
+    if (!groups.has(key)) groups.set(key, { real, items: [] });
+    groups.get(key).items.push({ source, ok: !source.exists || sourceVerifiable(source.repo.path, path, rootsCache) });
+  }
+  const out = [];
+  for (const { real, items } of groups.values()) {
+    const ok = items.filter((item) => item.ok);
+    if (ok.length) { out.push(...ok.map((item) => item.source)); continue; }
+    const owner = repos
+      .map((repo) => ({ repo, rel: relative(realOf(repo.path), real) }))
+      .filter(({ rel }) => rel && rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
+      .sort((a, b) => a.rel.length - b.rel.length)[0];
+    const moved = owner && { ...items[0].source, repo: owner.repo, file: owner.rel.replace(/\\/g, '/') };
+    if (moved && sourceVerifiable(owner.repo.path, resolve(owner.repo.path, moved.file), rootsCache)) out.push(moved);
+    else out.push(...items.map((item) => item.source));
+  }
+  return out;
 }
 
 /** Fresh source declarations for the metadata writer; does not trust a stored queue manifest. */

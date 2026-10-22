@@ -11,7 +11,7 @@
 
 import { readdirSync, existsSync, readFileSync, statSync, realpathSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { join, dirname, resolve, sep, basename, relative } from 'node:path';
+import { join, dirname, resolve, sep, basename, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 
@@ -573,6 +573,10 @@ export function lerTexto(caminho) {
 
 /** Caminho relativo à raiz do repo, sempre com barra normal (comparável entre SOs). */
 export function relPath(root, file) {
+  // A raiz pode chegar com outra grafia do mesmo caminho (barra normal, letra de unidade em outra
+  // caixa) e o `replace` textual devolvia o caminho absoluto, que virava chave não portável.
+  const rel = relative(resolve(root), resolve(file));
+  if (rel && rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel)) return rel.replace(/\\/g, '/');
   return file.replace(root, '').replace(/^[\\/]/, '').replace(/\\/g, '/');
 }
 

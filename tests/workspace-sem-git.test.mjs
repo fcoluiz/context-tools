@@ -3,19 +3,19 @@
 // a verificação de fontes do ack fora da raiz do projeto.
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { acknowledgeDocument } from '../scripts/ack.mjs';
 import { fingerprintSourcesInRoot } from '../scripts/lib/source-fingerprints.mjs';
 import { safeEditTarget } from '../scripts/lib/session-write-journal.mjs';
 
-const roots = pathToFileURL(join(import.meta.dirname, '..', 'scripts', 'lib', 'roots.mjs')).href;
+const roots = new URL('../scripts/lib/roots.mjs', import.meta.url).href;
 
 function workspace(fn) {
-  const ws = mkdtempSync(join(tmpdir(), 'ct-ws-'));
+  // Caminho real: no macOS o tmpdir passa por symlink (/var -> /private/var).
+  const ws = realpathSync(mkdtempSync(join(tmpdir(), 'ct-ws-')));
   try {
     const app = join(ws, 'app');
     for (const dir of ['app/src', 'app/.claude/context', 'app/.codex', 'app/ai-context', 'shared', 'other', 'unrelated']) mkdirSync(join(ws, dir), { recursive: true });

@@ -741,6 +741,16 @@ Claude usa `claude plugin update` quando o plugin já está instalado; no Codex 
 marketplace na tag nova, o que o CLI do Codex exige para trocar de versão. `--target=claude|codex`
 limita a um agente. As seções abaixo descrevem as alternativas por projeto e manuais.
 
+**Atualização sem ninguém olhando.** `node setup.mjs auto-update [--target=...] [--json] [--force]` é
+a mesma atualização, feita para ser chamada por agendador ou outro programa: sem perguntas, sem
+projeto e só no agente em que o plugin já está instalado no escopo do usuário e ativo — nunca
+instala, não mexe em instalação por projeto e deixa cópias locais antigas como estão. A última versão
+vem do `git ls-remote` ou, sem `git` no `PATH`, por HTTPS do mesmo endpoint do git. Sucesso é a versão
+nova aparecer na lista de plugins do agente, não só código 0; uma versão que não subiu só é tentada de
+novo depois de 24 h (`--force` tenta agora), registrado em `~/.context-tools/auto-update.json`. Com
+`--json`, a última linha da saída é o resumo `{ "latest", "agents": { "<id>": { "result", "from",
+"to" } } }`; o código de saída só é 1 quando uma atualização falhou.
+
 **Migrando uma cópia antiga por projeto.** Depois de uma instalação global, o setup procura projetos
 que ainda rodam uma cópia standalone: os listados em `~/.claude.json` e em `[projects]` de
 `~/.codex/config.toml`. Tira só os hooks que o instalador standalone escreveu

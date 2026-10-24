@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.15] — 2026-10-24
+
 ### Added
 
 - **`setup.mjs auto-update`: unattended update of the installed plugin.** Meant for a scheduler or

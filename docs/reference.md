@@ -208,6 +208,17 @@ model context window, rate-limit data, and compactions) for future analysis, but
 reuse Claude's measured cost curve or emit a context/time warning at `Stop`, so it does not offer a
 fresh session either. The handoff and the resume prompt can still be requested manually.
 
+**The warning also arrives mid-turn.** The `Stop` hook only runs when a turn ends, and an agent
+often works through a whole task list in one turn without stopping to ask. Measured on 2026-10-24 in
+local transcripts, in 116 sessions from the previous 30 days that crossed 200k: between crossing the
+threshold and the first `Stop`, median +36k, p75 +86k, and 25 sessions +100k or more — the worst
+crossed at 204k and the turn only ended at 703k, after 344 tool calls. So a `PostToolUse` hook
+checks the context of the latest request after each tool call (it reads only the tail of the
+transcript) and, on crossing, gives the same warning with the same state and handoff, plus a request
+to finish only the step in progress, fill in the block and ask the user before starting the next
+one. Whichever hook comes first warns; the other sees the saved state, so it is still **one warning
+per session**.
+
 **The same warning asks the AGENT to fill in the volatile block** — not the human. That part is not
 automatable without an LLM: "what was tried and failed" is not in git, it is in the head of whoever
 did the work. But the agent already has the whole session in context, so for it the cost is one
@@ -935,6 +946,7 @@ shows whether it is registered.
 |---|---|---|
 | `PreToolUse` (Grep / Bash) | answers before Claude Grep, a Claude `grep`/`rg` Bash command (hook `if` filter: no cost for other commands) or a Codex `rg`/`grep` command when the pattern is a symbol; notes the files it pointed to so `health.mjs` can report whether the agent used them (Claude). For a qualified pattern (`DateTimeUtils\.EnsureDateTime`, `util.cleanRegex`), it lists the calls inside the defining file written without the prefix, which that search cannot match — each with the method that contains it. When a name is defined in several places, a short evidence pack: the definitions, one line for the files that only import it, one line of similar names — not the matching lines the Grep is about to return. A test whose name only contains the term is not an answer | only when it answers |
 | `PostToolUse` (Grep / Bash) | after a Grep, or a `grep`/`rg` command, that returned line numbers: names the function, method or class each matched line falls in, with its line range and, when it fits, its declaration line (the parameters), from the outline of the files that matched (no index). Production files first, tests last; up to 20 files, and the files left out are named as not annotated — never cut silently. Grep shows `356: if (_maxDepth …` without the method around it; in the outcome benchmark an agent answered from that alone and named the wrong method | only when a matched file has a parser; at most 2,000 characters |
+| `PostToolUse` (Claude, any tool) | when the latest request crossed 200k of context and the session has not been warned yet, gives the `Stop` warning mid-turn (same handoff, same state) and asks the agent to stop the task list at the current step and ask the user | **once per session**; otherwise reads one small state file and the transcript tail and exits |
 | `UserPromptSubmit` (Codex) | locally checks each explicitly named file against its own context-map fingerprint; emits context only for stale, uncovered, or unverifiable files | no model call; one local hook process per prompt |
 | `Stop` | Claude warns when the session gets expensive and writes the handoff; Codex only records metrics | **once per session** |
 | `Stop` | once the volatile block is filled in, writes the resume prompt to disk and asks the agent to offer the user a fresh session | once per session |

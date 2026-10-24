@@ -8,6 +8,16 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **The expensive-session warning now also arrives mid-turn (Claude).** It only came from the
+  `Stop` hook, at the end of a turn, and an agent working through a task list in one turn kept
+  going long past 200k: in 116 local sessions from the last 30 days that crossed 200k, the warning
+  came 100k+ late in 25 of them, and 499k late in the worst (204k → 703k, 344 tool calls). A new
+  `PostToolUse` hook (`handoff-meio-turno.mjs`) checks the latest request's context after each tool
+  call, reading only the transcript tail, and on crossing gives the same warning and handoff and asks
+  the agent to stop at the current step and ask the user. Still once per session.
+
 ## [2.9.13] — 2026-10-22
 
 ### Fixed

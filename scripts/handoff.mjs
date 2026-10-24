@@ -351,8 +351,20 @@ function stopReport(root, t) {
     return;
   }
 
-  // ---- FASE 1: o aviso, uma vez por sessão ---------------------------------------------
-  //
+  emitir(avisoDaFase1(root, sid, m, t, salvar).join('\n'));
+}
+
+/**
+ * FASE 1: o aviso, uma vez por sessão — grava o handoff e o estado, e devolve as linhas.
+ *
+ * Compartilhada entre o `Stop` e o `PostToolUse` (`handoff-meio-turno.mjs`). O `Stop` só dispara
+ * no fim do turno, e um turno longo (uma lista de tarefas) passava de 200k para 500k+ sem nenhum
+ * `Stop` no meio — medido em 2026-10-24 em 116 sessões dos últimos 30 dias que cruzaram 200k: em
+ * 25 o aviso chegou 100k+ depois, no pior caso em 703k. Quem chegar primeiro avisa; o outro vê o
+ * estado gravado e segue para a fase 2.
+ */
+function avisoDaFase1(root, sid, m, t, salvar) {
+  const destino = caminhoDoHandoff(root, sid);
   // `mkdirSync` ANTES de gravar, e a ordem é load-bearing: em projeto que ainda não tem
   // `.claude/`, o `writeFileSync` falha, o `safe` engole e o handoff nunca é escrito — morto em
   // silêncio, exatamente nos projetos que acabaram de instalar o plugin. Este bug já existiu
@@ -378,8 +390,7 @@ function stopReport(root, t) {
   // auto-gerado que existiu em disco estava com ele em branco. Depender de alguém lembrar era
   // apostar o ganho inteiro na memória de quem volta.
   if (gerado) linhas.push(t('ses.preencha', { arq: relPath(root, destino) }));
-
-  emitir(linhas.join('\n'));
+  return linhas;
 }
 
 /**
@@ -756,3 +767,5 @@ if (isMain(import.meta.url)) {
 
 // Exportado para teste; o resto do módulo é CLI e hook.
 export { comandoDoPlugin, MAX_SPAN_ATRIBUIVEL, mapasRelevantes };
+// Para o `handoff-meio-turno.mjs`, que avisa no meio do turno com o mesmo texto e o mesmo estado.
+export { avisoDaFase1, LIMIAR_CONTEXTO };

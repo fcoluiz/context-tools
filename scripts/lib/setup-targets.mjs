@@ -55,7 +55,7 @@ function marketplaceListArray(data) {
 // Só sai o que o próprio instalador escreveu: hook do usuário ou de outra ferramenta fica.
 // A lista cobre todo script que um hook standalone já chamou, inclusive em versões antigas:
 // `grep-context` e `handoff-lembrete` ficavam de fora e seguiam rodando junto com o plugin.
-const CLAUDE_STANDALONE_HOOK = /^node\s+"?\$(?:\{CLAUDE_PROJECT_DIR\}|CLAUDE_PROJECT_DIR)\/\.claude\/scripts\/(?:context-maps|context-docs|coupling|handoff|handoff-lembrete|pre-tool|verify|claude-md-hint|grep-context|audit-docs|context-pack|health|metrics|providers|symbols)\.mjs"?(?:\s|$)/;
+const CLAUDE_STANDALONE_HOOK = /^node\s+"?\$(?:\{CLAUDE_PROJECT_DIR\}|CLAUDE_PROJECT_DIR)\/\.claude\/scripts\/(?:context-maps|context-docs|coupling|handoff|handoff-lembrete|handoff-meio-turno|pre-tool|verify|claude-md-hint|grep-context|audit-docs|context-pack|health|metrics|providers|symbols)\.mjs"?(?:\s|$)/;
 
 export function isManagedClaudeHook(command) {
   return typeof command === 'string' && CLAUDE_STANDALONE_HOOK.test(command.trim());

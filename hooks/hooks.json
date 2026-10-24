@@ -114,6 +114,15 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/grep-context.mjs\""
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/handoff-meio-turno.mjs\""
+          }
+        ]
       }
     ]
   }

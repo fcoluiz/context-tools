@@ -68,6 +68,40 @@ export function transcriptDaSessao(root, sessionId) {
   return existsSync(p) ? p : null;
 }
 
+/** Quanto do fim do transcript `contextoAtual` lê. Uma linha de `usage` tem centenas de bytes. */
+const CAUDA_BYTES = 256 * 1024;
+
+/**
+ * O contexto da ÚLTIMA requisição (`cache_read` do último `usage`), lendo só a cauda do arquivo.
+ *
+ * Existe para o hook de `PostToolUse`, que roda a cada chamada de ferramenta: `metricasDaSessao`
+ * lê o transcript inteiro, dezenas de MB numa sessão longa, e isso a cada ferramenta seria o hook
+ * custando mais que o problema que vigia. Mesma régua do `contexto` de lá (`cache_read`), para o
+ * limiar significar a mesma coisa nos dois lugares. Sem `usage` na cauda (um resultado de
+ * ferramenta enorme no fim), devolve `null`: a próxima chamada lê de novo.
+ */
+export function contextoAtual(caminho) {
+  if (!caminho) return null;
+  return safe(() => {
+    const fd = openSync(caminho, 'r');
+    try {
+      const tamanho = statSync(caminho).size;
+      const inicio = Math.max(0, tamanho - CAUDA_BYTES);
+      const buf = Buffer.alloc(tamanho - inicio);
+      readSync(fd, buf, 0, buf.length, inicio);
+      const linhas = buf.toString('utf8').split('\n');
+      // A primeira linha da cauda pode estar cortada no meio; o `JSON.parse` dela só falha.
+      for (let i = linhas.length - 1; i >= 0; i--) {
+        if (!linhas[i].includes('"usage"')) continue;
+        const o = safe(() => JSON.parse(linhas[i]), null);
+        const u = o && o.message && o.message.usage;
+        if (u && !o.isSidechain) return u.cache_read_input_tokens || 0;
+      }
+      return null;
+    } finally { closeSync(fd); }
+  }, null);
+}
+
 const numero = (valor) => Number.isFinite(Number(valor)) ? Number(valor) : 0;
 
 function usoCodexDaLinha(o) {

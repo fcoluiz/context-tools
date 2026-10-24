@@ -198,6 +198,17 @@ contexto e tempo; as métricas normalizadas continuam registradas no handoff par
 O arquivo não é regravado sozinho depois (mudaria embaixo de quem está lendo) — `--salvar` atualiza
 sob demanda.
 
+**O aviso também chega no meio do turno.** O hook de `Stop` só roda quando o turno acaba, e o
+agente costuma trabalhar uma lista de tarefas inteira num turno só, sem parar para perguntar. Medido
+em 2026-10-24 nos transcripts locais, em 116 sessões dos 30 dias anteriores que cruzaram 200k: entre
+cruzar o limiar e o primeiro `Stop`, mediana de +36k, p75 de +86k, e 25 sessões com +100k ou mais
+— a pior cruzou em 204k e o turno só acabou em 703k, depois de 344 chamadas de ferramenta. Por isso
+um hook de `PostToolUse` confere, a cada chamada de ferramenta, o contexto da última requisição (lê
+só a cauda do transcript) e, ao cruzar, dá o mesmo aviso, com o mesmo estado e o mesmo handoff, mais
+o pedido de terminar só o passo em andamento, preencher o bloco e perguntar ao usuário antes de
+começar o próximo. Quem chegar primeiro avisa; o outro vê o estado gravado, então continua sendo
+**um aviso por sessão**.
+
 **O mesmo aviso pede ao AGENTE que preencha o bloco volátil** — não ao humano. Essa parte não é
 automatizável sem LLM: "o que foi tentado e falhou" não está no git, está na cabeça de quem
 trabalhou. Mas o agente já tem a sessão inteira em contexto, então para ele custa um turno e nada
@@ -926,6 +937,7 @@ registrado.
 |---|---|---|
 | `PreToolUse` (Grep / Bash) | responde antes do Grep do Claude, de um `grep`/`rg` digitado no Bash do Claude (filtro `if` do hook: sem custo nos outros comandos) ou de um `rg`/`grep` do Codex quando o padrão é um símbolo; anota os arquivos indicados para o `health.mjs` dizer se o agente os usou (Claude). Com padrão qualificado (`DateTimeUtils\.EnsureDateTime`, `util.cleanRegex`), lista as chamadas dentro do arquivo que define o nome escritas sem o prefixo, que essa busca não encontra — cada uma com o método que a contém. Quando um nome é definido em vários lugares, um pacote de evidências curto: as definições, uma linha com os arquivos que só o importam e uma linha de nomes parecidos — não as linhas que o Grep vai devolver em seguida. Um teste cujo nome só contém o termo não é resposta | só quando responde |
 | `PostToolUse` (Grep / Bash) | depois de um Grep, ou de um `grep`/`rg`, que devolveu número de linha: diz em qual função, método ou classe cai cada linha encontrada, com o intervalo dela e, quando cabe, a linha da declaração (os parâmetros), a partir do outline dos arquivos que apareceram (sem índice). Código de produção primeiro, testes no fim; até 20 arquivos, e os que ficam de fora são nomeados como não anotados — nunca corta em silêncio. O Grep mostra `356: if (_maxDepth …` sem o método em volta; no benchmark de resultado, um agente respondeu só com isso e nomeou o método errado | só quando algum arquivo encontrado tem parser; no máximo 2.000 caracteres |
+| `PostToolUse` (Claude, qualquer ferramenta) | quando a última requisição cruzou 200k de contexto e a sessão ainda não foi avisada, dá o aviso do `Stop` no meio do turno (mesmo handoff, mesmo estado) e pede ao agente que pare a lista no passo atual e pergunte ao usuário | **uma vez por sessão**; no resto, lê um arquivo de estado pequeno e a cauda do transcript e sai |
 | `UserPromptSubmit` (Codex) | confere cada arquivo citado contra o fingerprint próprio no mapa; só injeta contexto se estiver defasado, sem cobertura ou sem verificação possível | sem chamada a modelo; um processo local por prompt |
 | `Stop` | Claude avisa quando a sessão fica cara e grava o handoff; Codex apenas registra métricas | **uma vez por sessão** |
 | `Stop` | assim que o bloco volátil é preenchido, grava o prompt de retomada em disco e pede ao agente que ofereça ao usuário uma sessão nova | uma vez por sessão |

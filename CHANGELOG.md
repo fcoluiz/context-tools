@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.14] — 2026-10-24
+
 ### Added
 
 - **The expensive-session warning now also arrives mid-turn (Claude).** It only came from the

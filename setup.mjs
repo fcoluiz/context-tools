@@ -6,6 +6,7 @@
 //   node setup.mjs [install|update] [--project <dir>] [--target=claude|codex|both]
 //   node setup.mjs status|doctor [--project <dir>] [--json] [--target=...]
 //   node setup.mjs latest
+//   node setup.mjs auto-update [--target=...] [--json] [--force]
 //   node setup.mjs configure [--project <dir>] [--target=...]
 //
 // Sem --target, detecta o que já existe no projeto (.codex/AGENTS.md, .claude/CLAUDE.md); se
@@ -16,10 +17,10 @@ import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  say, isDir, isFile, ask, latestTag, parseArgs, detectProjectRoot, waitBeforeExit, t,
+  say, isDir, isFile, ask, resolveLatestTag, parseArgs, detectProjectRoot, waitBeforeExit, t,
 } from './scripts/lib/setup-shared.mjs';
 import { TARGETS, resolveTargets } from './scripts/lib/setup-targets.mjs';
-import { runSetup, chooseGuidedRoot } from './scripts/lib/setup-engine.mjs';
+import { runSetup, chooseGuidedRoot, autoUpdate } from './scripts/lib/setup-engine.mjs';
 import { isMain } from './scripts/lib/roots.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -59,7 +60,9 @@ function help() {
 async function main() {
   const { command, project: explicitProject, flags } = parseArgs();
   if (command === 'help') { help(); return; }
-  if (command === 'latest') { say(latestTag(TARGETS.codex.repositoryUrl) || t('setup.run.localFallback', { versao: PACKAGE.version })); return; }
+  if (command === 'latest') { say((await resolveLatestTag(TARGETS.codex.repositoryUrl)) || t('setup.run.localFallback', { versao: PACKAGE.version })); return; }
+  // Sem projeto e sem perguntas: só o plugin já instalado para o usuário, em cada agente.
+  if (command === 'auto-update') { process.exitCode = await autoUpdate(resolveTargets(flags.target ? String(flags.target).split(',') : ['both']), ctx, flags); return; }
 
   const detectedRoot = detectProjectRoot(process.cwd(), explicitProject);
   const root = flags.global ? detectedRoot : await chooseGuidedRoot(detectedRoot, flags);

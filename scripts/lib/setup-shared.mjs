@@ -30,7 +30,7 @@ export function useSetupConfigLang(config = {}) {
   return lang;
 }
 
-const KNOWN_COMMANDS = new Set(['install', 'update', 'status', 'doctor', 'latest', 'configure', 'migrate', 'help']);
+const KNOWN_COMMANDS = new Set(['install', 'update', 'status', 'doctor', 'latest', 'auto-update', 'configure', 'migrate', 'help']);
 // No Windows, estas CLIs são chamadas pelo nome via cmd.exe, que resolve a extensão pelo PATHEXT:
 // o npm instala `claude.cmd`/`codex.cmd`, mas o instalador nativo do Claude Code instala
 // `claude.exe` — forçar ".cmd" quebrava nesse caso.
@@ -54,7 +54,7 @@ export function parseArgs(argv = process.argv.slice(2)) {
       continue;
     }
     const body = token.slice(2);
-    if (body === 'help' || body === 'yes' || body === 'json' || body === 'guided' || body === 'no-workspace' || body === 'no-bootstrap' || body === 'skip-cli-install' || body === 'skip-codex-install' || body === 'dry-run' || body === 'keep-open' || body === 'global' || body === 'mcp' || body === 'remove-mcp' || body === 'no-migrate' || body === 'all') {
+    if (body === 'help' || body === 'yes' || body === 'json' || body === 'guided' || body === 'no-workspace' || body === 'no-bootstrap' || body === 'skip-cli-install' || body === 'skip-codex-install' || body === 'dry-run' || body === 'keep-open' || body === 'global' || body === 'mcp' || body === 'remove-mcp' || body === 'no-migrate' || body === 'all' || body === 'force') {
       flags[body] = true;
       continue;
     }
@@ -184,6 +184,26 @@ export function latestTagFromLsRemote(output) {
 export function latestTag(repositoryUrl) {
   const result = run('git', ['ls-remote', '--tags', '--refs', repositoryUrl]);
   return result.status === 0 ? latestTagFromLsRemote(result.stdout) : null;
+}
+
+/** Tags da resposta de `info/refs` do git por HTTP (linhas pkt-line; tag anotada vem também com `^{}`). */
+export function latestTagFromRefs(text) {
+  const tags = [...String(text).matchAll(/refs\/tags\/(v\d+\.\d+\.\d+)(?![\w.-])/g)].map((m) => m[1]);
+  return tags.sort(compareVersions).at(-1) || null;
+}
+
+// Sem `git` no PATH — comum quando o setup é chamado por outro programa, não por um terminal — a
+// mesma lista de tags vem por HTTPS, do endpoint que o próprio `git ls-remote` consulta.
+export async function latestTagHttp(repositoryUrl, { timeout = 15000 } = {}) {
+  try {
+    const url = `${String(repositoryUrl).replace(/\/+$/, '')}/info/refs?service=git-upload-pack`;
+    const response = await fetch(url, { signal: AbortSignal.timeout(timeout), headers: { 'user-agent': 'git/2 context-tools-setup' } });
+    return response.ok ? latestTagFromRefs(await response.text()) : null;
+  } catch { return null; }
+}
+
+export async function resolveLatestTag(repositoryUrl) {
+  return latestTag(repositoryUrl) || await latestTagHttp(repositoryUrl);
 }
 
 export function relativeExtra(root, candidate) {

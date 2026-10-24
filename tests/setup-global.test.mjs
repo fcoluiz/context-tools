@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
 import test from 'node:test';
 import { localPath } from './paths.mjs';
+import { latestTagFromRefs } from '../scripts/lib/setup-shared.mjs';
 
 const SETUP = localPath('../setup.mjs');
 
@@ -59,7 +60,9 @@ if (agent === 'claude') {
     if (me.plugin && me.plugin.scope === scope) out('already installed');
     me.plugin = { version: ver(me.marketplace.ref), scope }; out('installed');
   }
-  if (cmd.startsWith('plugin update ')) { me.plugin.version = ver(me.marketplace.ref); out('updated'); }
+  // FAKE_CLI_STUCK: o CLI responde "updated" sem trocar a versão — o caso que o auto-update tem
+  // de reconhecer como falha.
+  if (cmd.startsWith('plugin update ')) { if (!process.env.FAKE_CLI_STUCK) me.plugin.version = ver(me.marketplace.ref); out('updated'); }
 }
 if (agent === 'codex') {
   if (cmd === 'plugin list') out({ installed: me.plugin ? [{ pluginId: 'context-tools@context-tools-codex', name: 'context-tools', marketplaceName: 'context-tools-codex', version: me.plugin.version, source: { ref: me.plugin.ref } }] : [] });
@@ -118,6 +121,7 @@ function fakeMachine(agents, initial = {}) {
     project,
     claudeConfig,
     run: (...extra) => spawnSync(process.execPath, [SETUP, '--global', '--yes', ...extra], { cwd: project, env, encoding: 'utf8' }),
+    auto: (extra, more = {}) => spawnSync(process.execPath, [SETUP, 'auto-update', ...extra], { cwd: project, env: { ...env, ...more }, encoding: 'utf8' }),
     state: () => JSON.parse(readFileSync(stateFile, 'utf8')),
     cleanup: () => rmSync(dir, { recursive: true, force: true }),
   };
@@ -236,5 +240,75 @@ test('setup --global --target=claude não instala nem toca o Codex', () => {
     assert.equal(r.status, 0, r.stdout + r.stderr);
     const { calls } = m.state();
     assert.ok(!calls.some((c) => c.startsWith('codex ') || c.startsWith('npm ')), calls.join('\n'));
+  } finally { m.cleanup(); }
+});
+
+test('a última tag sai também da resposta HTTP do git (pkt-line, tag anotada com ^{})', () => {
+  const refs = [
+    '001e# service=git-upload-pack\n0000',
+    '00a1abc HEAD\0multi_ack side-band-64k\n',
+    '003fabc refs/tags/v2.9.9\n',
+    '0042abc refs/tags/v2.9.14^{}\n',
+    '003fabc refs/tags/v2.9.14\n',
+    '0044abc refs/tags/v2.10.0-beta\n',
+  ].join('');
+  assert.equal(latestTagFromRefs(refs), 'v2.9.14');
+  assert.equal(latestTagFromRefs('nada'), null);
+});
+
+const resumo = (r) =>JSON.parse(r.stdout.trim().split(/\r?\n/).at(-1));
+
+test('setup auto-update leva os dois agentes à última versão e resume em JSON na última linha', () => {
+  const m = fakeMachine(['claude', 'codex'], {
+    claude: { marketplace: { ref: 'v9.9.8', scope: 'user' }, plugin: { version: '9.9.8', scope: 'user' } },
+    codex: { marketplace: { ref: 'v9.9.8' }, plugin: { version: '9.9.8', ref: 'v9.9.8' } },
+  });
+  try {
+    const r = m.auto(['--ref=v9.9.9', '--json']);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.deepEqual(resumo(r), {
+      latest: '9.9.9',
+      agents: { claude: { result: 'updated', from: '9.9.8', to: '9.9.9' }, codex: { result: 'updated', from: '9.9.8', to: '9.9.9' } },
+    });
+    const { claude, codex } = m.state();
+    assert.equal(claude.plugin.version, '9.9.9');
+    assert.equal(codex.plugin.version, '9.9.9');
+    assert.deepEqual(readdirSync(m.project), [], 'auto-update não escreve na pasta onde rodou');
+
+    const again = m.auto(['--ref=v9.9.9', '--json']);
+    assert.equal(resumo(again).agents.claude.result, 'current');
+  } finally { m.cleanup(); }
+});
+
+test('setup auto-update nunca instala: plugin ausente, desativado ou por projeto fica como está', () => {
+  const m = fakeMachine(['claude', 'codex'], { claude: { marketplace: { ref: 'v9.9.8', scope: 'project' }, plugin: { version: '9.9.8', scope: 'project' } } });
+  try {
+    const r = m.auto(['--ref=v9.9.9', '--json']);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    const { agents } = resumo(r);
+    assert.equal(agents.claude.result, 'not-global');
+    assert.equal(agents.codex.result, 'not-installed');
+    assert.ok(!m.state().calls.some((c) => /marketplace add|plugin (install|update|add)|^npm /.test(c)), m.state().calls.join('\n'));
+  } finally { m.cleanup(); }
+});
+
+test('setup auto-update: versão que não subiu é falha, e só volta a ser tentada depois de 24 h ou com --force', () => {
+  const m = fakeMachine(['claude'], { claude: { marketplace: { ref: 'v9.9.8', scope: 'user' }, plugin: { version: '9.9.8', scope: 'user' } } });
+  const updates = () => m.state().calls.filter((c) => c.startsWith('claude plugin update')).length;
+  try {
+    const first = m.auto(['--ref=v9.9.9', '--json', '--target=claude'], { FAKE_CLI_STUCK: '1' });
+    assert.equal(first.status, 1, first.stdout + first.stderr);
+    assert.deepEqual(resumo(first).agents.claude, { result: 'failed', from: '9.9.8', to: '9.9.8' });
+    const gravado = JSON.parse(readFileSync(join(m.dir, 'ct-home', 'auto-update.json'), 'utf8'));
+    assert.equal(gravado.failed.claude.version, '9.9.9');
+
+    const second = m.auto(['--ref=v9.9.9', '--json', '--target=claude'], { FAKE_CLI_STUCK: '1' });
+    assert.equal(resumo(second).agents.claude.result, 'failed-recently');
+    assert.equal(updates(), 1);
+
+    const forced = m.auto(['--ref=v9.9.9', '--json', '--target=claude', '--force']);
+    assert.equal(resumo(forced).agents.claude.result, 'updated');
+    assert.equal(updates(), 2);
+    assert.deepEqual(JSON.parse(readFileSync(join(m.dir, 'ct-home', 'auto-update.json'), 'utf8')).failed, {});
   } finally { m.cleanup(); }
 });

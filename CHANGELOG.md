@@ -8,6 +8,21 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **`setup.mjs auto-update`: unattended update of the installed plugin.** Meant for a scheduler or
+  another program: no questions, no project, and only where the plugin is already installed in the
+  user scope and enabled (it never installs). Success is checked against the agent's plugin list, a
+  version that did not go up waits 24 h before the next try (`--force` skips the wait), and `--json`
+  ends the output with a one-line summary. The decision of when and how to update now ships with the
+  plugin, so a caller keeps getting fixes to it without changing itself.
+
+### Fixed
+
+- **The latest version is found without `git` on the `PATH`.** `latest`, `install`/`update` and
+  `auto-update` fall back to the same git endpoint over HTTPS. Before, a setup started by another
+  program with a minimal `PATH` saw no new release at all and installed the bundled version.
+
 ## [2.9.14] — 2026-10-24
 
 ### Added

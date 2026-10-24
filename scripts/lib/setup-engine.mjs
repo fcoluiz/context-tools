@@ -2,6 +2,7 @@
 // `ctx` ({ repoRoot, packageVersion }) e implementa o fluxo install/update/status/doctor/latest/
 // configure/help igual para Codex e Claude — só o que o adapter fornece muda de um para o outro.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { installedRef, isManagedClaudeHook, isManagedCodexHook } from './setup-targets.mjs';
 import { installRuntime, mcpAddArgs, mcpGetArgs, mcpRemoveArgs, runtimeInstalled } from './setup-mcp.mjs';
@@ -9,8 +10,8 @@ import {
   describeLocalCopy, detectLocalCopy, disableUserLegacyPlugins, knownProjects, migrateCommand, migrateLocalCopy, userLegacyPlugins,
 } from './local-migration.mjs';
 import {
-  say, isDir, isFile, run, jsonOutput, latestTag, relativeExtra, parseExtraSelection, t, useSetupConfigLang,
-  normalizeSetupLanguage, ask, confirm, explainFailure, workspaceCandidates,
+  say, isDir, isFile, run, jsonOutput, resolveLatestTag, relativeExtra, parseExtraSelection, t, useSetupConfigLang,
+  normalizeSetupLanguage, ask, confirm, explainFailure, workspaceCandidates, compareVersions,
 } from './setup-shared.mjs';
 
 const BOM = String.fromCharCode(0xfeff);
@@ -380,7 +381,8 @@ export async function runSetup(adapter, ctx, { command, root, flags }) {
   // do próprio setup, não só no ai-context que ele gera.
   if (root) useSetupConfigLang(readConfig(adapter, root).config);
   if (command === 'help') { help(adapter); return 0; }
-  if (command === 'latest') { say(latestTag(adapter.repositoryUrl) || t('setup.run.localFallback', { versao: ctx.packageVersion })); return 0; }
+  if (command === 'latest') { say((await resolveLatestTag(adapter.repositoryUrl)) || t('setup.run.localFallback', { versao: ctx.packageVersion })); return 0; }
+  if (command === 'auto-update') return autoUpdate([adapter], ctx, flags);
   if (command === 'status' || command === 'doctor') {
     const status = projectStatus(adapter, ctx, root);
     printStatus(status, flags.json);
@@ -410,7 +412,7 @@ export async function runSetup(adapter, ctx, { command, root, flags }) {
   }
   if (!(await ensureCli(adapter, flags))) return 1;
 
-  const ref = flags.ref || latestTag(adapter.repositoryUrl) || `v${ctx.packageVersion}`;
+  const ref = flags.ref || (await resolveLatestTag(adapter.repositoryUrl)) || `v${ctx.packageVersion}`;
   const global = Boolean(flags.global);
   say(global ? t('setup.run.global', { agente: adapter.label }) : t('setup.run.detected', { agente: adapter.label, raiz: root }));
   say(t('setup.run.version', { agente: adapter.label, ref }));
@@ -429,6 +431,78 @@ export async function runSetup(adapter, ctx, { command, root, flags }) {
   say(t('setup.run.newSession', { agente: adapter.label }));
   if (adapter.needsHookTrustReminder) say(t('setup.run.hookTrust'));
   return 0;
+}
+
+// Tentativa automática que falhou, por agente, na pasta do usuário (a mesma do aviso de versão
+// nova): a mesma versão só é tentada de novo depois de AUTO_RETRY_MS, para não reinstalar em laço
+// uma versão que não sobe. `--force` ignora a espera.
+export const AUTO_RETRY_MS = 24 * 3600000;
+const autoStatePath = (env = process.env) => join(env.CONTEXT_TOOLS_HOME || join(homedir(), '.context-tools'), 'auto-update.json');
+
+function readAutoState() {
+  try { return JSON.parse(readFileSync(autoStatePath(), 'utf8')); } catch { return {}; }
+}
+
+function writeAutoState(state) {
+  try {
+    mkdirSync(dirname(autoStatePath()), { recursive: true });
+    writeFileSync(autoStatePath(), `${JSON.stringify(state, null, 2)}\n`, 'utf8');
+  } catch { /* sem a espera gravada, a próxima chamada só tenta de novo */ }
+}
+
+/** O que `auto-update` faria com este agente, antes de instalar qualquer coisa. */
+function autoCandidate(adapter, latest, failed, flags, now) {
+  if (run(adapter.bin, ['--version']).status !== 0) return { result: 'no-cli' };
+  const installed = pluginInfo(adapter).installed;
+  if (!installed) return { result: 'not-installed' };
+  const from = installed.version || null;
+  if (installed.enabled === false) return { result: 'disabled', from };
+  if (adapter.id === 'claude' && installed.scope && installed.scope !== 'user') return { result: 'not-global', from };
+  if (!latest) return { result: 'offline', from };
+  if (from && compareVersions(latest, from) <= 0) return { result: 'current', from };
+  if (!flags.force && failed?.version === latest && now - Date.parse(failed.at || 0) < AUTO_RETRY_MS) return { result: 'failed-recently', from };
+  return { result: 'pending', from };
+}
+
+/**
+ * `setup.mjs auto-update`: leva à última versão publicada só o plugin que JÁ está instalado no
+ * escopo do usuário e ativo em cada agente — não instala onde a pessoa não instalou, não mexe em
+ * instalação por projeto e não desativa cópias locais (`--no-migrate`). Feito para ser chamado sem
+ * terminal, por agendador ou outro programa: a decisão de atualizar mora aqui, e cada versão nova do
+ * plugin traz a sua. Com `--json`, a ÚLTIMA linha da saída é o resumo
+ * `{ latest, agents: { <id>: { result, from, to } } }`. Sai com 1 só quando uma atualização falhou.
+ */
+export async function autoUpdate(adapters, ctx, flags, now = Date.now()) {
+  const ref = flags.ref || await resolveLatestTag(adapters[0].repositoryUrl);
+  const latest = ref ? String(ref).replace(/^v/i, '') : null;
+  if (!latest) say(t('setup.auto.offline'));
+  const state = readAutoState();
+  const failedBefore = state.failed || {};
+  const failed = { ...failedBefore };
+  const report = { latest, agents: {} };
+  let exitCode = 0;
+  for (const adapter of adapters) {
+    const entry = autoCandidate(adapter, latest, failed[adapter.id], flags, now);
+    if (entry.result === 'pending') {
+      say(t('setup.auto.updating', { agente: adapter.label, de: entry.from || '?', para: latest }));
+      await runSetup(adapter, ctx, {
+        command: 'install',
+        root: null,
+        flags: { global: true, yes: true, ref: `v${latest}`, 'no-migrate': true, 'skip-cli-install': true },
+      });
+      // Sucesso = a versão nova aparece na lista do agente, não só código 0 do setup.
+      entry.to = pluginInfo(adapter).installed?.version || null;
+      entry.result = entry.to && compareVersions(entry.to, latest) >= 0 ? 'updated' : 'failed';
+      if (entry.result === 'updated') delete failed[adapter.id];
+      else { failed[adapter.id] = { version: latest, at: new Date(now).toISOString() }; exitCode = 1; }
+    }
+    // Sem a última versão, o aviso único lá de cima já disse tudo.
+    if (entry.result !== 'offline') say(t(`setup.auto.${entry.result}`,{ agente: adapter.label, versao: entry.to || entry.from || '?', ultima: latest || '?' }));
+    report.agents[adapter.id] = entry;
+  }
+  if (JSON.stringify(failed) !== JSON.stringify(failedBefore)) writeAutoState({ ...state, failed });
+  if (flags.json) console.log(JSON.stringify(report));
+  return exitCode;
 }
 
 export { chooseGuidedRoot };

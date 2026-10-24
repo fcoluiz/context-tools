@@ -388,6 +388,16 @@ const CAT = {
     'setup.run.dryRun': (p) => `[${p.agente}] Simulation: nothing was changed and no dependency or network access was triggered.`,
     'setup.run.localSim': (p) => `v${p.versao} (local simulation)`,
     'setup.run.localFallback': (p) => `v${p.versao} (local fallback)`,
+    'setup.auto.offline': () => 'Could not find the latest published version (no network?). Nothing was changed.',
+    'setup.auto.updating': (p) => `[${p.agente}] Updating ${p.de} → ${p.para}…`,
+    'setup.auto.updated': (p) => `[${p.agente}] Updated to ${p.versao}.`,
+    'setup.auto.failed': (p) => `[${p.agente}] Update to ${p.ultima} not completed (still ${p.versao}); tried again in 24 h, or now with --force.`,
+    'setup.auto.current': (p) => `[${p.agente}] Already on the latest version (${p.versao}).`,
+    'setup.auto.no-cli': (p) => `[${p.agente}] CLI not installed; skipped.`,
+    'setup.auto.not-installed': (p) => `[${p.agente}] Plugin not installed; skipped (auto-update never installs).`,
+    'setup.auto.disabled': (p) => `[${p.agente}] Plugin disabled; skipped.`,
+    'setup.auto.not-global': (p) => `[${p.agente}] Plugin installed per project, not for the user; skipped.`,
+    'setup.auto.failed-recently': (p) => `[${p.agente}] ${p.ultima} failed less than 24 h ago; skipped (use --force to retry now).`,
     'setup.run.failed': (p) => `\n[${p.agente}] Installation not completed. Fix the problem reported above and run the same file again.`,
     'setup.run.done': (p) => `\n[${p.agente}] Installation completed successfully.`,
     'setup.run.newSession': (p) => `Open a new ${p.agente} session to load the updated version.`,
@@ -440,6 +450,7 @@ Usage:
   node setup.mjs status [--project <directory>] [--json] [--target=...]
   node setup.mjs doctor [--project <directory>] [--json] [--target=...]
   node setup.mjs latest
+  node setup.mjs auto-update [--target=...] [--json] [--force]
   node setup.mjs configure [--project <directory>] [--target=...]
   node setup.mjs migrate [--project <directory> | --all] [--dry-run] [--target=...]
 
@@ -813,6 +824,16 @@ ${p.opcoes}`,
     'setup.run.dryRun': (p) => `[${p.agente}] Simulação: nenhuma alteração foi feita e nenhuma dependência/rede foi acionada.`,
     'setup.run.localSim': (p) => `v${p.versao} (simulação local)`,
     'setup.run.localFallback': (p) => `v${p.versao} (fallback local)`,
+    'setup.auto.offline': () => 'Não consegui ver a última versão publicada (sem rede?). Nada foi alterado.',
+    'setup.auto.updating': (p) => `[${p.agente}] Atualizando ${p.de} → ${p.para}…`,
+    'setup.auto.updated': (p) => `[${p.agente}] Atualizado para ${p.versao}.`,
+    'setup.auto.failed': (p) => `[${p.agente}] Atualização para ${p.ultima} não concluída (continua ${p.versao}); nova tentativa em 24 h, ou agora com --force.`,
+    'setup.auto.current': (p) => `[${p.agente}] Já está na última versão (${p.versao}).`,
+    'setup.auto.no-cli': (p) => `[${p.agente}] CLI não instalada; pulado.`,
+    'setup.auto.not-installed': (p) => `[${p.agente}] Plugin não instalado; pulado (auto-update nunca instala).`,
+    'setup.auto.disabled': (p) => `[${p.agente}] Plugin desativado; pulado.`,
+    'setup.auto.not-global': (p) => `[${p.agente}] Plugin instalado por projeto, não para o usuário; pulado.`,
+    'setup.auto.failed-recently': (p) => `[${p.agente}] ${p.ultima} falhou há menos de 24 h; pulado (use --force para tentar agora).`,
     'setup.run.failed': (p) => `\n[${p.agente}] Instalação não concluída. Corrija o problema indicado e execute o mesmo arquivo novamente.`,
     'setup.run.done': (p) => `\n[${p.agente}] Instalação concluída com sucesso.`,
     'setup.run.newSession': (p) => `Abra uma nova sessão do ${p.agente} para carregar a versão atualizada.`,
@@ -865,6 +886,7 @@ Uso:
   node setup.mjs status [--project <diretório>] [--json] [--target=...]
   node setup.mjs doctor [--project <diretório>] [--json] [--target=...]
   node setup.mjs latest
+  node setup.mjs auto-update [--target=...] [--json] [--force]
   node setup.mjs configure [--project <diretório>] [--target=...]
   node setup.mjs migrate [--project <diretório> | --all] [--dry-run] [--target=...]
 

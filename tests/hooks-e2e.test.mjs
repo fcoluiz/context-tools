@@ -13,7 +13,8 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { localPath } from './paths.mjs';
 import { vereditoDaDivisao, economiaEstimada, pastaDeTranscripts, metricasDaSessao } from '../scripts/lib/sessao.mjs';
-import { comandoDoPlugin } from '../scripts/handoff.mjs';
+import { comandoDoPlugin, LIMIAR_CONTEXTO } from '../scripts/handoff.mjs';
+import { LIMIAR as LIMIAR_MEIO_TURNO } from '../scripts/handoff-meio-turno.mjs';
 import { fingerprintSourcesInRoot } from '../scripts/lib/source-fingerprints.mjs';
 import { fingerprintSourcesInRoots } from '../scripts/lib/source-fingerprints.mjs';
 import { initializeDocumentation } from '../scripts/lib/documentation.mjs';
@@ -1587,6 +1588,68 @@ function sessaoComOferta(sid) {
     },
   };
 }
+
+test('E2E: o aviso chega NO MEIO do turno, quando o contexto cruza o limiar entre ferramentas', () => {
+  // O Stop só dispara no fim do turno, e um turno que trabalha uma lista inteira ia de 200k a
+  // 500k+ sem Stop nenhum. O PostToolUse confere a cada ferramenta, avisa uma vez com o mesmo
+  // estado da fase 1 e pede para parar a lista no passo atual; o Stop seguinte não repete.
+  const raiz = repo({ comMapa: false, comMudanca: true });
+  const transcritos = mkdtempSync(join(tmpdir(), 'ctx-transc-'));
+  const sid = 'sessao-meio-turno';
+  const env = { CLAUDE_CODE_SESSION_ID: sid, CONTEXT_TOOLS_TRANSCRIPTS: transcritos };
+  const tool = () => rodar('handoff-meio-turno.mjs', [`--root=${raiz}`], raiz, env);
+  const stop = () => rodar('handoff.mjs', ['--stop-report', `--root=${raiz}`], raiz, env);
+  const arq = join(transcritos, `${sid}.jsonl`);
+  const uso = (n, ctx) => JSON.stringify({
+    type: 'assistant', timestamp: new Date(17e11 + n * 60000).toISOString(),
+    message: { usage: { cache_read_input_tokens: ctx, cache_creation_input_tokens: 100 } },
+  }) + '\n';
+  try {
+    assert.equal(LIMIAR_MEIO_TURNO, LIMIAR_CONTEXTO, 'os dois hooks precisam avisar no mesmo limiar');
+
+    // Pico antigo acima do limiar, mas a última requisição abaixo (houve compactação): cala.
+    // A régua é o contexto de AGORA; e a cauda chega lá mesmo atrás de um resultado grande.
+    writeFileSync(arq, uso(0, 260000) + uso(1, 90000)
+      + JSON.stringify({ type: 'user', message: { content: [{ type: 'tool_result', content: 'x'.repeat(300 * 1024) }] } }) + '\n');
+    assert.equal(tool().stdout.trim(), '', 'abaixo do limiar agora tem de calar');
+    assert.ok(!existsSync(join(raiz, '.claude', '.handoff-aviso.json')), 'sem aviso, não grava estado');
+
+    appendFileSync(arq, Array.from({ length: 30 }, (_, i) => uso(i + 2, 210000 + i * 1000)).join(''));
+    const r = tool();
+    assert.equal(r.status, 0, r.stderr);
+    const j = JSON.parse(r.stdout);
+    assert.equal(j.hookSpecificOutput.hookEventName, 'PostToolUse');
+    const texto = j.hookSpecificOutput.additionalContext;
+    assert.match(texto, /Session at 2\d\dk tokens/, `esperava o aviso, veio: ${texto}`);
+    assert.match(texto, /MID-TURN/, 'precisa pedir para interromper a lista');
+    assert.match(texto, /--sessao=sessao-meio-turno --resposta=sim/, 'a resposta fica amarrada a esta sessão');
+    assert.ok(existsSync(join(raiz, '.claude', `handoff-${sid.slice(0, 8)}.md`)), 'o handoff é gerado junto, como na fase 1');
+
+    assert.equal(tool().stdout.trim(), '', 'uma vez só: a ferramenta seguinte cala');
+    assert.equal(stop().stdout.trim(), '', 'o Stop vê o aviso gravado e não repete a fase 1');
+  } finally {
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(transcritos, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});
+
+test('E2E: depois do aviso do Stop, o hook do meio do turno cala', () => {
+  const raiz = repo({ comMapa: false, comMudanca: true });
+  const transcritos = mkdtempSync(join(tmpdir(), 'ctx-transc-'));
+  const sid = 'sessao-stop-primeiro';
+  const env = { CLAUDE_CODE_SESSION_ID: sid, CONTEXT_TOOLS_TRANSCRIPTS: transcritos };
+  try {
+    writeFileSync(join(transcritos, `${sid}.jsonl`), JSON.stringify({
+      type: 'assistant', timestamp: new Date(17e11).toISOString(),
+      message: { usage: { cache_read_input_tokens: 260000 } },
+    }) + '\n');
+    assert.match(rodar('handoff.mjs', ['--stop-report', `--root=${raiz}`], raiz, env).stdout, /Session at/);
+    assert.equal(rodar('handoff-meio-turno.mjs', [`--root=${raiz}`], raiz, env).stdout.trim(), '');
+  } finally {
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(transcritos, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});
 
 test('E2E: "sim" deixa o handoff pendente, a sessão nova o carrega sozinha e ele some do disco', () => {
   const s = sessaoComOferta('sessao-sim-origem');

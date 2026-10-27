@@ -153,7 +153,11 @@ export function scriptCommand(root, name) {
 }
 
 /** Host da integração atual. Ausência mantém exatamente o comportamento Claude anterior. */
-export function runtimeHost(env = process.env, script = process.argv[1]) {
+export function runtimeHost(env = process.env, script = process.argv[1], argv = process.argv) {
+  // `--host=` vai no comando que o hook entrega ao agente: o shell do Codex não herda o
+  // CONTEXT_TOOLS_HOST do adaptador, e sem ele o script lia a fila de `.claude/`.
+  const flag = (argv || []).find((a) => a === '--host=codex' || a === '--host=claude');
+  if (flag) return flag.slice('--host='.length);
   if (env.CONTEXT_TOOLS_HOST === 'codex') return 'codex';
   if (env.CONTEXT_TOOLS_HOST === 'claude') return 'claude';
 
@@ -161,7 +165,8 @@ export function runtimeHost(env = process.env, script = process.argv[1]) {
   // adaptador codex-hook para injetar CONTEXT_TOOLS_HOST; o diretório instalado é a fonte segura
   // para decidir qual configuração o comando deve carregar.
   const caminho = String(script || '').replace(/\\/g, '/');
-  if (/(^|\/)\.codex\/scripts\//i.test(caminho)) return 'codex';
+  // O plugin Codex roda do cache (`~/.codex/plugins/cache/...`), não de `.codex/scripts/`.
+  if (/(^|\/)\.codex\/(scripts|plugins)\//i.test(caminho)) return 'codex';
   return 'claude';
 }
 

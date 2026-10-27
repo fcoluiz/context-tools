@@ -125,6 +125,8 @@ test('script standalone identifica Codex pelo diretório instalado', () => {
   assert.equal(runtimeHost({}, 'C:\\projeto\\.claude\\scripts\\symbols.mjs'), 'claude');
   assert.equal(runtimeHost({ CONTEXT_TOOLS_HOST: 'codex' }, 'C:\\plugin\\scripts\\symbols.mjs'), 'codex');
   assert.equal(runtimeHost({ CONTEXT_TOOLS_HOST: 'claude' }, 'C:\\projeto\\.codex\\scripts\\symbols.mjs'), 'claude');
+  assert.equal(runtimeHost({}, 'C:\\Users\\u\\.codex\\plugins\\cache\\context-tools-codex\\context-tools\\2.9.15\\scripts\\review.mjs', []), 'codex');
+  assert.equal(runtimeHost({}, 'C:\\plugin\\scripts\\review.mjs', ['node', 'review.mjs', '--host=codex']), 'codex');
 });
 
 test('Codex Bash busca usa o mesmo pre-hook sem tocar no estado Claude', () => {

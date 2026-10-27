@@ -8,6 +8,18 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Codex: automatic review could never be acknowledged ("unknown review id").** The hook keeps the
+  review queue in the Codex state folder, but the `review.mjs` command it handed to the agent ran
+  from the agent's shell, without the hook's environment, and looked for the queue in `.claude/`.
+  Every `ack` failed, pending items were deferred at the end of the turn and no map or document was
+  ever updated. The command now carries `--root=` and `--host=codex`, and a script running from the
+  Codex plugin cache is recognized as Codex.
+- **Coverage items explain how to finish them.** A source with no map or document yet needs one
+  created and `ack ... --document=PATH --kind=map|document`; the review prompt and the skill now say
+  so instead of suggesting a plain `ack` that always failed.
+
 ## [2.9.15] — 2026-10-24
 
 ### Added

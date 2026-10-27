@@ -74,7 +74,8 @@ Confira as fontes citadas, corrija o texto se preciso e registre com
 `ct.mjs explain --file <caminho>` diz por que um arquivo entra (ou não) em revisão.
 
 Fila local (Codex): `ct.mjs review status --json` e `show --id=ID --json`; depois de conferir,
-`ack --id=ID --revision=REVISION --reviewed` só para as versões conferidas (`--source=CHAVE` parcial),
+`ack --id=ID --revision=REVISION --reviewed` das versões conferidas (`--source=CHAVE` parcial;
+`coverage`: crie doc que cite a fonte e use `--document=PATH --kind=map|document`),
 `defer --id=ID --reason=insufficient-evidence` ou `retry --id=ID`. O Codex permite uma continuação
 por turno; o que sobrar fica visível no fim.
 

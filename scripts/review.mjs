@@ -12,7 +12,7 @@ import { documentDependencies } from './lib/document-dependencies.mjs';
 function main() {
   const root = resolveRoot();
   const args = process.argv.slice(2);
-  const action = args[0] || 'status';
+  const action = args.find((arg) => !arg.startsWith('--')) || 'status';
   const id = args.find((arg) => arg.startsWith('--id='))?.slice(5);
   const loaded = readReviewState(root);
   if (!loaded.ok) throw new Error(loaded.reason);

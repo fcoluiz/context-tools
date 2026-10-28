@@ -11,40 +11,58 @@ import { safe, statePath, stateDir } from './roots.mjs';
  * The file is decoded and encoded again in its original format. A project instruction file is
  * configuration/documentation, not disposable cache: appending a hint must not silently turn
  * Windows-1252, UTF-8-with-BOM, or UTF-16 into another encoding.
+ *
+ * `version` goes into the state file. When the block text changes, a project marked with an older
+ * version is read once more: a block identical to one of `legacyBlocks` (what an earlier version
+ * wrote) is replaced; a block someone edited is left alone.
  */
 export function aplicarMdHint(root, cfg, options) {
   const {
     targetFile,
     markerStart,
+    markerEnd,
     stateFile,
     block,
+    version = '1',
+    legacyBlocks = [],
     disabledBy = [],
   } = options;
 
   if (disabledBy.some((key) => cfg[key] === false)) return null;
 
   const marker = statePath(root, stateFile);
-  if (existsSync(marker)) return null;
+  if (existsSync(marker) && safe(() => readFileSync(marker, 'utf8').trim(), '') === version) return null;
 
   const caminho = join(root, targetFile);
   if (!existsSync(caminho)) {
-    marcarFeito(root, marker);
+    marcarFeito(root, marker, version);
     return null;
   }
 
   const documento = lerDocumento(caminho);
   if (documento === null) return null;
   const { text: atual } = documento;
+  const bloco = typeof block === 'function' ? block(atual) : block;
+  const newline = /\r\n/.test(atual) ? '\r\n' : /\r/.test(atual) ? '\r' : '\n';
 
   if (atual.includes(markerStart)) {
-    marcarFeito(root, marker);
+    const inicio = atual.indexOf(markerStart);
+    const fim = markerEnd ? atual.indexOf(markerEnd, inicio) : -1;
+    const normal = (texto) => texto.replace(/\r\n|\r/g, '\n').trimEnd();
+    const gravado = fim >= 0 ? normal(atual.slice(inicio, fim + markerEnd.length)) : null;
+    if (gravado && typeof bloco === 'string' && bloco && gravado !== normal(bloco)
+      && legacyBlocks.some((antigo) => normal(antigo) === gravado)) {
+      const novo = `${atual.slice(0, inicio)}${normal(bloco).replace(/\n/g, newline)}${atual.slice(fim + markerEnd.length)}`;
+      if (!gravarDocumento(caminho, documento, novo)) return null;
+      marcarFeito(root, marker, version);
+      return 'updated';
+    }
+    marcarFeito(root, marker, version);
     return 'already';
   }
 
-  const bloco = typeof block === 'function' ? block(atual) : block;
   if (typeof bloco !== 'string' || !bloco) return null;
 
-  const newline = /\r\n/.test(atual) ? '\r\n' : /\r/.test(atual) ? '\r' : '\n';
   const separador = /(?:\r\n|\r|\n){2,}$/.test(atual)
     ? ''
     : /(?:\r\n|\r|\n)$/.test(atual) ? newline : `${newline}${newline}`;
@@ -53,7 +71,7 @@ export function aplicarMdHint(root, cfg, options) {
   const ok = gravarDocumento(caminho, documento, novo);
   if (!ok) return null;
 
-  marcarFeito(root, marker);
+  marcarFeito(root, marker, version);
   return 'added';
 }
 
@@ -148,9 +166,9 @@ function encodeWindows1252(text) {
   return Buffer.from(bytes);
 }
 
-function marcarFeito(root, marker) {
+function marcarFeito(root, marker, version) {
   safe(() => {
     mkdirSync(stateDir(root), { recursive: true });
-    writeFileSync(marker, '');
+    writeFileSync(marker, version);
   }, null);
 }

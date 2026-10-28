@@ -8,6 +8,14 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The note added to `CLAUDE.md`/`AGENTS.md` no longer points at scripts inside the project.** It
+  mentioned `symbols.mjs`/`outline.mjs` and `.codex/scripts/`, which only exist in a local install;
+  with the global plugin the agent searched the checkout and reported the script missing. The note
+  now points to the `context-tools` skill only, and a note identical to the old text is replaced
+  once (a note someone edited is left alone).
+
 ## [2.9.16] — 2026-10-28
 
 ### Fixed

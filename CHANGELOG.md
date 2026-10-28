@@ -8,7 +8,7 @@ reconstructed from git history.
 
 ## [Unreleased]
 
-## [2.9.16] — 2026-10-27
+## [2.9.16] — 2026-10-28
 
 ### Fixed
 

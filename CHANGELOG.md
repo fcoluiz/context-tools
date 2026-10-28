@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.16] — 2026-10-28
+
 ### Fixed
 
 - **Codex: automatic review could never be acknowledged ("unknown review id").** The hook keeps the

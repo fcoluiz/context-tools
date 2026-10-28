@@ -830,7 +830,7 @@ O repositório também contém o marketplace do Codex em `.agents/plugins/market
 pessoa pode configurar esse marketplace e instalar a versão marcada diretamente pelo Codex:
 
 ```bash
-codex plugin marketplace add fcoluiz/context-tools --ref v2.9.15
+codex plugin marketplace add fcoluiz/context-tools --ref v2.9.16
 codex
 /plugins
 ```
@@ -847,7 +847,7 @@ O repositório também contém um marketplace de plugin do Claude Code em
 `plugin marketplace`/`plugin` que espelham os do Codex acima:
 
 ```bash
-claude plugin marketplace add fcoluiz/context-tools@v2.9.15 --scope project
+claude plugin marketplace add fcoluiz/context-tools@v2.9.16 --scope project
 claude plugin install context-tools@context-tools --scope project
 ```
 

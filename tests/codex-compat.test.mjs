@@ -403,6 +403,33 @@ test('Claude e Codex usam o mesmo núcleo de md-hint com estado isolado', () => 
   }
 });
 
+test('md-hint troca o bloco antigo que cita scripts no projeto, mas não um bloco editado', () => {
+  const root = novoRepo();
+  try {
+    const antigo = '<!-- context-tools:before-explore-codex -->\r\n## Antes de delegar a um subagente de exploração\r\n\r\nPara perguntas do tipo "onde X está definido" ou "como Y funciona", experimente primeiro a skill\r\n`context-tools` ou a navegação instalada para este host (`.codex/scripts/`), quando isso for adequado.\r\nUse um subagente para perguntas realmente abertas, nas quais a cobertura de todo o sistema importa.\r\nAs regras deste `AGENTS.md` continuam sendo a autoridade do projeto; esta nota é apenas uma sugestão operacional.\r\n<!-- /context-tools:before-explore-codex -->\r\n';
+    writeFileSync(join(root, 'AGENTS.md'), `# Projeto\r\n\r\n${antigo}\r\n## Depois\r\n`);
+    mkdirSync(join(root, '.codex', 'context-tools'), { recursive: true });
+    writeFileSync(join(root, '.codex', 'context-tools', '.codex-md-hint-done'), '');
+    const env = { CONTEXT_TOOLS_HOST: 'codex', CONTEXT_TOOLS_LANG: 'pt' };
+
+    assert.equal(runHook('codex-md-hint.mjs', [], root, {}, env).status, 0);
+    const atualizado = readFileSync(join(root, 'AGENTS.md'), 'utf8');
+    assert.doesNotMatch(atualizado, /\.codex\/scripts/);
+    assert.match(atualizado, /não os\r\nprocure neste projeto/);
+    assert.match(atualizado, /^# Projeto\r\n\r\n<!-- context-tools:before-explore-codex -->/);
+    assert.match(atualizado, /<!-- \/context-tools:before-explore-codex -->\r\n\r\n## Depois\r\n$/);
+    assert.equal(atualizado.match(/before-explore-codex -->/g).length, 2);
+
+    const editado = atualizado.replace('quando isso for adequado', 'sempre');
+    writeFileSync(join(root, 'AGENTS.md'), editado.replace('não os\r\nprocure', 'não os procure'));
+    writeFileSync(join(root, '.codex', 'context-tools', '.codex-md-hint-done'), '');
+    assert.equal(runHook('codex-md-hint.mjs', [], root, {}, env).status, 0);
+    assert.equal(readFileSync(join(root, 'AGENTS.md'), 'utf8'), editado.replace('não os\r\nprocure', 'não os procure'));
+  } finally {
+    rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});
+
 test('md-hint observa o idioma do arquivo antes do idioma do ambiente', () => {
   const root = novoRepo();
   try {

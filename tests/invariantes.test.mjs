@@ -112,7 +112,9 @@ test('os três manifestos de hooks cobrem o mesmo conjunto de scripts', () => {
   // como comando sob demanda; registrá-lo como hook só gastaria uma partida de Node por turno.
   // `handoff-lembrete.mjs` repete o aviso de handoff do Stop, que o Codex não emite, e
   // `handoff-meio-turno.mjs` antecipa esse mesmo aviso para o meio do turno.
-  const ferramentas = (mapa) => new Set(Object.values(mapa).flat().filter((s) => !/md-hint\.mjs$|^verify\.mjs$|^handoff-(lembrete|meio-turno)\.mjs$/.test(s)));
+  // `pair.mjs` tem contrapartida, mas DENTRO do codex-hook.mjs (prompt, edição e Stop que já
+  // existiam): hook novo no Codex Desktop fica desligado em silêncio até o usuário aprovar.
+  const ferramentas = (mapa) => new Set(Object.values(mapa).flat().filter((s) => !/md-hint\.mjs$|^verify\.mjs$|^handoff-(lembrete|meio-turno)\.mjs$|^pair\.mjs$/.test(s)));
   const noCodex = ferramentas(codexPlugin);
   const faltando = [...ferramentas(claude)].filter((script) => !noCodex.has(script));
   assert.deepEqual(faltando, [], 'ferramentas que o Claude roda em hook sem contrapartida no Codex');

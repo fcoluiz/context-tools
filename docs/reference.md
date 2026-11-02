@@ -962,6 +962,7 @@ shows whether it is registered.
 | `Stop` | Claude warns when the session gets expensive and writes the handoff; Codex only records metrics | **once per session** |
 | `Stop` | once the volatile block is filled in, writes the resume prompt to disk and asks the agent to offer the user a fresh session | once per session |
 | `UserPromptSubmit` (Claude) | if the `Stop` warning went out and the volatile block is still empty, repeats the request to fill it in; if the fresh-session offer went out with no answer, repeats the offer | **once each per session**; otherwise reads one small state file and exits |
+| `UserPromptSubmit` / `PreToolUse` (edit) / `Stop` — pair | records that the session is alive (for choosing it in a pair); when the session is in an active **pair**, tells the agent its role and what to do, refuses project edits outside its turn, and keeps the turn from ending while it is the other agent's turn. In Codex it runs inside the existing prompt, edit and `Stop` hooks — no new hook to approve | without a pair: one small JSON write per prompt, one read per edit |
 | `SessionStart` (Claude) | loads the handoff the user chose to resume (on `startup`/`clear`, within 2 h) and deletes it; deletes unused generated handoffs older than 7 days | only after a **yes** to the fresh-session offer |
 | `SessionStart` | lists context maps and flags the stale ones; shows a visible notice when action is needed | ~175 tokens |
 | `SessionStart` | ensures the standard `ai-context` structure, points to its index, and announces first setup; while the index is the only document, says there is nothing to read yet instead of asking for it to be read | only when documentation is enabled |
@@ -1081,6 +1082,49 @@ So the default is **generous about staying quiet**, in three layers: built-in ex
 file reads: with 3+ candidates, it never reads anything.
 
 ---
+
+## Two agents on one task: `pair`
+
+Two sessions open on the same machine — Claude and Codex, or two of the same — can split one task:
+the **planner** plans and reviews, the **builder** implements, and each waits for the other. There is
+no CLI involved: the sessions are the ones already open in the apps, and they talk through files. The
+pair state and drafts live in the project, in `.context-tools/pair/` (with a `.gitignore` that hides it
+all from git): the Codex sandbox only lets commands write inside the working folder.
+`~/.context-tools/pair/` keeps only the sessions seen and an index pointing each pair to its project.
+
+| step | who acts | the other |
+|---|---|---|
+| task | the planner gets the task from the user and records it (told to the builder, it asks the user to send it to the planner) | waits |
+| plan | planner reads the code and writes a plan (no project edits) | waits |
+| build | builder implements and verifies | waits |
+| review | planner checks the diff against the task and the plan; approves or rejects with reasons | waits |
+
+A rejection sends it back to build, up to `maxRounds` (default 2). Only the builder edits the
+project, and only while building: the edit hook refuses anything else, except drafts in the pair's
+own folder. Waiting is a command the agent runs (`pair.mjs wait`): while it runs the agent spends no
+tokens, and it returns as soon as it is that agent's turn — or after `waitSeconds` (default 110, under
+the default command timeout), saying to run it again. The `Stop` hook keeps a waiting agent from
+ending its turn, at most twice in a row without a `wait` in between.
+
+Nothing starts a pair on its own. Whoever sets it up (a script, a dashboard) picks two sessions from
+`pair.mjs sessions` and runs `pair.mjs create`; then one message in each session activates it —
+nothing can wake an idle session from outside. The commands the agent runs (`wait`, `send`) use no
+network and only write to the pair folder, and the briefing tells the agent so, for it to justify
+running them when the sandbox asks.
+
+```bash
+node scripts/pair.mjs sessions --project=. --json
+node scripts/pair.mjs create --planner=claude:<id> --builder=codex:<id> --project=. [--max-rounds=2] [--wait-seconds=110] [--idle-minutes=60]
+node scripts/pair.mjs list --active
+node scripts/pair.mjs show --pair=<id>
+node scripts/pair.mjs stop --pair=<id>
+```
+
+A pair ends when the planner approves, when the rounds run out, with `stop`, when its file is
+deleted, or after `idleMinutes` (default 60) without progress; both sessions go back to normal.
+Limits: a session that is closed stops answering (the pair then expires by idleness); edits made
+through shell commands are not intercepted. `CONTEXT_TOOLS_PAIR=0` turns all of it off, including the
+session registry.
 
 ## Configuration
 

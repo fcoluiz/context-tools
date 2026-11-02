@@ -46,6 +46,7 @@ export const VERBS = Object.freeze({
   providers: { script: 'providers.mjs', en: 'optional semantic providers', pt: 'provedores semânticos opcionais' },
   drift: { script: 'drift-check.mjs', en: 'knowledge left behind by a diff (CI)', pt: 'conhecimento deixado para trás num diff (CI)' },
   mcp: { script: 'mcp-server.mjs', en: 'MCP server over stdio (optional)', pt: 'servidor MCP por stdio (opcional)' },
+  pair: { script: 'pair.mjs', en: 'two agents on one task: sessions, create, wait, send, stop', pt: 'dois agentes numa tarefa: sessões, criar, esperar, entregar, parar' },
 });
 
 function lang() {

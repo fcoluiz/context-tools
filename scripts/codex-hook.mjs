@@ -69,10 +69,38 @@ async function writeCaptureHint() {
   }
 }
 
+// Dupla de agentes (lib/pair.mjs). Roda dentro de hooks que já existiam, e não como hook novo: o
+// Codex Desktop ignora em silêncio um hook que o usuário ainda não aprovou em /hooks. Sem dupla
+// ativa para esta sessão, só registra a sessão (no prompt) e devolve `null`.
+async function pairHook(kind) {
+  try {
+    const sessionId = String(evento.session_id || '');
+    const { findPairForSession, registerSession } = await import('./lib/pair.mjs');
+    if (kind === 'prompt') registerSession({ host: 'codex', sessionId, project: cwd, prompt: evento.prompt });
+    if (!findPairForSession('codex', sessionId)) return null;
+    const agent = await import('./lib/pair-agent.mjs');
+    if (kind === 'prompt') return agent.pairPromptContext({ host: 'codex', sessionId, cwd, prompt: evento.prompt, register: false });
+    if (kind === 'pre-tool') return agent.pairEditDenial({ host: 'codex', sessionId, cwd, event: evento });
+    return agent.pairStopReason({ host: 'codex', sessionId });
+  } catch {
+    return null; // M4: a dupla nunca derruba um hook que já funcionava.
+  }
+}
+
 async function main() {
   // Track explicit file edits around the tool call. This is Codex-only, local, and silent;
   // Stop later uses the recorded paths instead of claiming every shared-workspace diff.
   if (script === 'session-write-journal.mjs') {
+    // Edição fora da vez na dupla: recusada antes de virar autoria. JSON de PreToolUse e saída 2
+    // com o motivo no stderr, as duas formas de bloqueio que o Codex aceita.
+    if (args[0] === '--pre-tool-use') {
+      const denial = await pairHook('pre-tool');
+      if (denial) {
+        process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: denial } }));
+        process.stderr.write(`${denial}\n`);
+        return 2;
+      }
+    }
     try {
       process.chdir(cwd);
       const { recordSessionWriteEvent } = await import('./lib/session-write-journal.mjs');
@@ -133,9 +161,15 @@ async function main() {
       });
       const output = codexReviewOutput(result);
       if (output) process.stdout.write(output);
-      // Sessão que só leu código não chega à revisão acima (ela parte das edições). Sem revisão
-      // pendente neste turno, a sugestão de registro pode falar — nunca as duas juntas.
-      else await writeCaptureHint();
+      else {
+        // Dupla: na vez do outro agente, o turno não acaba — volta ao `wait`. A revisão acima
+        // tem prioridade; a dupla segue no Stop seguinte.
+        const pairReason = await pairHook('stop');
+        if (pairReason) process.stdout.write(JSON.stringify({ decision: 'block', reason: pairReason }));
+        // Sessão que só leu código não chega à revisão acima (ela parte das edições). Sem revisão
+        // pendente neste turno, a sugestão de registro pode falar — nunca as duas juntas.
+        else await writeCaptureHint();
+      }
     } catch (error) {
       recordMetric(cwd, 'auto-review', { outcome: 'hook-error', errorKind: error.code || 'review-engine-error' });
     }
@@ -146,16 +180,18 @@ async function main() {
   // process instead of starting a second Node child, and emit nothing for ordinary or fresh
   // prompts. The imported checker never stores the prompt or calls a model.
   if (script === 'context-docs.mjs' && args.includes('--prompt-audit')) {
+    let audit = '';
     try {
       process.chdir(cwd);
       const { contextMapsPromptAudit } = await import('./context-maps.mjs');
-      const context = contextMapsPromptAudit(cwd, typeof evento.prompt === 'string' ? evento.prompt : '');
-      if (context) process.stdout.write(JSON.stringify({
-        hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: context },
-      }));
+      audit = contextMapsPromptAudit(cwd, typeof evento.prompt === 'string' ? evento.prompt : '');
     } catch {
       // M4: an offline preflight must never block or disrupt the prompt.
     }
+    const context = [audit, await pairHook('prompt')].filter(Boolean).join('\n\n');
+    if (context) process.stdout.write(JSON.stringify({
+      hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: context },
+    }));
     return 0;
   }
 

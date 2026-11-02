@@ -270,11 +270,13 @@ function looksLikeStandalone(dir) {
  * repositorio que o Git instalado nao consegue abrir. Validar aqui preserva o fallback sem Git.
  * A raiz devolvida pelo Git tambem precisa ser a propria pasta, para nao aceitar um repositorio
  * pai por engano quando o `.git` local estiver quebrado.
+ * O prazo de 5s segue os demais `git` dos hooks: com 1s, Windows sob carga (antivirus, varios
+ * hooks em paralelo) estourava e um repositorio valido virava "sem git", calando os hooks.
  */
 export function isGitRepo(dir) {
   if (!existsSync(join(dir, '.git'))) return false;
   const topo = safe(() => execFileSync('git', ['-C', dir, 'rev-parse', '--show-toplevel'], {
-    timeout: 1000,
+    timeout: 5000,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
   }).trim(), '');

@@ -952,6 +952,7 @@ registrado.
 | `Stop` | Claude avisa quando a sessão fica cara e grava o handoff; Codex apenas registra métricas | **uma vez por sessão** |
 | `Stop` | assim que o bloco volátil é preenchido, grava o prompt de retomada em disco e pede ao agente que ofereça ao usuário uma sessão nova | uma vez por sessão |
 | `UserPromptSubmit` (Claude) | se o aviso do `Stop` saiu e o bloco volátil segue em branco, repete o pedido de preenchê-lo; se a oferta de sessão nova saiu sem resposta, repete a oferta | **uma vez cada, por sessão**; no resto, lê um arquivo de estado pequeno e sai |
+| `UserPromptSubmit` / `PreToolUse` (edição) / `Stop` — dupla | registra que a sessão está viva (para escolhê-la numa dupla); quando a sessão está numa **dupla** ativa, diz ao agente o papel e o que fazer, recusa edição no projeto fora da vez dele e não deixa o turno acabar na vez do outro agente. No Codex roda dentro dos hooks de prompt, edição e `Stop` que já existiam — nenhum hook novo para aprovar | sem dupla: uma gravação pequena de JSON por prompt, uma leitura por edição |
 | `SessionStart` (Claude) | carrega o handoff que o usuário escolheu retomar (em `startup`/`clear`, até 2 h depois) e o apaga; apaga handoffs gerados e não usados com mais de 7 dias | só depois de um **sim** à oferta de sessão nova |
 | `SessionStart` | lista mapas de contexto e marca os defasados; mostra aviso visível quando há ação necessária | ~175 tokens |
 | `SessionStart` | garante a estrutura padrão do `ai-context`, aponta o índice e avisa a primeira configuração; enquanto o índice for o único documento, diz que ainda não há o que ler em vez de mandar lê-lo | só quando a documentação está habilitada |
@@ -1063,6 +1064,49 @@ Por isso o padrão usa exclusões embutidas (`*.config.*`, `*.test.*`, `*.d.ts`,
 o agente decide se aquela área merece mapa com base na evidência e no contexto do projeto.
 
 ---
+
+## Dois agentes numa tarefa: `pair` (dupla)
+
+Duas sessões abertas na mesma máquina — Claude e Codex, ou duas do mesmo — dividem uma tarefa: o
+**planejador** planeja e valida, o **executor** implementa, e um espera o outro. Nenhum CLI entra: as
+sessões são as que já estão abertas nos apps, e conversam por arquivos. O estado da dupla e os
+rascunhos ficam no projeto, em `.context-tools/pair/` (com um `.gitignore` que esconde tudo do git):
+o sandbox do Codex só deixa gravar na pasta de trabalho. Em `~/.context-tools/pair/` ficam só as
+sessões vistas e um índice que aponta cada dupla para o projeto dela.
+
+| etapa | quem age | o outro |
+|---|---|---|
+| tarefa | o planejador recebe a tarefa do usuário e a registra (dita em outra sessão, o executor pede para mandá-la ao planejador) | espera |
+| plano | o planejador lê o código e escreve um plano (sem editar o projeto) | espera |
+| construção | o executor implementa e verifica | espera |
+| validação | o planejador confere o diff contra a tarefa e o plano; aprova ou reprova com motivos | espera |
+
+Uma reprovação volta para a construção, até `maxRounds` (padrão 2). Só o executor edita o projeto, e
+só na construção: o hook de edição recusa o resto, menos rascunhos na pasta da própria dupla. A
+espera é um comando que o agente roda (`pair.mjs wait`): enquanto ele roda, o agente não gasta token,
+e ele volta assim que for a vez daquele agente — ou depois de `waitSeconds` (padrão 110, abaixo do
+tempo limite padrão de comando), dizendo para rodar de novo. O hook de `Stop` não deixa um agente
+que está esperando encerrar o turno, no máximo duas vezes seguidas sem um `wait` no meio.
+
+Nada inicia uma dupla sozinho. Quem monta (um script, um painel) escolhe duas sessões em
+`pair.mjs sessions` e roda `pair.mjs create`; depois, uma mensagem em cada sessão a ativa — de fora,
+nada acorda uma sessão parada. Os comandos que o agente roda (`wait`, `send`) não usam rede e só
+gravam na pasta da dupla, e o briefing diz isso ao agente, para ele justificar a execução quando o
+sandbox pedir.
+
+```bash
+node scripts/pair.mjs sessions --project=. --json
+node scripts/pair.mjs create --planner=claude:<id> --builder=codex:<id> --project=. [--max-rounds=2] [--wait-seconds=110] [--idle-minutes=60]
+node scripts/pair.mjs list --active
+node scripts/pair.mjs show --pair=<id>
+node scripts/pair.mjs stop --pair=<id>
+```
+
+A dupla acaba quando o planejador aprova, quando as rodadas acabam, com `stop`, quando o arquivo dela
+é apagado, ou depois de `idleMinutes` (padrão 60) sem progresso; as duas sessões voltam ao normal.
+Limites: uma sessão fechada para de responder (a dupla então expira por inatividade); edição feita
+por comando de shell não é interceptada. `CONTEXT_TOOLS_PAIR=0` desliga tudo, inclusive o registro de
+sessões.
 
 ## Configuração
 

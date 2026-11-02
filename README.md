@@ -301,6 +301,13 @@ Reports, cases and every run's raw data: [docs/benchmarks](docs/benchmarks/).
   [reference](docs/reference.md#the-token-saving-measured--and-it-is-small) shows how this was
   measured and where the bigger levers are.
 
+## Two agents on one task
+
+Claude and Codex open on the same machine can split one task: one plans and reviews, the other
+implements, each waiting for the other — the sessions already open in the desktop apps, no CLI. Only
+the builder edits, and only in its turn. Something has to set the pair up (`pair.mjs create`); see
+[the reference](docs/reference.md#two-agents-on-one-task-pair).
+
 ## In a team: knowledge left behind in a pull request
 
 Maps and `ai-context/` documents committed to the repository are shared knowledge — and they only

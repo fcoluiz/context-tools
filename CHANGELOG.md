@@ -8,6 +8,17 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Two agents on one task (`pair`).** Two sessions already open on the same machine — Claude and
+  Codex, or two of the same — can split a task: the planner takes the task from the user, plans
+  and reviews, the builder implements, each waiting for the other through files in the project's `.context-tools/pair/` (git-ignored), with no CLI.
+  Only the builder edits the project, and only while building; a rejected review goes back to
+  building, up to a round limit. Nothing starts a pair on its own: `pair.mjs create` picks two
+  sessions from `pair.mjs sessions`, and `pair.mjs stop` ends it. In Codex it runs inside the
+  existing prompt, edit and `Stop` hooks, so there is no new hook to approve. `CONTEXT_TOOLS_PAIR=0`
+  turns it off.
+
 ### Fixed
 
 - **The note added to `CLAUDE.md`/`AGENTS.md` no longer points at scripts inside the project.** It
@@ -15,6 +26,11 @@ reconstructed from git history.
   with the global plugin the agent searched the checkout and reported the script missing. The note
   now points to the `context-tools` skill only, and a note identical to the old text is replaced
   once (a note someone edited is left alone).
+- **Hooks no longer go quiet when `git` is slow to answer.** The check that a folder is a Git
+  repository gave `git rev-parse` one second; on a loaded Windows machine (antivirus, several hooks
+  at once) that ran out, a valid repository was treated as "no git" and the hooks said nothing. The
+  limit is now 5 seconds, like the other `git` calls in the hooks. The same timeout made the test
+  suite fail intermittently on Windows.
 
 ## [2.9.16] — 2026-10-28
 

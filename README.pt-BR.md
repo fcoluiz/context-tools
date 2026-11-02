@@ -307,6 +307,13 @@ Relatórios, casos e os dados brutos de cada execução: [docs/benchmarks](docs/
   valor real está em menos caminhos errados e menos re-exploração — a
   [referência](docs/reference.pt-BR.md) mostra como isso foi medido e onde estão as alavancas maiores.
 
+## Dois agentes numa tarefa
+
+Claude e Codex abertos na mesma máquina podem dividir uma tarefa: um planeja e valida, o outro
+implementa, um esperando o outro — as sessões já abertas nos apps desktop, sem CLI. Só o executor
+edita, e só na vez dele. Alguém precisa montar a dupla (`pair.mjs create`); veja
+[a referência](docs/reference.pt-BR.md#dois-agentes-numa-tarefa-pair-dupla).
+
 ## Em equipe: conhecimento deixado para trás num pull request
 
 Mapas e documentos `ai-context/` commitados no repositório são conhecimento compartilhado — e só

@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.17] — 2026-11-02
+
 ### Added
 
 - **Two agents on one task (`pair`).** Two sessions already open on the same machine — Claude and

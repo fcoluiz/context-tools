@@ -1431,9 +1431,10 @@ function runStopReport() {
 }
 
 /**
- * SubagentStart (Claude): o contexto do SessionStart só chega à thread principal, e os subagentes
- * que exploram (Explore, Plan, general-purpose — o `matcher` do hooks.json filtra) começavam sem
- * saber das ferramentas e re-varriam o código. Recebem só o atalho e os nomes das áreas: o estado
+ * SubagentStart (Claude e Codex): o contexto do SessionStart só chega à thread principal, e os
+ * subagentes que exploram (Explore, Plan, general-purpose no Claude; default, explorer, worker no
+ * Codex — o `matcher` de cada manifesto filtra) começavam sem saber das ferramentas e re-varriam
+ * o código. Recebem só o atalho e os nomes das áreas: o estado
  * de cada mapa já foi calculado para a thread principal e custaria git diff por subagente.
  */
 function runSubagentStart() {

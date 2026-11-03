@@ -32,6 +32,18 @@
         ]
       }
     ],
+    "SubagentStart": [
+      {
+        "matcher": "default|explorer|worker",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/scripts/codex-hook.mjs\" context-maps.mjs --subagent-start",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [

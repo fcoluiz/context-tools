@@ -386,6 +386,7 @@ test('instalação both cria as duas integrações sem misturar os diretórios',
       JSON.parse(readFileSync(join(root, '.claude', 'context-tools.json'), 'utf8')),
     );
     assert.ok(existsSync(join(root, '.agents', 'skills', 'context-tools', 'SKILL.md')));
+    assert.ok(existsSync(join(root, '.agents', 'skills', 'context-tools', 'references', 'revisao.md')), 'a skill sem as referências manda ler arquivo que não existe');
     const hooks = JSON.parse(readFileSync(join(root, '.codex', 'hooks.json'), 'utf8'));
     assert.ok(hooks.hooks.PreToolUse.some(group => group.matcher === 'Bash'));
     const commands = Object.values(hooks.hooks)

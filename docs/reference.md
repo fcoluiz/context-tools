@@ -133,7 +133,9 @@ hashes, and undated status claims.
 **`ct`** is one entry point for all of the above: `ct.mjs <verb>` runs the same script with the same
 arguments, in the same Node process (no second start-up). `ct.mjs help` lists the verbs. It exists for
 the agent's sake: the skill used to repeat a full `node "<path>/scripts/x.mjs"` for every tool, text
-paid each time the skill loads; with verbs the skill went from 16,873 to about 6,900 characters.
+paid each time the skill loads; with verbs the skill went from 16,873 to about 6,900 characters. Map review and
+diagnostics then moved to `skills/context-tools/references/`, read only when the request is about
+them, so a normal load is about 5,600 characters.
 
 **`overview`** is the first-minute panorama, built only from the code and git: where the code is
 concentrated, the files changed most in the last six months (marked when a map or `ai-context`

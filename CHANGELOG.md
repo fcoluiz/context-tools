@@ -18,6 +18,16 @@ reconstructed from git history.
   the main thread). Parallel subagents each get it: the
   dedupe key includes the agent id. `"subagentContext": false` (in `.claude/` or `.codex/context-tools.json`) turns it off.
 
+### Changed
+
+- **The skill costs less each time it loads.** Map review (`ack`, the Codex review queue,
+  `tracked-edit`, document metadata) and diagnostics/configuration moved from `SKILL.md` to
+  `references/revisao.md` and `references/diagnostico.md`, which `SKILL.md` points to and the agent
+  reads only when the request is about them. `SKILL.md` went from 7,600 to 5,586 characters (about
+  500 fewer tokens per load, estimated at 4 characters per token). The standalone Codex install
+  copies the references too; `tests/orcamento.test.mjs` caps `SKILL.md` at 6,000 characters and
+  fails on a missing or orphaned reference.
+
 ### Fixed
 
 - **Hooks no longer wait for stdin to close.** On Windows the host sometimes writes the hook event

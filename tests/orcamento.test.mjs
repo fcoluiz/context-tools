@@ -4,7 +4,7 @@
 // medido em 2026-10-08 — servem para que crescer seja uma decisão, não um acidente.
 
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -39,7 +39,15 @@ test('descrição da skill (vai em todo prompt) e corpo da skill têm teto', () 
   const description = skill.match(/^description:\s*(.*)$/m)?.[1] || '';
   // 2026-10-09: a skill passou a usar os verbos do ct.mjs e caiu de 16.873 para ~6.900 caracteres.
   assert.ok(description.length <= 420, `descrição da skill com ${description.length} chars (teto 420)`);
-  assert.ok(skill.length <= 7600, `SKILL.md com ${skill.length} chars (teto 7.600)`);
+  // 2026-11-03: revisão de mapa e diagnóstico foram para `references/`, lidas sob demanda (~7.600 → ~5.700).
+  assert.ok(skill.length <= 6000, `SKILL.md com ${skill.length} chars (teto 6.000)`);
+  // Cada referência citada existe, e nenhuma fica órfã: uma que o SKILL.md não cita nunca é lida.
+  const citadas = [...new Set([...skill.matchAll(/`references\/([\w-]+\.md)`/g)].map((m) => m[1]))].sort();
+  assert.deepEqual(readdirSync(join(ROOT, 'skills', 'context-tools', 'references')).sort(), citadas);
+  for (const ref of citadas) {
+    const texto = read('skills', 'context-tools', 'references', ref);
+    assert.ok(texto.length <= 2500, `references/${ref} com ${texto.length} chars (teto 2.500)`);
+  }
 });
 
 test('bloco inserido em CLAUDE.md/AGENTS.md (vai em todo prompt) tem teto', () => {

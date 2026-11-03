@@ -68,27 +68,9 @@ conta própria (`"captureHint": false` desliga).
 
 ### Mapa ou documento defasado
 
-Confira as fontes citadas, corrija o texto se preciso e registre com
-`ct.mjs ack <mapa-ou-documento.md> [--source=<chave>]` — ele grava `source_fingerprints`,
-`source_digest` e a data. Nunca copie hashes à mão nem registre sem inspecionar a fonte.
-`ct.mjs explain --file <caminho>` diz por que um arquivo entra (ou não) em revisão.
-
-Fila local (Codex): `ct.mjs review status --json` e `show --id=ID --json`; depois de conferir,
-`ack --id=ID --revision=REVISION --reviewed` das versões conferidas (`--source=CHAVE` parcial;
-`coverage`: crie doc que cite a fonte e use `--document=PATH --kind=map|document`),
-`defer --id=ID --reason=insufficient-evidence` ou `retry --id=ID`. O Codex permite uma continuação
-por turno; o que sobrar fica visível no fim.
-
-No Codex o `Stop` atribui edições pelos eventos `apply_patch`/`Edit`/`Write`; Bash comum não conta.
-Script que edita arquivos declara os alvos:
-`node "${PLUGIN_ROOT}/scripts/tracked-edit.mjs" manifest --file=CAMINHO` e depois
-`node "${PLUGIN_ROOT}/scripts/tracked-edit.mjs" --context-tools-edit=TOKEN -- EXECUTAVEL ARGUMENTOS`
-(todos os arquivos possíveis, inclusive em `extraRepos`).
-
-Metadados opcionais de documento: `maintenance: live|historical|manual` (decisões são históricas
-por padrão), `review_sources: ["./src/a.js"]` e
-`review_dependencies: [{"source":"./src/a.js","symbols":["function foo"]}]` (nomes exatos do
-outline; não declare escopo de símbolo se o comportamento depende de fontes fora dele).
+Confira as fontes citadas antes de registrar e nunca copie hashes à mão. O passo a passo (`ack`,
+`explain`, a fila local do Codex, `tracked-edit` e os metadados de documento) está em
+`references/revisao.md`, ao lado deste arquivo: leia antes de registrar uma revisão.
 
 ## Antes de commitar documentação
 
@@ -101,14 +83,5 @@ com `find`/`outline`. Status ("não commitado") vira mentira em semanas: se regi
 
 ## Diagnóstico e configuração
 
-- `ct.mjs health [--days=30] [--audit] [--json]`: saúde local, atualidade do conhecimento e uso.
-  Resposta emitida por hook não prova uso; digest em dia não prova correção. Contadores crus:
-  `node "${PLUGIN_ROOT}/scripts/metrics.mjs" [--json|--clear]`.
-- `ct.mjs providers [--install-plan]`: language servers opcionais; nenhum hook instala nada.
-- `map-suggestions.mjs`: arquivos sem mapa que co-mudam com fontes mapeadas (pista, não confirmação).
-- `ct.mjs drift --base=<ref> [--strict]`: mapas/documentos cuja fonte mudou no diff sem revisão
-  registrada — para PR/CI (há uma GitHub Action no repositório do plugin).
-- Configuração opcional em `.claude/context-tools.json` ou `.codex/context-tools.json`:
-  `sourceDirs`, `ignoreDirs` (pastas descartáveis, por nome), `extraRepos` (repos irmãos; derivado
-  de um `*.code-workspace` quando existe, `[]` desliga), `coupling`, `lang`,
-  `claudeMdHint`/`codexMdHint`, `documentation.{enabled,autoInit,captureHint,root}`, `updateCheck`.
+`health`, `providers`, `drift`, métricas e as chaves de `context-tools.json`: leia
+`references/diagnostico.md` (ao lado deste arquivo) quando o pedido for sobre isso.

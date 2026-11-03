@@ -129,7 +129,8 @@ inválido e alegação de status sem data.
 argumentos, no mesmo processo Node (sem segunda partida). `ct.mjs help` lista os verbos. Existe por
 causa do agente: a skill repetia `node "<caminho>/scripts/x.mjs"` inteiro para cada ferramenta,
 texto pago toda vez que a skill carrega; com verbos ela caiu de 16.873 para cerca de 6.900
-caracteres.
+caracteres. Depois a revisão de mapa e o diagnóstico foram para `skills/context-tools/references/`,
+lidos só quando o pedido é sobre isso, e a carga comum ficou em cerca de 5.600 caracteres.
 
 **`overview`** é o panorama do primeiro minuto, montado só do código e do git: onde o código se
 concentra, os arquivos mais alterados nos últimos seis meses (marcados quando um mapa ou documento

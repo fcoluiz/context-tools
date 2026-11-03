@@ -27,6 +27,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { resolveRoot, safe, loadConfig, isMain, statePath } from './lib/roots.mjs';
 import { writeHookOutput } from './lib/hook-output.mjs';
+import { readHookInput } from './lib/hook-input.mjs';
 
 // Identificador, ou alternância de identificadores. Qualquer metacaractere de regex
 // (`\d`, `^`, `.*`, classe) reprova: aí a intenção é busca textual, não "onde X está".
@@ -39,10 +40,6 @@ const MAX_BLOCO = 1200;
 const PACK_BUDGET = 800;
 const PACK_ESCALATION_BUDGET = 2000;
 const MAX_PACK_BLOCO = 3200;
-
-function stdin() {
-  return safe(() => readFileSync(0, 'utf8'), '');
-}
 
 /** Já respondemos este padrão nesta sessão? Repetir gasta token sem informar nada. */
 function jaRespondido(root, chave) {
@@ -261,7 +258,7 @@ async function anotarResposta(root, sid, files) {
 }
 
 async function main() {
-  const saida = await executarPreTool(stdin());
+  const saida = await executarPreTool(await readHookInput());
   if (saida) writeHookOutput(resolveRoot(), saida);
 }
 

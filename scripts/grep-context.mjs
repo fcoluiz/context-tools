@@ -15,11 +15,11 @@
 //   Corte nunca é silencioso. Na rodada 2 do benchmark, a lista parava em 8 arquivos sem avisar, e
 //   o agente tratou como completa uma lista sem os 4 chamadores de um dos arquivos cortados.
 
-import { readFileSync } from 'node:fs';
 import { extname, isAbsolute, relative, resolve } from 'node:path';
 import { resolveRoot, safe, loadConfig, isMain, lerTexto, sanitizeModelText } from './lib/roots.mjs';
 import { writeHookOutput } from './lib/hook-output.mjs';
 import { isTestFile } from './lib/verification.mjs';
+import { readHookInput } from './lib/hook-input.mjs';
 
 const MAX_ARQUIVOS_LIDOS = 20;     // arquivos anotados; os demais são nomeados como não anotados
 const MAX_ARQUIVOS_VISTOS = 200;   // limite de memória para saídas enormes
@@ -179,7 +179,7 @@ export async function executarGrepContext(entrada) {
 }
 
 async function main() {
-  const saida = await executarGrepContext(safe(() => readFileSync(0, 'utf8'), ''));
+  const saida = await executarGrepContext(await readHookInput());
   if (saida) writeHookOutput(resolveRoot(), saida);
 }
 

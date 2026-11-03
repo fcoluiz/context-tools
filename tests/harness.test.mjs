@@ -241,8 +241,9 @@ test('o hook PreToolUse não importa módulos pesados no topo', async () => {
   const { readFileSync } = await import('node:fs');
   const estaticos = (arquivo) => [...readFileSync(localPath(`../scripts/${arquivo}`, import.meta.url), 'utf8')
     .matchAll(/^import\s[^'"]*['"]([^'"]+)['"]/gm)].map((m) => m[1]).filter((m) => !m.startsWith('node:'));
-  assert.deepEqual(estaticos('pre-tool.mjs').sort(), ['./lib/hook-output.mjs', './lib/roots.mjs']);
+  assert.deepEqual(estaticos('pre-tool.mjs').sort(), ['./lib/hook-input.mjs', './lib/hook-output.mjs', './lib/roots.mjs']);
   assert.deepEqual(estaticos('lib/hook-output.mjs'), ['./roots.mjs']);
+  assert.deepEqual(estaticos('lib/hook-input.mjs'), []);
 });
 
 // A regex era `/\\s+/` — casava o TEXTO "\s", não espaço: `C:\x\scripts` virava `C:\x cripts`

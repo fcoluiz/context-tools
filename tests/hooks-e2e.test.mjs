@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, appendFileSync, readFileSync, existsSync, utimesSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { localPath } from './paths.mjs';
@@ -1952,4 +1952,45 @@ test('E2E: SubagentStart dá o atalho e as áreas a cada subagente, inclusive em
     writeFileSync(join(raiz, '.claude', 'context-tools.json'), JSON.stringify({ subagentContext: false }));
     assert.equal(rodar('context-maps.mjs', ['--subagent-start'], raiz, {}, evento('a3')).stdout, '');
   } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
+});
+
+// No Windows o host às vezes escreve o evento e não fecha o stdin, e alguns shells prefixam BOM.
+// Com `readFileSync(0)` o hook ficava parado até o timeout do host; agora segue assim que o
+// evento JSON está completo, e o BOM não derruba o parse.
+test('E2E: hook com stdin aberto e BOM responde e termina sozinho', async () => {
+  const raiz = repo();
+  const rodarAberto = (script, args, evento) => new Promise((resolve) => {
+    const filho = spawn(process.execPath, [S(script), ...args], {
+      env: { ...process.env, CONTEXT_TOOLS_HOST: 'claude', CONTEXT_MAPS_ROOT: raiz, CLAUDE_PROJECT_DIR: raiz, CONTEXT_TOOLS_LANG: 'en' },
+      cwd: raiz,
+    });
+    let stdout = '';
+    filho.stdout.on('data', (d) => { stdout += d; });
+    const inicio = Date.now();
+    const trava = setTimeout(() => filho.kill(), 15000);
+    filho.on('exit', (status) => { clearTimeout(trava); resolve({ status, stdout, ms: Date.now() - inicio }); });
+    filho.stdin.write(`﻿${JSON.stringify(evento)}`); // e nunca chama end()
+  });
+  try {
+    const r = await rodarAberto('context-maps.mjs', ['--subagent-start'], { session_id: 's1', agent_id: 'a1', agent_type: 'Explore' });
+    assert.equal(r.status, 0, `hook morto pelo teste depois de ${r.ms} ms: travou esperando o fim do stdin`);
+    assert.match(JSON.parse(r.stdout).hookSpecificOutput.additionalContext, /minha-area/);
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
+});
+
+test('readHookInput: tira BOM, segue com o JSON completo e respeita o prazo sem entrada', async () => {
+  const { PassThrough } = await import('node:stream');
+  const { readHookInput, readHookEvent } = await import('../scripts/lib/hook-input.mjs');
+  const aberto = new PassThrough();
+  const lido = readHookInput({ stream: aberto, timeoutMs: 5000 });
+  aberto.write('﻿{"session_id":');
+  aberto.write('"s"}');
+  assert.equal(await lido, '{"session_id":"s"}');
+  const inicio = Date.now();
+  assert.deepEqual(await readHookEvent({ stream: new PassThrough(), timeoutMs: 50 }), {});
+  assert.ok(Date.now() - inicio < 2000);
+  const fechado = new PassThrough();
+  const texto = readHookInput({ stream: fechado });
+  fechado.end('não é json');
+  assert.equal(await texto, 'não é json', 'o texto bruto segue para quem o interpreta');
 });

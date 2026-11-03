@@ -50,6 +50,7 @@ import { recordMetric } from './lib/telemetry.mjs';
 import { updateNotice } from './update-check.mjs';
 import { localCopyNotice } from './lib/local-migration.mjs';
 import { fingerprintSourcesInRoot, parseSourceFingerprints, sameDigest, sameSource } from './lib/source-fingerprints.mjs';
+import { readHookEvent } from './lib/hook-input.mjs';
 
 const git = (repo, args) => safe(() => execFileSync('git', args, {
   cwd: repo, encoding: 'utf8', timeout: 20000, maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'],
@@ -454,12 +455,6 @@ function relatorioDeDivisao(root, t) {
   return texto;
 }
 
-/** Evento do hook no stdin (`session_id`, `source`). Vazio quando rodado à mão. */
-function eventoDoHook() {
-  if (process.stdin.isTTY) return {};
-  return safe(() => JSON.parse(readFileSync(0, 'utf8') || '{}'), {}) || {};
-}
-
 /**
  * SessionStart: a sessão nova carrega sozinha o handoff que o usuário aceitou retomar.
  *
@@ -489,8 +484,9 @@ function retomadaAutomatica(root, t, evento) {
  * AGENTE (`additionalContext`) e os avisos de versão nova e de cópia local antiga vão para o USUÁRIO
  * (`systemMessage`) — quem atualiza ou migra a instalação é a pessoa, não o modelo. Uma escrita só, porque duas no stdout não são JSON.
  */
-function sessionStart(root, cfg, t) {
-  const evento = eventoDoHook();
+async function sessionStart(root, cfg, t) {
+  // Evento do hook no stdin (`session_id`, `source`); vazio quando rodado à mão.
+  const evento = await readHookEvent();
   safe(() => limparHandoffsAntigos(root), 0);
   const retomada = safe(() => retomadaAutomatica(root, t, evento), '');
   const texto = [retomada, relatorioDeDivisao(root, t)].filter(Boolean).join('\n\n');
@@ -723,13 +719,13 @@ function retomar(root, id, t) {
   console.log(jaConsumidoPor(root, atual) ? t('ho.retomarJa') : t('ho.retomarNada'));
 }
 
-function main() {
+async function main() {
   const args = process.argv.slice(2);
   const root = resolveRoot(args);
   const cfg = loadConfig(root);
   const t = makeT(detectLang(cfg));
   if (args.includes('--stop-report')) { stopReport(root, t); return; }
-  if (args.includes('--session-start')) { sessionStart(root, cfg, t); return; }
+  if (args.includes('--session-start')) { await sessionStart(root, cfg, t); return; }
   const valor = (nome) => {
     const a = args.find((x) => x === nome || x.startsWith(`${nome}=`));
     return a === undefined ? undefined : (a.includes('=') ? a.slice(a.indexOf('=') + 1) : '');
@@ -753,7 +749,7 @@ function main() {
 if (isMain(import.meta.url)) {
   const started = Date.now();
   const root = resolveRoot(process.argv.slice(2));
-  try { main(); } catch (e) { console.log(`handoff: ${e && e.message ? e.message : e}`); }
+  try { await main(); } catch (e) { console.log(`handoff: ${e && e.message ? e.message : e}`); }
   finally {
     const args = process.argv.slice(2);
     recordMetric(root, 'handoff', {

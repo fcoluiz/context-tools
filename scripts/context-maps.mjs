@@ -26,6 +26,7 @@ import { selectAutomaticReviewCandidates } from './lib/auto-review-candidates.mj
 import { compareReviewedSources, fingerprintKey, fingerprintSourcesInRoot, loadFingerprintState, parseSourceFingerprints, rememberFingerprint, sameDigest, sameSource, saveFingerprintState } from './lib/source-fingerprints.mjs';
 import { sessionWriteFiles } from './lib/session-write-journal.mjs';
 import { reviewFinding } from './lib/review-findings.mjs';
+import { readHookEvent } from './lib/hook-input.mjs';
 const t = makeT(detectLang(safe(() => loadConfig(resolveRoot()), {})));
 
 const GIT_TIMEOUT_MS = 5000;
@@ -1437,10 +1438,10 @@ function runStopReport() {
  * o código. Recebem só o atalho e os nomes das áreas: o estado
  * de cada mapa já foi calculado para a thread principal e custaria git diff por subagente.
  */
-function runSubagentStart() {
+async function runSubagentStart() {
   const root = workspaceRoot();
   if (safe(() => loadConfig(root).subagentContext, undefined) === false) return;
-  const input = process.stdin.isTTY ? {} : safe(() => JSON.parse(readFileSync(0, 'utf8').replace(/^﻿/, '') || '{}'), {}) || {};
+  const input = await readHookEvent();
   // Caminho absoluto, não `$CLAUDE_PLUGIN_ROOT`: o shell do subagente pode ser PowerShell.
   const full = join(scriptDir(), 'ct.mjs').replace(/\\/g, '/');
   const rel = relative(root, full).replace(/\\/g, '/');
@@ -1456,10 +1457,10 @@ function runSubagentStart() {
   writeHookOutput(root, { hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: text } }, { sessionId });
 }
 
-function main() {
+async function main() {
   const mode = process.argv[2] || '--session-start';
   if (mode === '--stop-report') runStopReport();
-  else if (mode === '--subagent-start') runSubagentStart();
+  else if (mode === '--subagent-start') await runSubagentStart();
   else runSessionStart();
 }
 
@@ -1477,7 +1478,7 @@ export {
 if (isMain(import.meta.url)) {
   const started = Date.now();
   const root = workspaceRoot();
-  try { main(); } catch { /* noop */ }
+  try { await main(); } catch { /* noop */ }
   finally {
     recordMetric(root, 'context-maps', {
       mode: { '--stop-report': 'stop-report', '--subagent-start': 'subagent-start' }[process.argv[2]] || 'session-start',

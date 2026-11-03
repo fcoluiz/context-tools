@@ -17,6 +17,7 @@
 
 import { readFileSync } from 'node:fs';
 import { isMain, runtimeHost } from './lib/roots.mjs';
+import { readHookEvent } from './lib/hook-input.mjs';
 import {
   createPair, expireIfIdle, findPairForSession, heartbeat, listPairs, listSessions, readPair, registerSession, ROLES, send,
   SEND_KINDS, stopPair, turnOf,
@@ -49,13 +50,9 @@ const fail = (error, extra = '') => {
 };
 const out = (value, json) => console.log(json ? JSON.stringify(value, null, 2) : value);
 
-function readStdin() {
-  try { return JSON.parse(readFileSync(0, 'utf8') || '{}'); } catch { return {}; }
-}
-
 /** Entrada dos hooks do Claude. Nunca falha o hook: na dúvida, sai calado. */
 async function hook(kind) {
-  const event = readStdin();
+  const event = await readHookEvent();
   const host = runtimeHost();
   const sessionId = String(event.session_id || '');
   const cwd = typeof event.cwd === 'string' && event.cwd ? event.cwd : process.env.CLAUDE_PROJECT_DIR || process.cwd();

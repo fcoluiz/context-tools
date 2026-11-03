@@ -18,6 +18,7 @@ import {
   initializeDocumentation,
 } from './lib/documentation.mjs';
 import { contextMapsPromptAudit, contextMapsStopReport } from './context-maps.mjs';
+import { readHookEvent } from './lib/hook-input.mjs';
 
 function arg(name, fallback = null) {
   const item = process.argv.find((value) => value.startsWith(`${name}=`));
@@ -102,8 +103,7 @@ async function main() {
     const codex = process.env.CONTEXT_TOOLS_HOST === 'codex';
     if (codex) {
       const { executeContextReview, codexReviewOutput } = await import('./lib/review-engine.mjs');
-      let event = {};
-      try { event = JSON.parse(readFileSync(0, 'utf8') || '{}'); } catch { /* empty CLI input */ }
+      const event = await readHookEvent();
       const output = codexReviewOutput(executeContextReview(root, {
         sessionId: event.session_id || process.env.CONTEXT_TOOLS_SESSION_ID,
         turnId: event.turn_id || process.env.CONTEXT_TOOLS_TURN_ID,
@@ -112,8 +112,7 @@ async function main() {
       if (output) process.stdout.write(output);
       return;
     }
-    let event = {};
-    try { event = JSON.parse(readFileSync(0, 'utf8') || '{}'); } catch { /* CLI sem entrada */ }
+    const event = await readHookEvent();
     let captureHint = '';
     try {
       const { readCaptureSuggestion } = await import('./lib/session-reads.mjs');
@@ -137,8 +136,7 @@ async function main() {
     return;
   }
   if (mode === '--prompt-audit') {
-    let event = {};
-    try { event = JSON.parse(readFileSync(0, 'utf8') || '{}'); } catch { /* malformed event: no context */ }
+    const event = await readHookEvent();
     let context = '';
     try { context = contextMapsPromptAudit(root, typeof event.prompt === 'string' ? event.prompt : ''); } catch { /* local audit must never disrupt the user prompt */ }
     emitHook(root, 'UserPromptSubmit', context);

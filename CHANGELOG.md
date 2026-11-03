@@ -18,6 +18,17 @@ reconstructed from git history.
   the main thread). Parallel subagents each get it: the
   dedupe key includes the agent id. `"subagentContext": false` (in `.claude/` or `.codex/context-tools.json`) turns it off.
 
+### Fixed
+
+- **Hooks no longer wait for stdin to close.** On Windows the host sometimes writes the hook event
+  and leaves the pipe open; every hook read stdin with `readFileSync(0)`, which waits for the end,
+  so the hook sat until the host killed it (60 s for a `PreToolUse` with no `timeout`, holding the
+  user's Grep). All hooks now read through one helper that continues as soon as the JSON event is
+  complete, gives up after 2 s if nothing arrives, and strips a leading BOM that some shells add
+  (`JSON.parse` rejected the whole event over it). With the pipe left open, `context-maps
+  --subagent-start`, `pre-tool` and `handoff --session-start` went from killed at 4 s to done in
+  0.2–0.4 s on a Windows test machine.
+
 ## [2.9.17] — 2026-11-02
 
 ### Added

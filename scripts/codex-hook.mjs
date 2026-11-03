@@ -5,11 +5,11 @@
 // transcript_path via stdin e usa systemMessage quando o script chamado realmente produz um
 // aviso. Este processo normaliza esses detalhes sem alterar o contrato dos hooks Claude existentes.
 
-import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { recordMetric } from './lib/telemetry.mjs';
+import { readHookInput } from './lib/hook-input.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const script = process.argv[2];
@@ -31,9 +31,7 @@ if (!permitidos.has(script)) {
   process.exit(1);
 }
 
-const entrada = (() => {
-  try { return readFileSync(0, 'utf8'); } catch { return ''; }
-})();
+const entrada = await readHookInput();
 let evento = {};
 try { evento = entrada.trim() ? JSON.parse(entrada) : {}; } catch { evento = {}; }
 

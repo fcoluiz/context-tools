@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -13,6 +13,13 @@ import { providerForExtension, discoverProviders } from '../scripts/providers.mj
 import { buildContextPack } from '../scripts/context-pack.mjs';
 import { fatosDaSessao } from '../scripts/lib/sessao.mjs';
 import { recordMetric, readMetrics, clearMetrics } from '../scripts/lib/telemetry.mjs';
+
+// SKILL.md e as referências que ele manda ler sob demanda: o que vale para a skill vale para todas.
+function textoDaSkill() {
+  const dir = new URL('../skills/context-tools/', import.meta.url);
+  return ['SKILL.md', ...readdirSync(new URL('references/', dir)).map((r) => `references/${r}`)]
+    .map((f) => readFileSync(new URL(f, dir), 'utf8')).join('\n');
+}
 
 function projeto() {
   const root = mkdtempSync(join(tmpdir(), 'ctx-new-'));
@@ -48,7 +55,7 @@ test('provedores semânticos são detectados sem instalação automática', () =
 });
 
 test('skill do Codex aponta para caminhos executáveis, não para placeholder', () => {
-  const skill = readFileSync(new URL('../skills/context-tools/SKILL.md', import.meta.url), 'utf8');
+  const skill = textoDaSkill();
   assert.doesNotMatch(skill, /node <scripts>\//);
   assert.match(skill, /node "\$\{PLUGIN_ROOT\}\/scripts\/ct\.mjs"/);
   assert.match(skill, /node "\$\{PLUGIN_ROOT\}\/scripts\/metrics\.mjs"/);
@@ -103,7 +110,7 @@ test('todo verbo do ct.mjs citado na skill existe e aponta para um script que ex
   // A skill é a única documentação que o agente lê; um verbo citado ali e ausente do ct.mjs viraria
   // "verbo desconhecido" no meio de uma tarefa.
   const { VERBS } = await import('../scripts/ct.mjs');
-  const skill = readFileSync(new URL('../skills/context-tools/SKILL.md', import.meta.url), 'utf8');
+  const skill = textoDaSkill();
   const citados = [...skill.matchAll(/ct\.mjs (?:"\s*)?([a-z]+)/g)].map((m) => m[1]).filter((v) => v !== 'help');
   assert.ok(citados.length >= 8, 'a skill deveria citar os verbos principais');
   for (const verbo of new Set(citados)) {

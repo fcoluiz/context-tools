@@ -54,8 +54,14 @@ for (const f of readdirSync(join(HERE, 'scripts', 'lib'))) {
   if (!dry) copyFileSync(join(HERE, 'scripts', 'lib', f), join(dstLib, f));
   copied++;
 }
-act('skills/context-tools/SKILL.md');
-if (!dry) copyFileSync(join(HERE, 'skills', 'context-tools', 'SKILL.md'), join(dstSkill, 'SKILL.md'));
+// A skill leva junto as referências que o SKILL.md manda ler sob demanda.
+for (const f of ['SKILL.md', ...readdirSync(join(HERE, 'skills', 'context-tools', 'references')).map((r) => `references/${r}`)]) {
+  act(`skills/context-tools/${f}`);
+  if (!dry) {
+    mkdirSync(dirname(join(dstSkill, f)), { recursive: true });
+    copyFileSync(join(HERE, 'skills', 'context-tools', f), join(dstSkill, f));
+  }
+}
 say(`  → ${copied} script(s) + 1 skill\n`);
 }
 if (!dry) mkdirSync(codexDir, { recursive: true });

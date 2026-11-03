@@ -16,7 +16,7 @@
 import { readdirSync, readFileSync, existsSync, writeFileSync, statSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, relative, basename, dirname, resolve, isAbsolute, sep } from 'node:path';
-import { resolveRoot, findRepos, safe, loadConfig, isMain, lerTexto, CODE_RE, walk, relPath, statePath, runtimeHost, scriptCommand } from './lib/roots.mjs';
+import { resolveRoot, findRepos, safe, loadConfig, isMain, lerTexto, CODE_RE, walk, relPath, statePath, runtimeHost, scriptCommand, scriptDir } from './lib/roots.mjs';
 import { writeHookOutput } from './lib/hook-output.mjs';
 import { lerDocumento } from './lib/md-hint.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
@@ -1430,9 +1430,35 @@ function runStopReport() {
   emitContext('Stop', text, text);
 }
 
+/**
+ * SubagentStart (Claude): o contexto do SessionStart só chega à thread principal, e os subagentes
+ * que exploram (Explore, Plan, general-purpose — o `matcher` do hooks.json filtra) começavam sem
+ * saber das ferramentas e re-varriam o código. Recebem só o atalho e os nomes das áreas: o estado
+ * de cada mapa já foi calculado para a thread principal e custaria git diff por subagente.
+ */
+function runSubagentStart() {
+  const root = workspaceRoot();
+  if (safe(() => loadConfig(root).subagentContext, undefined) === false) return;
+  const input = process.stdin.isTTY ? {} : safe(() => JSON.parse(readFileSync(0, 'utf8').replace(/^﻿/, '') || '{}'), {}) || {};
+  // Caminho absoluto, não `$CLAUDE_PLUGIN_ROOT`: o shell do subagente pode ser PowerShell.
+  const full = join(scriptDir(), 'ct.mjs').replace(/\\/g, '/');
+  const rel = relative(root, full).replace(/\\/g, '/');
+  const cmd = `node ${rel && !rel.startsWith('..') && !isAbsolute(rel) ? rel : `"${full}"`}`;
+  const areas = [...new Set(loadMaps(root).map((m) => m.area))];
+  const text = [
+    t('map.subagent', { cmd: `\`${cmd}\`` }),
+    areas.length ? t('map.subagentMaps', { areas: listaSegura(areas, 12) }) : '',
+  ].filter(Boolean).join('\n');
+  // Cada subagente é um destinatário: sem o agent_id na chave, a deduplicação de 90 s calaria
+  // todos os subagentes paralelos depois do primeiro.
+  const sessionId = `${input.session_id || ''}:${input.agent_id || Math.random()}`;
+  writeHookOutput(root, { hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: text } }, { sessionId });
+}
+
 function main() {
   const mode = process.argv[2] || '--session-start';
   if (mode === '--stop-report') runStopReport();
+  else if (mode === '--subagent-start') runSubagentStart();
   else runSessionStart();
 }
 
@@ -1453,7 +1479,7 @@ if (isMain(import.meta.url)) {
   try { main(); } catch { /* noop */ }
   finally {
     recordMetric(root, 'context-maps', {
-      mode: process.argv[2] === '--stop-report' ? 'stop-report' : 'session-start',
+      mode: { '--stop-report': 'stop-report', '--subagent-start': 'subagent-start' }[process.argv[2]] || 'session-start',
       durationMs: Date.now() - started,
     });
   }

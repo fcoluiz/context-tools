@@ -300,7 +300,8 @@ Relatórios, casos e os dados brutos de cada execução: [docs/benchmarks](docs/
   cache é invalidado por mudança de arquivo e por mudança no próprio parser, e é recusado quando o
   relógio do sistema de arquivos é grosseiro demais para confiar.
 - **Tokens:** o único custo que você paga sem pedir é o aviso do `SessionStart`, ~175 tokens, mais
-  ~30 da linha com o comando de teste quando o projeto tem um. Os demais avisos custam zero quando
+  ~30 da linha com o comando de teste quando o projeto tem um, e ~115 por subagente Explore, Plan ou
+  general-purpose. Os demais avisos custam zero quando
   não há o que dizer.
 - **A parte honesta:** em sessões reais, 89% do custo é contexto sendo recarregado, e a saída de
   ferramentas é uma fatia pequena disso. Navegar melhor economiza **1–3%** dos tokens, não 20%. O

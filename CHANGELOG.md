@@ -8,6 +8,15 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Subagents learn about the tools (Claude).** The `SessionStart` note reaches only the main
+  thread, so Explore, Plan and general-purpose subagents started without knowing about `ct.mjs` and
+  re-explored by hand. A `SubagentStart` hook now gives each of them the shortcut and the mapped area
+  names (456 characters, ~115 tokens, measured on this repository with 8 maps; map freshness stays in
+  the main thread). Parallel subagents each get it: the
+  dedupe key includes the agent id. `"subagentContext": false` turns it off.
+
 ## [2.9.17] — 2026-11-02
 
 ### Added

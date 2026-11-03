@@ -147,6 +147,12 @@ test('aviso do hook: só no plugin global, uma vez por dia por projeto, com o co
     assert.match(text, /cópia local antiga do context-tools \(2 hook\(s\) local\(is\), plugin antigo context-tools@luiz-context-tools ligado\)/);
     assert.match(text, /node "\/plugins\/context-tools\/setup\.mjs" migrate --project ".+" --target=claude --yes/);
     assert.equal(localCopyNotice(root, { env, now: NOW + 1000, t }), '', 'mesmo dia: cala');
+    // Motivo novo no mesmo dia (o plugin antigo ligado também em settings.local.json) não espera as
+    // 24 h do motivo já dito.
+    writeJson(join(root, '.claude', 'settings.local.json'), { enabledPlugins: { 'context-tools@luiz-context-tools': true } });
+    assert.notEqual(localCopyNotice(root, { env, now: NOW + 2000, t }), '', 'motivo novo: avisa no mesmo dia');
+    assert.equal(localCopyNotice(root, { env, now: NOW + 3000, t }), '', 'o motivo novo também cala depois de dito');
+    rmSync(join(root, '.claude', 'settings.local.json'));
     assert.notEqual(localCopyNotice(root, { env, now: NOW + LOCAL_NOTICE_EVERY_MS + 1, t }), '');
     assert.equal(localCopyNotice(root, { env: { ...env, CONTEXT_TOOLS_LOCAL_COPY_CHECK: '0' }, now: NOW + 3 * LOCAL_NOTICE_EVERY_MS, t }), '');
   } finally {

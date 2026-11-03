@@ -38,6 +38,11 @@ reconstructed from git history.
   (`JSON.parse` rejected the whole event over it). With the pipe left open, `context-maps
   --subagent-start`, `pre-tool` and `handoff --session-start` went from killed at 4 s to done in
   0.2–0.4 s on a Windows test machine.
+- **The old-local-copy notice speaks up again when what it found changes.** The global plugin's
+  `SessionStart` warns once a day per project that a local copy is still active; a new finding on
+  the same day (another hook, the old plugin also enabled in `settings.local.json`) stayed silent
+  until the next day. The notice now remembers what it reported and repeats only for a new reason;
+  a record from an earlier version counts as the same reason, so updating does not repeat it.
 
 ## [2.9.17] — 2026-11-02
 

@@ -11,7 +11,7 @@
 // (`~/.context-tools/migrations/<data>/`), para não aparecer no `git status`.
 import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { isManagedClaudeHook, isManagedCodexHook, removeManagedHooksFrom, TARGETS } from './setup-targets.mjs';
 
 const BOM = String.fromCharCode(0xfeff);
@@ -188,7 +188,9 @@ export const LOCAL_NOTICE_EVERY_MS = 24 * 60 * 60 * 1000;
 /**
  * Aviso do `SessionStart` do plugin GLOBAL quando o projeto ainda tem a cópia local ativa. Cobre
  * quem instalou o global antes desta migração existir, ou recusou a pergunta: o instalador não volta
- * a esses projetos, mas o hook passa por eles. Uma vez por dia por projeto; desligável com
+ * a esses projetos, mas o hook passa por eles. Uma vez por dia por projeto, ou na hora se o que
+ * foi achado mudou (outro hook, outro plugin antigo): o dia de silêncio vale para o motivo já dito,
+ * não para um novo. Desligável com
  * `CONTEXT_TOOLS_LOCAL_COPY_CHECK=0`. Só avisa: mexer em configuração do projeto no meio da sessão,
  * sem a pessoa pedir, não é papel de hook.
  */
@@ -201,8 +203,13 @@ export function localCopyNotice(root, { env = process.env, now = Date.now(), hos
   const path = join(base, 'local-copy-notice.json');
   const seen = readJson(path) || {};
   const key = `${host}:${process.platform === 'win32' ? resolve(root).toLowerCase() : resolve(root)}`;
-  if (now - (seen[key] || 0) < LOCAL_NOTICE_EVERY_MS) return '';
-  try { mkdirSync(base, { recursive: true }); writeFileSync(path, JSON.stringify({ ...seen, [key]: now })); } catch { /* sem disco: avisa mesmo assim */ }
+  const why = detected.items
+    .map((item) => [relative(root, item.path).replace(/\\/g, '/'), item.hooks || 0, [...(item.legacyPlugins || [])].sort().join(','), item.skill ? 'skill' : ''].join('|'))
+    .sort().join(';');
+  // Registro antigo é só o instante: vale como o mesmo motivo, para a atualização não repetir o aviso.
+  const last = typeof seen[key] === 'number' ? { at: seen[key], why } : seen[key] || {};
+  if (last.why === why && now - (last.at || 0) < LOCAL_NOTICE_EVERY_MS) return '';
+  try { mkdirSync(base, { recursive: true }); writeFileSync(path, JSON.stringify({ ...seen, [key]: { at: now, why } })); } catch { /* sem disco: avisa mesmo assim */ }
   const setup = join(pluginRoot, 'setup.mjs').replace(/\\/g, '/');
   const comando = `node "${setup}" migrate --project "${resolve(root).replace(/\\/g, '/')}" --target=${host} --yes`;
   return t('ho.localCopy', { detalhe: describeLocalCopy(detected, t), comando });

@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.18] — 2026-11-03
+
 ### Added
 
 - **Subagents learn about the tools (Claude and Codex).** The `SessionStart` note reaches only the

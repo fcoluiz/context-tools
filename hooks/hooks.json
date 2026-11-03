@@ -27,6 +27,18 @@
         ]
       }
     ],
+    "SubagentStart": [
+      {
+        "matcher": "Explore|Plan|general-purpose",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/context-maps.mjs\" --subagent-start",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",

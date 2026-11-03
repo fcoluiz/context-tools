@@ -293,7 +293,8 @@ Reports, cases and every run's raw data: [docs/benchmarks](docs/benchmarks/).
   is invalidated by file changes and by changes to the parser itself, and is refused when the
   filesystem clock is too coarse to trust.
 - **Tokens:** the only cost you pay without asking is the `SessionStart` note, ~175 tokens, plus ~30
-  for the test-command line when the project has one. Other warnings cost nothing when there is
+  for the test-command line when the project has one, and ~115 per exploring subagent (Explore, Plan or
+  general-purpose in Claude; default, explorer or worker in Codex). Other warnings cost nothing when there is
   nothing to say.
 - **The honest part:** in real sessions, 89% of the cost is context being re-loaded, and tool output
   is a small share of it. Better navigation saves **1–3%** of tokens, not 20%. The real value is

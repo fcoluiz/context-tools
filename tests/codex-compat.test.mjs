@@ -195,6 +195,28 @@ test('Codex SessionStart transforma alerta acionável em systemMessage visível'
   } finally { rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
+// SubagentStart do Codex (0.162+): o adaptador repassa a saída sem converter em systemMessage —
+// é o contexto do subagente, não um aviso para o usuário. O matcher segue `agent_type`.
+test('Codex SubagentStart entrega atalho e áreas ao subagente pelo adaptador', () => {
+  const root = novoRepo();
+  try {
+    mkdirSync(join(root, '.claude', 'context'), { recursive: true });
+    writeFileSync(join(root, '.claude', 'context', 'area.md'), '---\narea: codex-area\ncovers:\n  - "src/sample.mjs"\nverified_at: 2026-01-01\n---\n');
+    const event = (agent_id) => ({ session_id: 'codex-sub', cwd: root, hook_event_name: 'SubagentStart', agent_id, agent_type: 'explorer' });
+    for (const id of ['x1', 'x2']) {
+      const result = runHook('codex-hook.mjs', ['context-maps.mjs', '--subagent-start'], root, event(id));
+      assert.equal(result.status, 0, result.stderr);
+      const output = JSON.parse(result.stdout);
+      assert.equal(output.systemMessage, undefined);
+      assert.equal(output.hookSpecificOutput.hookEventName, 'SubagentStart');
+      assert.match(output.hookSpecificOutput.additionalContext, /ct\.mjs"?` find <name>/);
+      assert.match(output.hookSpecificOutput.additionalContext, /codex-area/);
+    }
+    const matcher = JSON.parse(readFileSync(join(ROOT, 'hooks', 'codex-hooks.json'), 'utf8')).hooks.SubagentStart[0].matcher;
+    assert.deepEqual(matcher.split('|'), ['default', 'explorer', 'worker'], 'awaiter só espera; não explora código');
+  } finally { rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
+});
+
 test('Codex usa cwd do evento como raiz mesmo quando o projeto sem git está dentro de workspace maior', () => {
   const pai = mkdtempSync(join(tmpdir(), 'context-tools-codex-workspace-'));
   const root = join(pai, 'AppServer');

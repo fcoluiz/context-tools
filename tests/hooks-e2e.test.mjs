@@ -1934,3 +1934,22 @@ test('E2E: o aviso de sessão sai UMA VEZ e já deixa o handoff em disco', () =>
     assert.equal(r1.stdout.trim(), '', 'sem dado de sessão, silêncio');
   } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
+
+test('E2E: SubagentStart dá o atalho e as áreas a cada subagente, inclusive em paralelo', () => {
+  const raiz = repo();
+  try {
+    const evento = (agent_id) => JSON.stringify({ session_id: 's1', agent_id, agent_type: 'Explore' });
+    const a = rodar('context-maps.mjs', ['--subagent-start'], raiz, {}, evento('a1'));
+    const b = rodar('context-maps.mjs', ['--subagent-start'], raiz, {}, evento('a2'));
+    for (const r of [a, b]) {
+      assert.equal(r.status, 0);
+      const j = JSON.parse(r.stdout).hookSpecificOutput;
+      assert.equal(j.hookEventName, 'SubagentStart');
+      assert.match(j.additionalContext, /ct\.mjs"?` find <name>/);
+      assert.match(j.additionalContext, /minha-area/);
+      assert.ok(j.additionalContext.length <= 600, `aviso de subagente com ${j.additionalContext.length} chars`);
+    }
+    writeFileSync(join(raiz, '.claude', 'context-tools.json'), JSON.stringify({ subagentContext: false }));
+    assert.equal(rodar('context-maps.mjs', ['--subagent-start'], raiz, {}, evento('a3')).stdout, '');
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
+});

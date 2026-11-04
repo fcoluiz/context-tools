@@ -18,6 +18,13 @@ reconstructed from git history.
 - **Questions get answers, not files.** Without a "save this to context" request, the skill tells
   the agent to answer in the conversation and create nothing; when unsure, it asks once first.
 
+### Fixed
+
+- **Hooks wait for their output to leave before exiting.** `context-maps`, `coupling`,
+  `claude-md-hint` and `verify` called `process.exit()` right after writing. On macOS a write to a
+  pipe is asynchronous, so whatever was still queued was cut and the host got truncated JSON or
+  nothing. They now exit once the write completes, with a 1 s limit in case the host stops reading.
+
 ## [2.9.18] — 2026-11-03
 
 ### Added

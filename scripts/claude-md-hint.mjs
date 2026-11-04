@@ -2,7 +2,7 @@
 // One-time navigation hint for an existing CLAUDE.md.
 
 import { resolveRoot, loadConfig, isMain } from './lib/roots.mjs';
-import { writeHookOutput } from './lib/hook-output.mjs';
+import { exitWhenFlushed, writeHookOutput } from './lib/hook-output.mjs';
 import { makeT, detectInstructionLang } from './lib/i18n.mjs';
 import { aplicarMdHint, lerTextoHint } from './lib/md-hint.mjs';
 
@@ -85,5 +85,5 @@ function main() {
 
 if (isMain(import.meta.url)) {
   try { main(); } catch { /* M4: silence, never break the session */ }
-  process.exit(0);
+  exitWhenFlushed(0);
 }

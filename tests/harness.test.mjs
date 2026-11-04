@@ -29,6 +29,17 @@ function runHook(script, args, env, input = '') {
   });
 }
 
+test('exitWhenFlushed encerra só depois que a saída inteira chegou ao pipe', () => {
+  // No macOS o pipe é assíncrono: com `process.exit()` direto, só o que coube no buffer chegava.
+  const url = pathToFileURL(join(SCRIPTS, 'lib', 'hook-output.mjs')).href;
+  const code = `import { exitWhenFlushed } from ${JSON.stringify(url)};
+process.stdout.write('x'.repeat(512 * 1024));
+exitWhenFlushed(0);`;
+  const r = spawnSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.length, 512 * 1024);
+});
+
 test('a mesma mensagem de hook só é reivindicada uma vez dentro da janela', () => {
   const root = tempProject();
   const env = {};

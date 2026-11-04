@@ -116,6 +116,20 @@ export function writeHookOutput(root, payload, opts = {}) {
 }
 
 /**
+ * Encerra o hook depois que a saída saiu de fato. No macOS a escrita em pipe é assíncrona: um
+ * `process.exit()` logo depois do `write` corta o que ainda está na fila e o host recebe JSON pela
+ * metade (ou nada). O `write('')` vazio chama de volta quando tudo antes dele foi escrito; o timer,
+ * que segura o processo de propósito, encerra mesmo assim se o host parar de ler o pipe.
+ */
+export function exitWhenFlushed(code = 0, { stream = process.stdout, timeoutMs = 1000 } = {}) {
+  process.exitCode = code;
+  const exit = () => process.exit(code);
+  const force = setTimeout(exit, timeoutMs);
+  stream.once('error', exit);
+  stream.write('', () => { clearTimeout(force); exit(); });
+}
+
+/**
  * Com `CONTEXT_TOOLS_HOOK_LOG=<arquivo>`, cada saída vira uma linha JSONL. O `stream-json` do
  * `claude -p` não mostra o que PreToolUse/PostToolUse injetam; o benchmark de resultado lê este
  * arquivo para saber quanto cada hook pôs no contexto de cada execução. Falha de disco não cala o hook.

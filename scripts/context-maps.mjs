@@ -17,7 +17,7 @@ import { readdirSync, readFileSync, existsSync, writeFileSync, statSync, mkdirSy
 import { execFileSync } from 'node:child_process';
 import { join, relative, basename, dirname, resolve, isAbsolute, sep } from 'node:path';
 import { resolveRoot, findRepos, safe, loadConfig, isMain, lerTexto, CODE_RE, walk, relPath, statePath, runtimeHost, scriptCommand, scriptDir } from './lib/roots.mjs';
-import { writeHookOutput } from './lib/hook-output.mjs';
+import { exitWhenFlushed, writeHookOutput } from './lib/hook-output.mjs';
 import { lerDocumento } from './lib/md-hint.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
@@ -1485,5 +1485,5 @@ if (isMain(import.meta.url)) {
       durationMs: Date.now() - started,
     });
   }
-  process.exit(0);
+  exitWhenFlushed(0);
 }

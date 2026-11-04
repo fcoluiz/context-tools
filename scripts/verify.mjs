@@ -10,7 +10,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { isMain, loadConfig, resolveRoot, runtimeHost, safe, statePath } from './lib/roots.mjs';
-import { writeHookOutput } from './lib/hook-output.mjs';
+import { exitWhenFlushed, writeHookOutput } from './lib/hook-output.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
 import { transcriptDaSessao } from './lib/sessao.mjs';
@@ -203,5 +203,5 @@ if (isMain(import.meta.url)) {
   } finally {
     safe(() => recordMetric(resolveRoot(process.argv.slice(2)), 'verify', { ...result, durationMs: Date.now() - started }), null);
   }
-  process.exit(0);
+  exitWhenFlushed(0);
 }

@@ -62,9 +62,9 @@ Vale para o que ESTA conversa investigou; não exige pasta nem tipo. Tipo pelo c
 entre telas/units → `feature`; tela → `tela`; tabelas → `banco`; sistema externo →
 `integracao`; escolha técnica → `decisao`. Documento que já cobre a área é atualizado; senão,
 `ct.mjs docs create --type=<tipo> --name=<nome>`. Só o que o código confirmou, sem
-`arquivo:linha`; o resto fica `A mapear`. Some uma linha ao índice e mostre o que registrou. O
-`Stop` sugere a frase ao usuário quando a sessão só leu código sem cobertura; não registre por
-conta própria (`"captureHint": false` desliga).
+`arquivo:linha`; o resto fica `A mapear`. Some uma linha ao índice e mostre o que registrou. Sem
+esse pedido, responda na conversa e não crie arquivo (na dúvida, pergunte uma vez); o `Stop` só
+sugere a frase quando a sessão leu código sem cobertura (`"captureHint": false` desliga).
 
 ### Mapa ou documento defasado
 

@@ -7,6 +7,12 @@ Confira as fontes citadas, corrija o texto se preciso e registre com
 `source_digest` e a data. Nunca copie hashes à mão nem registre sem inspecionar a fonte.
 `ct.mjs explain --file <caminho>` diz por que um arquivo entra (ou não) em revisão.
 
+Ao relatar: releia a fonte agora; antes de dizer que algo sumiu ou não é usado, `ct.mjs refs` na
+árvore inteira. Cada divergência traz o caso concreto (o texto diz X, o símbolo `Y` faz Z), em
+**Corrigir** / **Completar** / **Opcional**, numeradas sem reiniciar ("faça 2 e 5"). Feche com
+`Veredito:` (registrado, registrado com correções ou não registrado) e `Não verificado:` (o que
+não foi lido ou depende de uso dinâmico).
+
 Fila local (Codex): `ct.mjs review status --json` e `show --id=ID --json`; depois de conferir,
 `ack --id=ID --revision=REVISION --reviewed` das versões conferidas (`--source=CHAVE` parcial;
 `coverage`: crie doc que cite a fonte e use `--document=PATH --kind=map|document`),

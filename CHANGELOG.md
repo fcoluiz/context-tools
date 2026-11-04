@@ -8,6 +8,16 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Changed
+
+- **Map and document reviews report in a fixed shape.** `references/revisao.md` now asks the agent
+  to re-read the source before reporting and to run `ct.mjs refs` across the whole tree before
+  calling something gone or unused. Each mismatch comes with the concrete case (what the text says,
+  what the symbol does), grouped as fix / complete / optional and numbered without restarting, so the
+  user can answer "do 2 and 5". The report closes with `Veredito:` and `Não verificado:`.
+- **Questions get answers, not files.** Without a "save this to context" request, the skill tells
+  the agent to answer in the conversation and create nothing; when unsure, it asks once first.
+
 ## [2.9.18] — 2026-11-03
 
 ### Added

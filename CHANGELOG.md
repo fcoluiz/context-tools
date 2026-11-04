@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.19] — 2026-11-04
+
 ### Changed
 
 - **Map and document reviews report in a fixed shape.** `references/revisao.md` now asks the agent

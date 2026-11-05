@@ -51,6 +51,7 @@ caminho). Os scripts individuais continuam funcionando como antes.
 | esta documentação ainda é verdade? | `ct check [--strict]` |
 | revisei este mapa/documento — registrar | `ct ack <mapa-ou-doc.md>` |
 | o que a próxima sessão precisa saber? | `ct handoff [--salvar]` |
+| compactar esta sessão sem perder o essencial | `ct handoff --compactar` |
 | como está a saúde da instalação local? | `ct health [--days=30] [--audit] [--json]` |
 | o mesmo em JSON versionado, para CI ou painel | `ct snapshot [--days=30] [--sessions=20]` |
 

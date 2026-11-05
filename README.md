@@ -50,6 +50,7 @@ The individual scripts keep working exactly as before.
 | is this documentation still true? | `ct check [--strict]` |
 | I reviewed this map/doc — record it | `ct ack <map-or-doc.md>` |
 | what does the next session need to know? | `ct handoff [--salvar]` |
+| compact this session without losing the essentials | `ct handoff --compactar` |
 | how healthy is the local setup? | `ct health [--days=30] [--audit] [--json]` |
 | the same as versioned JSON, for CI or a dashboard | `ct snapshot [--days=30] [--sessions=20]` |
 

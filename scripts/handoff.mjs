@@ -22,9 +22,11 @@
 //   handoff.mjs                → imprime o handoff
 //   handoff.mjs --salvar       → grava em .claude/handoff-<sessão>.md
 //   handoff.mjs --prompt       → o handoff como prompt para colar numa sessão nova
-//   handoff.mjs --resposta=sim|nao [--sessao=<id>]
+//   handoff.mjs --compactar    → instrução de `/compact` com o que manter, para seguir na mesma sessão
+//   handoff.mjs --resposta=sim|nao|compactar [--sessao=<id>]
 //                              → registra a resposta do usuário à oferta de sessão nova; `sim`
-//                                deixa o handoff pendente e diz como abrir a sessão nova
+//                                deixa o handoff pendente e diz como abrir a sessão nova;
+//                                `compactar` imprime a instrução de `/compact`
 //   handoff.mjs --retomar[=<id>]
 //                              → imprime o handoff (o pendente, ou o da sessão <id>) e o apaga
 //   handoff.mjs --root=<dir>
@@ -33,7 +35,7 @@ import { writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync, statSy
 import { execFileSync } from 'node:child_process';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveRoot, findRepos, safe, loadConfig, isMain, relPath, stateDir, statePath, stateRelPrefix, runtimeHost } from './lib/roots.mjs';
+import { resolveRoot, findRepos, safe, loadConfig, isMain, relPath, stateDir, statePath, stateRelPrefix, runtimeHost, sanitizeModelText } from './lib/roots.mjs';
 import { writeHookOutput } from './lib/hook-output.mjs';
 import {
   sessionId, caminhoDoHandoff, estadoDoAviso, blocoVolatilPreenchido, lerPendente, gravarPendente,
@@ -597,6 +599,78 @@ function metaDoHandoff(doc) {
   return meta;
 }
 
+/** Por repositório, os arquivos que esta sessão tocou e, em cada um, os símbolos. */
+function arquivosDaSessao(root, sid) {
+  // Índice construído UMA vez para todos os repos: o custo é construir, não consultar.
+  // Com cache quente são ~130 ms; sem, seria proibitivo para algo que roda no Stop.
+  const indice = safe(() => buildIndex(root, loadConfig(root)), null);
+  const out = [];
+  for (const repo of findRepos(root, { requireGit: true })) {
+    const arquivos = tocados(root, sid, repo);
+    if (!arquivos.length) continue;
+    const ref = baselineDaSessao(root, sid, repo.path) || 'HEAD';
+    const simbolos = safe(() => simbolosTocados(repo.path, ref, arquivos, indice), new Map());
+    out.push({ repo, arquivos, simbolos });
+  }
+  return out;
+}
+
+/**
+ * As quatro respostas do bloco volátil, na ordem das perguntas (`ho.q1`..`ho.q4`). Estrutural,
+ * como o resto: o último `##` e as linhas `- **…**`, sem comparar o texto traduzido da pergunta.
+ */
+function respostasDoVolatil(doc) {
+  if (!doc || !blocoVolatilPreenchido(doc)) return [];
+  const linhas = doc.split('\n');
+  const respostas = [];
+  for (const l of linhas.slice(inicioDoVolatil(linhas) + 1)) {
+    const m = l.match(/^- \*\*.+?\*\*\s*(.*)$/);
+    if (m) respostas.push(m[1].trim());
+    else if (respostas.length && l.trim()) respostas[respostas.length - 1] += ` ${l.trim()}`;
+  }
+  return respostas.map((r) => sanitizeModelText(r, 400));
+}
+
+/**
+ * `--compactar`: a alternativa barata ao handoff, para quem prefere seguir na MESMA sessão.
+ *
+ * O resumo da compactação perde justamente o que não dá para reconstruir: o caminho exato, a
+ * mensagem de erro literal e a restrição que o usuário disse uma vez. Isto entrega a instrução de
+ * foco pronta, com o que o handoff já sabe — o mecânico (arquivos, símbolos, erros do transcript)
+ * e, quando preenchido, o volátil. A restrição vem na frente: é a que mais custa perder.
+ *
+ * No Claude, `/compact <instrução>`. O `/compact` do Codex não recebe instrução, então ali o mesmo
+ * texto vai como a mensagem seguinte à compactação, que entra inteira no contexto novo.
+ */
+function montarCompactacao(root, sid, t) {
+  const salvo = safe(() => readFileSync(caminhoDoHandoff(root, sid), 'utf8'), null);
+  const [feito, falhou, proximo, restricoes] = respostasDoVolatil(salvo);
+  const fatos = fatosDaSessao(transcriptDaSessao(root, sid));
+  const arquivos = [];
+  for (const { repo, arquivos: lista, simbolos } of arquivosDaSessao(root, sid)) {
+    for (const a of lista) {
+      const nome = repo.name === '.' ? a : `${repo.name}/${a}`;
+      const s = (simbolos.get(a) || []).slice(0, 3);
+      arquivos.push(s.length ? `${nome} (${s.join(', ')})` : nome);
+    }
+  }
+  const erros = fatos ? fatos.falhas.slice(-4) : [];
+  const partes = [
+    [t('ho.cpRestricoes'), restricoes],
+    [t('ho.cpProximo'), proximo],
+    [t('ho.cpErros'), erros.length ? erros.map((e) => `"${e}"`).join('; ') : ''],
+    [t('ho.cpArquivos'), arquivos.length ? arquivos.slice(0, 15).join(', ') + (arquivos.length > 15 ? ` +${arquivos.length - 15}` : '') : ''],
+    [t('ho.cpFalhou'), falhou],
+    [t('ho.cpFeito'), feito],
+  ].filter(([, v]) => v);
+  const codex = runtimeHost() === 'codex';
+  const foco = [t(codex ? 'ho.cpFocoCodex' : 'ho.cpFoco'), ...partes.map(([k, v]) => `${k}: ${v.replace(/\.$/, '')}.`)]
+    .join(' ').slice(0, 2500);
+  const linhas = [codex ? t('ho.cpCodex') : t('ho.cpClaude'), '', codex ? foco : `/compact ${foco}`];
+  if (!restricoes && !proximo) linhas.push('', t('ho.cpVazio', { arq: relPath(root, caminhoDoHandoff(root, sid)) }));
+  return linhas.join('\n');
+}
+
 /**
  * Monta o handoff. Separado do `main` porque o hook de `Stop` também o gera — e gerar duas
  * versões diferentes do mesmo documento seria pior que não ter nenhuma.
@@ -635,18 +709,9 @@ function montar(root, sid, t) {
     if (fatos.falhas.length) linhas.push(t('ho.falhas', { lista: fatos.falhas.join(' | ') }));
   }
 
-  // Índice construído UMA vez para todos os repos: o custo é construir, não consultar.
-  // Com cache quente são ~130 ms; sem, seria proibitivo para algo que roda no Stop.
-  const indice = safe(() => buildIndex(root, loadConfig(root)), null);
-
   let algumArquivo = false;
-  for (const repo of findRepos(root, { requireGit: true })) {
-    const arquivos = tocados(root, sid, repo);
-    if (!arquivos.length) continue;
+  for (const { repo, arquivos, simbolos } of arquivosDaSessao(root, sid)) {
     algumArquivo = true;
-    const ref = baselineDaSessao(root, sid, repo.path) || 'HEAD';
-    const simbolos = safe(() => simbolosTocados(repo.path, ref, arquivos, indice), new Map());
-
     linhas.push('');
     linhas.push(`## ${repo.name === '.' ? t('ho.repo') : repo.name} — ${arquivos.length} ${t('ho.arquivos')}`);
     for (const a of arquivos.slice(0, 40)) {
@@ -698,7 +763,14 @@ function responder(root, sid, resposta, t) {
   const { estado, salvar } = estadoDoAviso(root, sid);
   const destino = caminhoDoHandoff(root, sid);
   const sim = /^(s|sim|y|yes)$/i.test(String(resposta).trim());
-  salvar({ ...(estado || {}), resposta: sim ? 'sim' : 'nao', respondido: Date.now() });
+  const compactar = /^(compactar|compact)$/i.test(String(resposta).trim());
+  salvar({ ...(estado || {}), resposta: sim ? 'sim' : compactar ? 'compactar' : 'nao', respondido: Date.now() });
+  if (compactar) {
+    console.log(t('ho.respCompactar', { arq: relPath(root, destino), dias: DIAS_RETENCAO }));
+    console.log('');
+    console.log(montarCompactacao(root, sid, t));
+    return;
+  }
   if (!sim) { console.log(t('ho.respNao', { arq: relPath(root, destino), dias: DIAS_RETENCAO })); return; }
   if (!existsSync(destino)) { console.log(t('ho.retomarNada')); return; }
   const pArq = destino.replace(/\.md$/, '.prompt.md');
@@ -733,6 +805,7 @@ async function main() {
   const sid = valor('--sessao') || sessionId();
 
   if (args.includes('--prompt')) { console.log(montarPrompt(root, sid, t)); return; }
+  if (args.includes('--compactar') || args.includes('--compact')) { console.log(montarCompactacao(root, sid, t)); return; }
   if (valor('--resposta') !== undefined) { responder(root, sid, valor('--resposta'), t); return; }
   if (valor('--retomar') !== undefined) { retomar(root, valor('--retomar'), t); return; }
 
@@ -754,7 +827,7 @@ if (isMain(import.meta.url)) {
     const args = process.argv.slice(2);
     recordMetric(root, 'handoff', {
       mode: args.includes('--stop-report') ? 'stop-report' : args.includes('--session-start') ? 'session-start'
-        : args.includes('--prompt') ? 'prompt' : args.some((a) => a.startsWith('--resposta')) ? 'answer'
+        : args.includes('--prompt') ? 'prompt' : args.includes('--compactar') || args.includes('--compact') ? 'compact' : args.some((a) => a.startsWith('--resposta')) ? 'answer'
           : args.some((a) => a.startsWith('--retomar')) ? 'resume' : args.includes('--salvar') ? 'save' : 'preview',
       durationMs: Date.now() - started,
     });

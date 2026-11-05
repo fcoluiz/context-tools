@@ -268,6 +268,18 @@ export function metricasDaSessao(caminho) {
   };
 }
 
+/**
+ * A mensagem de erro numa linha, sem perder o FIM: num comando que falhou, a linha que importa
+ * costuma ser a última (a exceção, o `assert`), e cortar só pelo começo guardava o eco do comando.
+ */
+function erroExato(valor, max = 180) {
+  const texto = Array.isArray(valor) ? valor.map((x) => (x && x.text) || '').join(' ') : valor;
+  const limpo = sanitizeModelText(texto, Number.MAX_SAFE_INTEGER);
+  if (limpo.length <= max) return limpo;
+  const cauda = Math.floor(max * 0.6);
+  return `${limpo.slice(0, max - cauda - 3)}...${limpo.slice(-cauda)}`;
+}
+
 /** Fatos mecânicos do transcript; não interpreta intenção nem tenta preencher hipóteses. */
 export function fatosDaSessao(caminho) {
   if (!caminho) return null;
@@ -300,8 +312,19 @@ export function fatosDaSessao(caminho) {
     }
     const result = o.tool_result || (o.type === 'tool_result' ? o : null);
     if (result && (result.is_error || result.isError || result.error)) {
-      const texto = result.error || result.content || 'tool failure';
-      falhas.push(sanitizeModelText(Array.isArray(texto) ? texto.map((x) => x?.text || '').join(' ') : texto, 180));
+      falhas.push(erroExato(result.error || result.content || 'tool failure'));
+    }
+    // Claude Code: o resultado com erro vem DENTRO da mensagem do usuário, como bloco `tool_result`.
+    if (o.type === 'user' && Array.isArray(o.message && o.message.content)) {
+      for (const c of o.message.content) {
+        if (c && c.type === 'tool_result' && c.is_error) falhas.push(erroExato(c.content || 'tool failure'));
+      }
+    }
+    // Codex: comando de shell que terminou com código diferente de zero.
+    const item = o.payload && o.payload.type === 'item_completed' ? o.payload.item : null;
+    if (item && item.type === 'CommandExecution'
+      && (item.status === 'failed' || (item.exit_code != null && item.exit_code !== 0))) {
+      falhas.push(erroExato(item.aggregated_output || `exit code ${item.exit_code}`));
     }
   }
   return {
@@ -309,7 +332,8 @@ export function fatosDaSessao(caminho) {
     ferramentas: [...ferramentas].sort().slice(0, 30),
     edicoes: [...edicoes].sort().slice(0, 40),
     comandos,
-    falhas: [...new Set(falhas)].slice(0, 12),
+    // As MAIS RECENTES: a falha do começo da sessão quase sempre já foi resolvida.
+    falhas: [...new Set(falhas)].slice(-12),
   };
 }
 

@@ -8,6 +8,23 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Changed
+
+- **`SubagentStart` stays silent when the project has no context maps.** A controlled run (Sonnet,
+  4 "who calls X" questions on public repositories, 3 repetitions, the main agent told to delegate
+  the search to an Explore subagent) compared the hook on and off with `"subagentContext": false`.
+  Without maps, the hook sent only the `ct.mjs` shortcut (240 characters): no subagent ever called
+  it, and that arm cost 7% more ($1.18 vs $1.10 over 12 runs each; 11/12 vs 12/12 solved). With maps
+  (one per top-level folder, 8 runs) both arms solved 4/4 and the hook arm cost 12% less, within
+  noise. So the hook now speaks only when there are area names to give.
+
+### Fixed
+
+- **The outcome benchmark rebuilds a broken mirror.** A cached mirror left with only `objects/`
+  (an interrupted clone, or a Temp cleanup) made every later round fail with "already exists"; a
+  pinned commit that left all refs was not found either. The mirror is now rebuilt, and a missing
+  commit is fetched by its SHA.
+
 ## [2.9.20] — 2026-11-05
 
 ### Added

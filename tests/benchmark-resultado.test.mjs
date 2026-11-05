@@ -106,6 +106,28 @@ test('paralelo: runAsync entrega stdin, saída e timeout; espelho estável por U
   assert.notEqual(mirrorPath('https://github.com/a/b.git', base), mirrorPath('https://github.com/a/c.git', base));
 });
 
+test('espelho quebrado (só objects/, sem HEAD) é refeito em vez de travar o clone', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const { mkdirSync, existsSync } = await import('node:fs');
+  const { mirrorPath, prepararEspelho } = await import('../scripts/benchmark-outcome.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'ct-bench-mirror-'));
+  try {
+    const origem = join(dir, 'origem');
+    const git = (...a) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { cwd: origem, encoding: 'utf8' });
+    mkdirSync(origem);
+    git('init', '--quiet');
+    writeFileSync(join(origem, 'a.txt'), 'a');
+    git('add', '.');
+    git('commit', '--quiet', '-m', 'a');
+    const sha = git('rev-parse', 'HEAD').stdout.trim();
+    const base = join(dir, 'mirrors');
+    mkdirSync(join(mirrorPath(origem, base), 'objects'), { recursive: true });
+    const path = prepararEspelho({ git: origem, ref: sha }, base);
+    assert.ok(existsSync(join(path, 'HEAD')));
+    assert.equal(spawnSync('git', ['-C', path, 'cat-file', '-e', `${sha}^{commit}`]).status, 0);
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
+});
+
 test('bug injetado não aparece no histórico: com setup, a cópia começa num commit único', async () => {
   const { prepararCopia } = await import('../scripts/benchmark-outcome.mjs');
   const { spawnSync } = await import('node:child_process');

@@ -2001,6 +2001,12 @@ test('E2E: SubagentStart dá o atalho e as áreas a cada subagente, inclusive em
     }
     writeFileSync(join(raiz, '.claude', 'context-tools.json'), JSON.stringify({ subagentContext: false }));
     assert.equal(rodar('context-maps.mjs', ['--subagent-start'], raiz, {}, evento('a3')).stdout, '');
+    // Sem mapas, calado: o atalho sozinho não foi usado por subagente nenhum na medição.
+    rmSync(join(raiz, '.claude', 'context-tools.json'));
+    rmSync(join(raiz, '.claude', 'context'), { recursive: true, force: true });
+    const semMapas = rodar('context-maps.mjs', ['--subagent-start'], raiz, {}, evento('a4'));
+    assert.equal(semMapas.status, 0);
+    assert.equal(semMapas.stdout, '');
   } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 

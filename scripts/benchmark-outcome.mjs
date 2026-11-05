@@ -125,18 +125,24 @@ export function mirrorPath(url, base = join(tmpdir(), 'ct-outcome-mirrors')) {
   return join(base, createHash('sha1').update(url).digest('hex').slice(0, 12));
 }
 
-function prepararEspelho(c) {
-  const path = mirrorPath(c.git);
+export function prepararEspelho(c, base) {
+  const path = mirrorPath(c.git, base);
   const temRef = () => !c.ref || spawnSync('git', ['-C', path, 'cat-file', '-e', `${c.ref}^{commit}`]).status === 0;
+  const buscar = (...refspec) => spawnSync('git', ['-C', path, 'fetch', '--quiet', 'origin', ...refspec], { encoding: 'utf8', timeout: 600000 });
+  // Um commit que saiu de todas as refs (branch apagada, PR) ainda vem pelo SHA.
+  const buscarSha = () => { if (!temRef() && /^[0-9a-f]{40}$/i.test(c.ref)) buscar(c.ref); return temRef(); };
   if (existsSync(join(path, 'HEAD'))) {
     if (temRef()) return path;
-    spawnSync('git', ['-C', path, 'fetch', '--quiet', 'origin', '+refs/*:refs/*'], { encoding: 'utf8', timeout: 600000 });
-    if (temRef()) return path;
-    rmSync(path, { recursive: true, force: true });
+    buscar('+refs/*:refs/*');
+    if (buscarSha()) return path;
   }
+  // Espelho sem HEAD (clone interrompido, limpeza do Temp que poupa só `objects/`) não serve e faria
+  // o `git clone` recusar a pasta: refaz do zero.
+  rmSync(path, { recursive: true, force: true });
   mkdirSync(dirname(path), { recursive: true });
   const r = spawnSync('git', ['clone', '--quiet', '--mirror', c.git, path], { encoding: 'utf8', timeout: 900000 });
   if (r.status !== 0) throw new Error(`mirror failed for ${c.git}: ${r.stderr}`);
+  buscarSha();
   return path;
 }
 

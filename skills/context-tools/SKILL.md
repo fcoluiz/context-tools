@@ -81,6 +81,11 @@ mais, hash de commit inválido e status sem data (`--strict` serve para pre-comm
 conferidas estava certa — a pior errava por 2.861 linhas. Cite o símbolo; a linha se resolve na hora
 com `find`/`outline`. Status ("não commitado") vira mentira em semanas: se registrar, deixe datado.
 
+## Compactar sem perder o essencial
+
+Para seguir na mesma sessão em vez de abrir outra: `ct.mjs handoff --compactar` e mostre ao usuário
+o que ele imprimir. Quem digita `/compact` é o usuário; no Codex, o texto vai na mensagem seguinte.
+
 ## Diagnóstico e configuração
 
 `health`, `providers`, `drift`, métricas e as chaves de `context-tools.json`: leia

@@ -1712,6 +1712,56 @@ test('E2E: "nao" mantém a sessão, cala o lembrete e não deixa nada pendente',
   } finally { s.limpar(); }
 });
 
+test('E2E: "compactar" entrega um /compact com restrição, erro exato e arquivos, e cala o lembrete', async () => {
+  // A alternativa barata ao handoff: seguir na mesma sessão, mas com a instrução de foco pronta.
+  // O resumo da compactação perde justamente caminho, erro literal e restrição dita uma vez.
+  const s = sessaoComOferta('sessao-compactar');
+  try {
+    // A última pergunta do bloco volátil é a da restrição; o erro vem do transcript, no formato do
+    // Claude Code (bloco `tool_result` dentro da mensagem do usuário).
+    writeFileSync(s.doc, readFileSync(s.doc, 'utf8').replace(/^(- \*\*[^\n]+\*\*)[ \t]*$(?![\s\S]*^- \*\*)/m, '$1 nunca commitar com --no-verify'));
+    appendFileSync(join(s.env.CONTEXT_TOOLS_TRANSCRIPTS, 'sessao-compactar.jsonl'), JSON.stringify({
+      type: 'user', message: { content: [{ type: 'tool_result', is_error: true, content: 'Exit code 1\nAssertionError: esperado 3, veio 2' }] },
+    }) + '\n');
+    assert.match(readFileSync(s.doc, 'utf8'), /nunca commitar/, 'pré-condição: restrição gravada');
+
+    const r = s.handoff(['--sessao=sessao-compactar', '--resposta=compactar']);
+    assert.equal(r.status, 0, r.stderr);
+    const linha = r.stdout.split('\n').find((l) => l.startsWith('/compact '));
+    assert.ok(linha, `tinha de haver uma linha /compact pronta: ${r.stdout}`);
+    assert.match(linha, /do not undo: nunca commitar com --no-verify/);
+    assert.match(linha, /AssertionError: esperado 3, veio 2/, 'o erro literal');
+    assert.match(linha, /src\/a\.js/, 'o caminho exato');
+    assert.match(linha, /faltava o teste do parser/);
+    assert.ok(linha.indexOf('nunca commitar') < linha.indexOf('src/a.js'), 'a restrição vem antes');
+    assert.equal(s.estado()['sessao-compactar'].resposta, 'compactar');
+    assert.equal(s.lembrete().stdout.trim(), '', 'respondido: nada a lembrar');
+    assert.equal(s.estado()._pendente, undefined, 'compactar não deixa handoff pendente');
+
+    // A oferta é UMA pergunta, sozinha, com a sessão nova recomendada (mais barata) e o compactar
+    // por último: compactar paga uma chamada que lê o contexto inteiro e não é mais barato.
+    const { makeT } = await import('../scripts/lib/i18n.mjs');
+    for (const lang of ['en', 'pt']) {
+      for (const chave of ['ses.oferta', 'ses.ofertaLembrete', 'ses.meioTurno']) {
+        const texto = makeT(lang)(chave, { arq: 'x', cmd: 'h', mult: '1.5' });
+        assert.match(texto, /ONE question|UMA pergunta/, `${lang} ${chave}: uma pergunta só`);
+        const iNova = texto.search(/Recommended|Recomendado/);
+        const iCompactar = texto.search(/"Compact here"|"Compactar aqui"/);
+        assert.ok(iNova >= 0 && iCompactar > iNova, `${lang} ${chave}: sessão nova antes de compactar`);
+      }
+    }
+
+    // Codex: o /compact dele não recebe instrução, então o texto sai solto, para a mensagem seguinte.
+    // O estado do Codex mora em `.codex/context-tools/`, e o handoff dele também.
+    mkdirSync(join(s.raiz, '.codex', 'context-tools'), { recursive: true });
+    writeFileSync(join(s.raiz, '.codex', 'context-tools', 'handoff-sessao-c.md'), readFileSync(s.doc, 'utf8'));
+    const codex = s.handoff(['--sessao=sessao-compactar', '--compactar'], { CONTEXT_TOOLS_HOST: 'codex' });
+    assert.equal(codex.status, 0, codex.stderr);
+    assert.doesNotMatch(codex.stdout, /^\/compact /m);
+    assert.match(codex.stdout, /nunca commitar com --no-verify/);
+  } finally { s.limpar(); }
+});
+
 test('E2E: SessionStart apaga handoffs gerados com mais de 7 dias, e só os gerados', () => {
   const raiz = repo({ comMapa: false });
   const dir = join(raiz, '.claude');

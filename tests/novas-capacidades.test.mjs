@@ -89,6 +89,25 @@ test('fatos do transcript registram ferramentas, edição e falha sem interpreta
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
+test('fatos do transcript pegam o erro do Claude Code e do Codex sem perder o fim da mensagem', () => {
+  const root = projeto();
+  const transcript = join(root, 'session.jsonl');
+  try {
+    const longo = `${'eco do comando '.repeat(30)}Error: cannot find module './x.mjs'`;
+    writeFileSync(transcript, [
+      JSON.stringify({ type: 'user', message: { content: [{ type: 'tool_result', is_error: true, content: longo }] } }),
+      JSON.stringify({ type: 'user', message: { content: [{ type: 'tool_result', content: 'ok' }] } }),
+      JSON.stringify({ type: 'event_msg', payload: { type: 'item_completed', item: { type: 'CommandExecution', status: 'failed', exit_code: 2, aggregated_output: 'npm ERR! missing script: lint' } } }),
+      JSON.stringify({ type: 'event_msg', payload: { type: 'item_completed', item: { type: 'CommandExecution', status: 'completed', exit_code: 0, aggregated_output: 'fine' } } }),
+    ].join('\n'));
+    const { falhas } = fatosDaSessao(transcript);
+    assert.equal(falhas.length, 2);
+    assert.match(falhas[0], /cannot find module '\.\/x\.mjs'$/, 'o fim do erro longo sobrevive ao corte');
+    assert.ok(falhas[0].length <= 180);
+    assert.equal(falhas[1], 'npm ERR! missing script: lint');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
 test('métricas locais são limitadas ao estado do projeto', () => {
   const root = projeto();
   const old = process.env.CONTEXT_TOOLS_STATE_DIR;

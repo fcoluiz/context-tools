@@ -227,9 +227,21 @@ o prompt de retomada ainda não saiu. Depois disso, cala.
 **Com o bloco preenchido, o `Stop` oferece uma sessão nova sozinho** — sem comando para lembrar.
 O prompt de retomada é gravado ao lado do handoff (`handoff-<id>.prompt.md`) e **não** vai para o
 chat: a sessão cara é o último lugar onde gastar mais contexto. Em vez disso o agente pergunta ao
-usuário, com uma pergunta de múltipla escolha — "Nova sessão a partir do handoff" ou "Continuar
-aqui" — e registra a resposta com `handoff.mjs --resposta=sim|nao --sessao=<id>`. Se essa oferta se
+usuário, com UMA pergunta de múltipla escolha, sozinha — "Nova sessão a partir do handoff"
+(recomendada, a mais barata), "Continuar aqui" ou "Compactar aqui" (mais cara que a sessão nova) — e
+registra a resposta com `handoff.mjs --resposta=sim|nao|compactar --sessao=<id>`. Se essa oferta se
 perder como o pedido acima, o `UserPromptSubmit` a repete **uma vez** enquanto não houver resposta.
+
+**Compactar em vez de dividir.** `handoff.mjs --compactar` (e a resposta `compactar`) imprime um
+`/compact <o que manter>` pronto, para quem prefere seguir na mesma sessão. **Não** é mais barato
+que dividir: o `/compact` paga uma chamada a mais que lê o contexto inteiro, justo quando ele está
+maior, e o resumo ainda perde detalhe; a sessão nova começa pequena. O resumo da compactação
+costuma perder justamente o que não dá para reconstruir: o caminho exato, a mensagem de erro literal
+e a restrição que o usuário disse uma vez. A instrução leva o que o handoff já sabe — as restrições
+do usuário e o próximo passo do bloco volátil (quando preenchido), os erros exatos mais recentes do
+transcript, arquivos e símbolos tocados e o que foi tentado —, com as restrições na frente. Só o
+usuário consegue digitar `/compact`. O `/compact` do Codex não recebe instrução, então ali o mesmo
+texto sai para ser enviado como a mensagem seguinte à compactação, que entra inteira no contexto novo.
 
 No **sim**, o handoff fica *pendente* e o agente abre a sessão nova:
 

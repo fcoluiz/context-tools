@@ -241,9 +241,22 @@ remember. It cannot do that alongside the warning: at that moment the volatile b
 generated empty, and that block is the only part that makes resuming worth it. The resume prompt is
 written next to the handoff (`handoff-<id>.prompt.md`) and is **not** pasted into the chat: the
 expensive session is the last place to spend more context. Instead the agent asks the user with a
-multiple-choice question — "Fresh session from the handoff" or "Keep going here" — and records the
-answer with `handoff.mjs --resposta=sim|nao --sessao=<id>`. If that offer is dropped like the
-request above, the `UserPromptSubmit` hook repeats it **once** while there is no answer.
+single multiple-choice question, asked on its own — "Fresh session from the handoff" (recommended,
+the cheapest), "Keep going here" or "Compact here" (more expensive than a fresh session) — and
+records the answer with `handoff.mjs --resposta=sim|nao|compactar --sessao=<id>`. If that offer is
+dropped like the request above, the `UserPromptSubmit` hook repeats it **once** while there is no
+answer.
+
+**Compacting instead of splitting.** `handoff.mjs --compactar` (and the `compactar` answer) prints a
+ready `/compact <what to keep>` for whoever prefers to stay in the same session. It is **not**
+cheaper than splitting: `/compact` pays one more call that reads the whole context, right when it is
+largest, and its summary still loses detail; a fresh session starts small. A compaction
+summary tends to lose exactly what cannot be rebuilt: exact paths, the literal error message and a
+constraint the user said once. The instruction carries what the handoff already knows — the
+user's constraints and the next step from the volatile block (when filled), the latest exact
+errors from the transcript, files and symbols touched, and what was tried — constraints first.
+Only the user can type `/compact`. Codex's `/compact` takes no instruction, so there the same text
+is printed to send as the next message after compacting, which enters the new context whole.
 
 On **yes**, the handoff becomes *pending* and the agent opens the new session:
 

@@ -8,6 +8,29 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **A ready `/compact` that keeps what summaries lose.** `handoff.mjs --compactar` prints a
+  `/compact <what to keep>` built from what the handoff already knows: the user's constraints and
+  the next step from the volatile block, the latest exact errors, files and symbols touched, and
+  what was tried, constraints first. It is not cheaper than splitting: `/compact` pays one more call
+  that reads the whole context, and the summary still loses detail. So the fresh-session offer
+  stays ONE question, with the fresh session recommended as the cheapest and "Compact here"
+  (`--resposta=compactar`) last, marked as more expensive. Codex's `/compact` takes no instruction,
+  so there the same text is printed to send as the next message after compacting.
+
+### Changed
+
+- **The fresh-session offer is one question, asked on its own.** The agent had bundled the offer
+  with an unrelated question in the same call; the offer text now forbids that.
+
+### Fixed
+
+- **Session facts now see tool errors.** The handoff's "tool failures" line read only a shape the
+  Claude Code transcript does not use, so it stayed empty; it now reads the `tool_result` error
+  blocks inside user messages and Codex commands that exit non-zero, keeps the latest ones, and
+  cuts long messages in the middle so the final line (the exception, the assert) survives.
+
 ## [2.9.19] — 2026-11-04
 
 ### Changed

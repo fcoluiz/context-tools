@@ -632,7 +632,9 @@ function respostasDoVolatil(doc) {
 }
 
 /**
- * `--compactar`: a alternativa barata ao handoff, para quem prefere seguir na MESMA sessão.
+ * `--compactar`: para quem prefere seguir na MESMA sessão. NÃO é mais barato que dividir: o
+ * `/compact` paga uma chamada a mais que lê o contexto inteiro, e o resumo perde detalhe. Por
+ * isso, na oferta, ele é a última opção, e a sessão nova segue como a recomendada.
  *
  * O resumo da compactação perde justamente o que não dá para reconstruir: o caminho exato, a
  * mensagem de erro literal e a restrição que o usuário disse uma vez. Isto entrega a instrução de

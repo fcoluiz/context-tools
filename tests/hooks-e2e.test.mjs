@@ -1712,7 +1712,7 @@ test('E2E: "nao" mantém a sessão, cala o lembrete e não deixa nada pendente',
   } finally { s.limpar(); }
 });
 
-test('E2E: "compactar" entrega um /compact com restrição, erro exato e arquivos, e cala o lembrete', () => {
+test('E2E: "compactar" entrega um /compact com restrição, erro exato e arquivos, e cala o lembrete', async () => {
   // A alternativa barata ao handoff: seguir na mesma sessão, mas com a instrução de foco pronta.
   // O resumo da compactação perde justamente caminho, erro literal e restrição dita uma vez.
   const s = sessaoComOferta('sessao-compactar');
@@ -1737,6 +1737,19 @@ test('E2E: "compactar" entrega um /compact com restrição, erro exato e arquivo
     assert.equal(s.estado()['sessao-compactar'].resposta, 'compactar');
     assert.equal(s.lembrete().stdout.trim(), '', 'respondido: nada a lembrar');
     assert.equal(s.estado()._pendente, undefined, 'compactar não deixa handoff pendente');
+
+    // A oferta é UMA pergunta, sozinha, com a sessão nova recomendada (mais barata) e o compactar
+    // por último: compactar paga uma chamada que lê o contexto inteiro e não é mais barato.
+    const { makeT } = await import('../scripts/lib/i18n.mjs');
+    for (const lang of ['en', 'pt']) {
+      for (const chave of ['ses.oferta', 'ses.ofertaLembrete', 'ses.meioTurno']) {
+        const texto = makeT(lang)(chave, { arq: 'x', cmd: 'h', mult: '1.5' });
+        assert.match(texto, /ONE question|UMA pergunta/, `${lang} ${chave}: uma pergunta só`);
+        const iNova = texto.search(/Recommended|Recomendado/);
+        const iCompactar = texto.search(/"Compact here"|"Compactar aqui"/);
+        assert.ok(iNova >= 0 && iCompactar > iNova, `${lang} ${chave}: sessão nova antes de compactar`);
+      }
+    }
 
     // Codex: o /compact dele não recebe instrução, então o texto sai solto, para a mensagem seguinte.
     // O estado do Codex mora em `.codex/context-tools/`, e o handoff dele também.

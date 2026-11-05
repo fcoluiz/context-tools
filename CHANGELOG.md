@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.21] — 2026-11-05
+
 ### Changed
 
 - **`SubagentStart` stays silent when the project has no context maps.** A controlled run (Sonnet,

@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.9.20] — 2026-11-05
+
 ### Added
 
 - **A ready `/compact` that keeps what summaries lose.** `handoff.mjs --compactar` prints a

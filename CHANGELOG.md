@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.11.1] — 2026-11-06
+
 ### Fixed
 
 - **The standalone Claude install now brings the skill.** `install.mjs` copied only scripts and hooks,

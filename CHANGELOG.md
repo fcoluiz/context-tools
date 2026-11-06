@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.10.0] — 2026-11-06
+
 ### Added
 
 - **Band above the prompt (Claude Code).** On builds that load plugin mods, `hooks/band.json` adds a

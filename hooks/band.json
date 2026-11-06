@@ -1,0 +1,5 @@
+{
+  "description": "Band above the prompt (Claude Code mods): session cost, turns, context cost multiplier and test state.",
+  "hooks": {},
+  "modules": ["./band/register.tsx"]
+}

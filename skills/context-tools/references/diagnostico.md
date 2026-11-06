@@ -12,4 +12,7 @@ Parte da skill `context-tools`; lida sob demanda. Prefixo dos comandos: o mesmo 
 - Configuração opcional em `.claude/context-tools.json` ou `.codex/context-tools.json`:
   `sourceDirs`, `ignoreDirs` (pastas descartáveis, por nome), `extraRepos` (repos irmãos; derivado
   de um `*.code-workspace` quando existe, `[]` desliga), `coupling`, `lang`,
-  `claudeMdHint`/`codexMdHint`, `documentation.{enabled,autoInit,captureHint,root}`, `updateCheck`.
+  `claudeMdHint`/`codexMdHint`, `documentation.{enabled,autoInit,captureHint,root}`, `updateCheck`,
+  `leanRule` (`false` tira a regra mínima do SessionStart), `debt.markers`.
+- `ct.mjs status [--json]`: custo/contexto da sessão e se os testes valem — a faixa acima do prompt
+  do Claude Code mostra o mesmo.

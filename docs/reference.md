@@ -54,6 +54,9 @@ the same `grep`s repeated across sessions: knowledge derived, used, and thrown a
 | which uncovered files repeatedly change with mapped areas? | `map-suggestions.mjs [--json]` |
 | is this documentation still true? | `audit-docs.mjs [--strict]` |
 | **why is this code like this?** | `why.mjs <symbol>` |
+| what does my diff touch outside itself (changed/removed symbols used elsewhere)? | `changes.mjs [--base=<ref>] [--json]` |
+| what deferred work (TODO/FIXME/HACK/XXX) is there, how old, and with no trigger to come back? | `debt.mjs [--all] [--json]` |
+| what has this session cost, how heavy is the context, are the tests current? | `status.mjs [--json] [--session=<id>] [--host=claude|codex]` |
 | what does the next session need to know? | `handoff.mjs [--salvar]` |
 | I reviewed this map/doc — record it | `ack.mjs <map-or-doc.md>` |
 | how do I assemble a bounded evidence pack? | `context-pack.mjs <symbol-or-file> [--budget=N]` |
@@ -982,6 +985,7 @@ shows whether it is registered.
 | `SessionStart` | lists context maps and flags the stale ones; shows a visible notice when action is needed | ~175 tokens |
 | `SessionStart` | ensures the standard `ai-context` structure, points to its index, and announces first setup; while the index is the only document, says there is nothing to read yet instead of asking for it to be read | only when documentation is enabled |
 | `SessionStart` | one line with the project's test command, what `npm test` actually runs, and how to run a single test file when the runner tells; in a JavaScript project with dependencies declared and none installed, that the tests will fail until they are installed. In the outcome benchmark, agents spent 3–8 turns of a fix finding this out | ~30 tokens; silent when no test command is detectable or `verify.enabled` is false |
+| band above the prompt (Claude Code mods, `hooks/band.json`) | after each turn, runs `status.mjs --band` once, off the turn's critical path: session cost, last turn's cost, turns, context and cost multiplier, test state, and a warning when splitting pays off or the last test run failed | 0 tokens: drawn by the interface, never sent to the model |
 | `SessionStart` | says whether the last session split won, tied, or lost | only when there was a split |
 | `SessionStart` | tells the user (not the agent) a newer release is out, with the update command; reads a cache, and refreshes it with a detached `git ls-remote --tags` when older than 24 h | only when a newer release exists; again after 7 days if not updated |
 | `SubagentStart` | gives exploring subagents (Explore, Plan and general-purpose in Claude; default, explorer and worker in Codex) the `ct.mjs` shortcut and the mapped area names: the `SessionStart` note reaches only the main thread, and these are the agents that re-explore. Silent when the project has no context maps: measured with a control, no subagent used the shortcut alone. `"subagentContext": false` turns it off | ~115 tokens per such subagent (456 chars with 8 maps) |
@@ -1155,7 +1159,9 @@ documentation folders. To depart from convention, `.claude/context-tools.json`:
   "contextMaps": { "intentionallyUnmapped": ["scripts/legacy/"] },
   "claudeMdHint": false,
   "extraRepos": ["../AppConnection", "../shared"],
-  "verify": { "command": "npm run test:unit", "testPatterns": ["make check"] }
+  "verify": { "command": "npm run test:unit", "testPatterns": ["make check"] },
+  "leanRule": false,
+  "debt": { "markers": ["TODO", "FIXME", "HACK", "XXX", "NOTE"] }
 }
 ```
 
@@ -1166,7 +1172,9 @@ Names only, case-insensitive; entries with a path separator are ignored. Nothing
 project's throwaway folders are declared here.
 
 `verify.command` overrides the detected test command; `verify.testPatterns` adds commands that count
-as a test run; `verify.enabled: false` turns the `Stop` note off.
+as a test run; `verify.enabled: false` turns the `Stop` note off. `leanRule: false` drops the one-line
+lean rule from `SessionStart` (on by default, ~355 characters). `debt.markers` replaces the markers
+`ct debt` looks for.
 
 ### Operational documentation
 

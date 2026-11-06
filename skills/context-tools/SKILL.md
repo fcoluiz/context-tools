@@ -1,6 +1,6 @@
 ---
 name: context-tools
-description: Navegação de código e conhecimento do projeto sem re-explorar na mão. Use para achar onde um símbolo está definido, quem o usa, o que está em jogo antes de mudá-lo, o panorama do projeto, navegar arquivo grande (>1.500 linhas) ou ver o que muda junto. Também antes de commitar documentação, ao revisar mapa/documento defasado, ou quando o usuário pedir para registrar algo "no contexto".
+description: Navegação de código e conhecimento do projeto sem re-explorar na mão. Use para achar onde um símbolo está definido, quem o usa, o que está em jogo antes de mudá-lo, o panorama do projeto, navegar arquivo grande (>1.500 linhas) ou ver o que muda junto. Também para revisar um diff ou auditar o projeto, antes de commitar documentação, com mapa defasado, ou para registrar algo "no contexto".
 ---
 
 # Ferramentas de contexto
@@ -13,8 +13,7 @@ valendo. A raiz vem do agente, do cwd ou do repositório acima; `--root=<dir>` f
 
 ⚠️ **Sempre `node` + prefixo completo.** As tabelas abaixo e os avisos dos hooks abreviam para
 `ct.mjs …`/`symbols.mjs …`; ao rodar, escreva `node "<prefixo>/ct.mjs" …`. Nunca execute um `.mjs`
-direto: no PowerShell/cmd do Windows isso não roda o script — abre a janela "Selecione um
-aplicativo para abrir este arquivo .mjs" e trava a tela do usuário.
+direto: no Windows isso abre a janela "Selecione um aplicativo" e trava a tela do usuário.
 
 Tudo é **gerado na hora** (nunca defasa) e **falha visível**: sem resposta, diz e manda para
 `rg`/`grep` — siga o conselho em vez de insistir. Variável local, propriedade aninhada e coluna fora
@@ -70,7 +69,7 @@ sugere a frase quando a sessão leu código sem cobertura (`"captureHint": false
 
 Confira as fontes citadas antes de registrar e nunca copie hashes à mão. O passo a passo (`ack`,
 `explain`, a fila local do Codex, `tracked-edit` e os metadados de documento) está em
-`references/revisao.md`, ao lado deste arquivo: leia antes de registrar uma revisão.
+`references/revisao.md`: leia antes de registrar uma revisão.
 
 ## Antes de commitar documentação
 
@@ -86,7 +85,12 @@ com `find`/`outline`. Status ("não commitado") vira mentira em semanas: se regi
 Para seguir na mesma sessão em vez de abrir outra: `ct.mjs handoff --compactar` e mostre ao usuário
 o que ele imprimir. Quem digita `/compact` é o usuário; no Codex, o texto vai na mensagem seguinte.
 
+## Revisar código ou auditar o projeto
+
+Leia antes `references/revisao-codigo.md`: começa por `ct.mjs changes` (quem usa, fora do diff, o que
+mudou) e fixa o formato do relatório. Dívida adiada (TODO/FIXME/HACK): `ct.mjs debt`.
+
 ## Diagnóstico e configuração
 
 `health`, `providers`, `drift`, métricas e as chaves de `context-tools.json`: leia
-`references/diagnostico.md` (ao lado deste arquivo) quando o pedido for sobre isso.
+`references/diagnostico.md` quando o pedido for sobre isso.

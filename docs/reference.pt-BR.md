@@ -55,6 +55,9 @@ O custo não é ler o arquivo. É **procurar onde a coisa está**, sessão após
 | o que muda junto com este arquivo? | `coupling.mjs <arquivo>` |
 | esta documentação ainda é verdade? | `audit-docs.mjs [--strict]` |
 | **por que este código é assim?** | `why.mjs <símbolo>` |
+| o que meu diff mexe fora dele (símbolos mudados/removidos usados em outro lugar)? | `changes.mjs [--base=<ref>] [--json]` |
+| que trabalho adiado (TODO/FIXME/HACK/XXX) existe, há quanto tempo, e sem gatilho para voltar? | `debt.mjs [--all] [--json]` |
+| quanto esta sessão já custou, quanto pesa o contexto, os testes valem? | `status.mjs [--json] [--session=<id>] [--host=claude|codex]` |
 | o que a próxima sessão precisa saber? | `handoff.mjs [--salvar]` |
 | revisei este mapa/documento — registrar | `ack.mjs <mapa-ou-doc.md>` |
 | como montar um pacote de evidências limitado? | `context-pack.mjs <símbolo-ou-arquivo> [--budget=N]` |
@@ -970,6 +973,7 @@ registrado.
 | `SessionStart` | lista mapas de contexto e marca os defasados; mostra aviso visível quando há ação necessária | ~175 tokens |
 | `SessionStart` | garante a estrutura padrão do `ai-context`, aponta o índice e avisa a primeira configuração; enquanto o índice for o único documento, diz que ainda não há o que ler em vez de mandar lê-lo | só quando a documentação está habilitada |
 | `SessionStart` | uma linha com o comando de teste do projeto, o que o `npm test` roda de fato e como rodar um arquivo de teste só, quando o runner diz; num projeto JavaScript com dependências declaradas e nenhuma instalada, que os testes vão falhar até instalá-las. No benchmark de resultado, os agentes gastavam de 3 a 8 turnos de uma correção descobrindo isso | ~30 tokens; calado quando não há comando detectável ou `verify.enabled` é falso |
+| faixa acima do prompt (mods do Claude Code, `hooks/band.json`) | ao fim de cada turno, roda `status.mjs --band` uma vez, fora do caminho do turno: custo da sessão, custo do último turno, turnos, contexto e multiplicador de custo, estado dos testes, e um alerta quando dividir compensa ou o último teste falhou | 0 tokens: desenhada pela interface, nunca vai ao modelo |
 | `SessionStart` | diz se a última divisão de sessão ganhou, empatou ou perdeu | só quando houve divisão |
 | `SessionStart` | avisa o usuário (não o agente) que há versão nova, com o comando de atualização; lê um cache e o renova com um `git ls-remote --tags` destacado quando tem mais de 24 h | só quando há versão nova; de novo após 7 dias sem atualizar |
 | `SubagentStart` | dá aos subagentes que exploram (Explore, Plan e general-purpose no Claude; default, explorer e worker no Codex) o atalho do `ct.mjs` e os nomes das áreas mapeadas: o aviso do `SessionStart` só chega à thread principal, e são esses agentes que re-exploram. Calado quando o projeto não tem mapas de contexto: medido com controle, nenhum subagente usou o atalho sozinho. `"subagentContext": false` desliga | ~115 tokens por subagente desses (456 caracteres com 8 mapas) |
@@ -1135,7 +1139,9 @@ Para fugir da convenção, `.claude/context-tools.json`:
   "contextMaps": { "intentionallyUnmapped": ["scripts/legacy/"] },
   "claudeMdHint": false,
   "extraRepos": ["../AppConnection", "../shared"],
-  "verify": { "command": "npm run test:unit", "testPatterns": ["make check"] }
+  "verify": { "command": "npm run test:unit", "testPatterns": ["make check"] },
+  "leanRule": false,
+  "debt": { "markers": ["TODO", "FIXME", "HACK", "XXX", "NOTE"] }
 }
 ```
 
@@ -1146,7 +1152,9 @@ sugestão de sessões só de leitura. Só nomes, sem diferenciar maiúsculas; en
 caminho são ignoradas. Nada é adivinhado: as pastas descartáveis do projeto são declaradas aqui.
 
 `verify.command` substitui o comando de teste detectado; `verify.testPatterns` acrescenta comandos que
-contam como teste; `verify.enabled: false` desliga o aviso do `Stop`.
+contam como teste; `verify.enabled: false` desliga o aviso do `Stop`. `leanRule: false` tira do
+`SessionStart` a linha da regra mínima (ligada por padrão, ~355 caracteres). `debt.markers` troca os
+marcadores que o `ct debt` procura.
 
 ### Documentação operacional
 

@@ -45,6 +45,9 @@ The individual scripts keep working exactly as before.
 | how do I navigate this huge file? | `ct outline <file> [filter]` |
 | what changes together with this file? | `ct coupling <file>` |
 | why is this code like this? | `ct why <symbol>` |
+| what does my diff touch outside itself? | `ct changes [--base=<ref>]` |
+| what did we leave for later, and how long ago? | `ct debt [--all] [--json]` |
+| what has this session cost, and are the tests current? | `ct status [--json]` |
 | which tests cover this file, and how do I run them? | `ct verify <file> [<file>…]` |
 | give me a bounded evidence pack for a symbol or file | `ct pack <symbol-or-file> [--budget=N]` |
 | is this documentation still true? | `ct check [--strict]` |
@@ -53,6 +56,12 @@ The individual scripts keep working exactly as before.
 | compact this session without losing the essentials | `ct handoff --compactar` |
 | how healthy is the local setup? | `ct health [--days=30] [--audit] [--json]` |
 | the same as versioned JSON, for CI or a dashboard | `ct snapshot [--days=30] [--sessions=20]` |
+
+On Claude Code builds that load plugin mods, a **band above the prompt** shows the session cost, the
+last turn's cost, turns, the context with the per-message cost multiplier it implies (and when
+splitting pays off), and whether tests ran after the last code edit; Codex gets the same from
+`ct status`. A short **lean rule** at session start asks for the least code that solves the task,
+never at the cost of validation, error handling or security (`"leanRule": false` turns it off).
 
 The agent does not need to remember any of this. **Hooks** bring the tools in on their own: before a
 `grep` for a symbol the index answers first, a session starts with a short list of the context maps

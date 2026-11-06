@@ -38,7 +38,7 @@ export const VERBS = Object.freeze({
   debt: { script: 'debt.mjs', en: 'deferred work (TODO/FIXME/HACK) by age', pt: 'trabalho adiado (TODO/FIXME/HACK) por idade' },
   status: { script: 'status.mjs', en: 'session cost, context and test state', pt: 'custo da sessão, contexto e estado dos testes' },
   verify: { script: 'verify.mjs', en: 'related tests and test command', pt: 'testes relacionados e comando' },
-  docs: { script: 'context-docs.mjs', en: 'ai-context: init, create, status, audit', pt: 'ai-context: init, create, status, audit' },
+  docs: { script: 'context-docs.mjs', en: 'ai-context: init, create, status, audit, search', pt: 'ai-context: init, create, status, audit, search' },
   ack: { script: 'ack.mjs', en: 'record a reviewed map/doc', pt: 'registrar revisão de mapa/documento' },
   check: { script: 'audit-docs.mjs', en: 'rotten pointers and claims in docs', pt: 'ponteiros e alegações podres na doc' },
   health: { script: 'health.mjs', en: 'local health, freshness and usage', pt: 'saúde local, atualidade e uso' },

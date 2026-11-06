@@ -38,7 +38,7 @@ test('instalação standalone registra o grep do Bash com filtro if, sem apagar 
     assert.deepEqual(pre.map((g) => g.matcher).sort(), ['Bash', 'Edit|Write|MultiEdit|NotebookEdit', 'Grep']);
     assert.equal(pre.find((g) => g.matcher.startsWith('Edit')).hooks.length, 1, 'a trava de edição da dupla também é idempotente');
     const bash = pre.find((g) => g.matcher === 'Bash');
-    assert.deepEqual(bash.hooks.map((h) => h.if).sort(), ['Bash(grep *)', 'Bash(rg *)']);
+    assert.deepEqual(bash.hooks.map((h) => h.if).sort(), ['Bash(cat *)', 'Bash(grep *)', 'Bash(head *)', 'Bash(nl *)', 'Bash(rg *)', 'Bash(sed -n *)']);
     assert.equal(pre.find((g) => g.matcher === 'Grep').hooks.length, 1);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });

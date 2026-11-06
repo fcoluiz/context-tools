@@ -38,6 +38,7 @@ The individual scripts keep working exactly as before.
 | question | verb |
 |---|---|
 | where is X defined? | `ct find <name> [<name>…]` |
+| …and show me its code right away | `ct find <name> --body[=N]` |
 | who uses X, and from which function? | `ct refs <name> [--strings]` |
 | where on screen is "Customer code", and what code reads it? (Delphi) | `ct ui <text on screen>` |
 | what is at stake before I change X? | `ct impact <symbol-or-file>` |
@@ -47,20 +48,23 @@ The individual scripts keep working exactly as before.
 | why is this code like this? | `ct why <symbol>` |
 | what does my diff touch outside itself? | `ct changes [--base=<ref>]` |
 | what did we leave for later, and how long ago? | `ct debt [--all] [--json]` |
-| what has this session cost, and are the tests current? | `ct status [--json]` |
+| what has this session cost, are the tests current, and when does my usage limit run out? | `ct status [--json]` |
 | which tests cover this file, and how do I run them? | `ct verify <file> [<file>…]` |
 | give me a bounded evidence pack for a symbol or file | `ct pack <symbol-or-file> [--budget=N]` |
 | is this documentation still true? | `ct check [--strict]` |
 | I reviewed this map/doc — record it | `ct ack <map-or-doc.md>` |
+| which `ai-context/` document covers this? | `ct docs search <term>` |
 | what does the next session need to know? | `ct handoff [--salvar]` |
 | compact this session without losing the essentials | `ct handoff --compactar` |
 | how healthy is the local setup? | `ct health [--days=30] [--audit] [--json]` |
+| what did each hook do in this session, and why was it quiet? | `ct health --session [--json]` |
 | the same as versioned JSON, for CI or a dashboard | `ct snapshot [--days=30] [--sessions=20]` |
 
 On Claude Code builds that load plugin mods, a **band above the prompt** shows the session cost, the
 last turn's cost, turns, the context with the per-message cost multiplier it implies (and when
-splitting pays off), and whether tests ran after the last code edit; Codex gets the same from
-`ct status`. A short **lean rule** at session start asks for the least code that solves the task,
+splitting pays off), whether tests ran after the last code edit, and, once half of a usage-limit
+window is gone, when it runs out at the current pace if that comes before it resets; Codex gets the
+same from `ct status`. A short **lean rule** at session start asks for the least code that solves the task,
 never at the cost of validation, error handling or security (`"leanRule": false` turns it off).
 
 The agent does not need to remember any of this. **Hooks** bring the tools in on their own: before a

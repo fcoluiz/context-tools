@@ -3,6 +3,7 @@
 
 import { resolveRoot, isMain, loadConfig, sanitizeModelText, runtimeHost } from './lib/roots.mjs';
 import { MAX_EVENTS, readMetrics } from './lib/telemetry.mjs';
+import { detectLang } from './lib/i18n.mjs';
 import { contextMapsStopReport, sessionBaselineDiagnostics, currentSessionId } from './context-maps.mjs';
 import { sessionWriteJournalDiagnostics } from './lib/session-write-journal.mjs';
 import { reviewQueueDiagnostics } from './lib/auto-review-state.mjs';
@@ -406,11 +407,116 @@ function printHuman(report, portuguese) {
   for (const note of report.notes) console.log(`- ${note}`);
 }
 
+// ── health --session: o que os hooks fizeram NESTA conversa ──────────────────────────────────
+// Responde "por que o hook não avisou?": cada evento registrado com a sessão (lib/telemetry), o
+// que foi dito ao agente e quanto, e o motivo de cada silêncio que o hook registra. Sem caminho,
+// prompt ou comando: a saída --json serve de pacote para relatar um problema.
+
+/** Por que um resultado do PreToolUse calou ou falou, em palavras. */
+const PRETOOL_MOTIVO = {
+  hit: ['respondeu com a definição antes da busca', 'answered with the definition before the search'],
+  pack: ['respondeu com um pacote de evidências', 'answered with an evidence pack'],
+  miss: ['calou: o índice não tem definição com esse nome', 'quiet: the index has no definition by that name'],
+  ambiguous: ['calou: acertos demais, a busca responde melhor', 'quiet: too many hits, the search answers better'],
+  'already-answered': ['calou: já respondeu esse padrão nesta sessão', 'quiet: already answered that pattern this session'],
+  'qualified-hint': ['avisou das chamadas sem o prefixo', 'flagged calls written without the prefix'],
+  'qualified-none': ['calou: nenhuma chamada sem o prefixo', 'quiet: no call without the prefix'],
+  reread: ['avisou de releitura sem mudança', 'flagged a re-read of an unchanged file'],
+};
+
+function latestSession(events) {
+  for (let i = events.length - 1; i >= 0; i--) if (typeof events[i]?.session === 'string') return events[i].session;
+  return null;
+}
+
+export function buildSessionReport(events, sessionId) {
+  const sid = sessionId || latestSession(events);
+  const mine = sid ? events.filter((e) => e?.session === sid && Number.isFinite(e.at)).sort((a, b) => a.at - b.at) : [];
+  const hooks = {};
+  for (const e of mine) {
+    if (e.type === 'hook-output') continue;
+    const key = e.mode ? `${e.type} ${e.mode}` : e.type;
+    const h = hooks[key] ||= { runs: 0, durations: [], outcomes: {} };
+    h.runs++;
+    if (Number.isFinite(e.durationMs)) h.durations.push(e.durationMs);
+    if (typeof e.outcome === 'string') h.outcomes[e.outcome] = (h.outcomes[e.outcome] || 0) + 1;
+  }
+  const outputs = { emitted: 0, deduped: 0, chars: 0, byScript: {} };
+  for (const e of mine.filter((x) => x.type === 'hook-output')) {
+    const chars = Number.isFinite(e.chars) ? e.chars : 0;
+    const s = outputs.byScript[`${e.script || 'unknown'} ${e.event || ''}`.trim()] ||= { emitted: 0, deduped: 0, chars: 0 };
+    if (e.outcome === 'deduped') { outputs.deduped++; s.deduped++; } else { outputs.emitted++; s.emitted++; }
+    outputs.chars += chars;
+    s.chars += chars;
+  }
+  return {
+    session: sid,
+    events: mine.length,
+    from: mine[0]?.at ?? null,
+    to: mine.at(-1)?.at ?? null,
+    hooks: Object.fromEntries(Object.entries(hooks).map(([k, h]) => [k, {
+      runs: h.runs, outcomes: h.outcomes, p50Ms: percentile(h.durations, 0.5), p95Ms: percentile(h.durations, 0.95),
+    }])),
+    outputs: { ...outputs, estimatedTokens: Math.round(outputs.chars / 4) },
+    timeline: mine.slice(-40).map((e) => ({
+      at: e.at,
+      type: e.type,
+      mode: e.mode ?? e.event ?? null,
+      outcome: e.outcome ?? null,
+      ...(Number.isFinite(e.chars) ? { chars: e.chars } : {}),
+      ...(Number.isFinite(e.durationMs) ? { durationMs: e.durationMs } : {}),
+    })),
+  };
+}
+
+function printSession(r, pt) {
+  const say = (a, b) => (pt ? a : b);
+  if (!r.session || !r.events) {
+    console.log(say('Nenhum evento registrado para esta sessão. As métricas passaram a guardar a sessão na 2.11.0; rode de novo depois de alguns turnos.',
+      'No events recorded for this session. Metrics started keeping the session in 2.11.0; run again after a few turns.'));
+    return;
+  }
+  const hora = (at) => new Date(at).toTimeString().slice(0, 8);
+  console.log(say(`Sessão ${r.session.length > 12 ? `${r.session.slice(0, 12)}…` : r.session}: ${r.events} evento(s), ${hora(r.from)}–${hora(r.to)}.`,
+    `Session ${r.session.length > 12 ? `${r.session.slice(0, 12)}…` : r.session}: ${r.events} event(s), ${hora(r.from)}–${hora(r.to)}.`));
+  const o = r.outputs;
+  console.log(say(`Dito ao agente: ${o.emitted} aviso(s), ${o.chars} caractere(s) (~${o.estimatedTokens} tokens); ${o.deduped} repetido(s) calado(s) pela deduplicação.`,
+    `Told to the agent: ${o.emitted} note(s), ${o.chars} char(s) (~${o.estimatedTokens} tokens); ${o.deduped} repeat(s) silenced by dedupe.`));
+  for (const [k, s] of Object.entries(o.byScript).sort((a, b) => b[1].chars - a[1].chars)) {
+    console.log(`  ${k}: ${s.emitted}× · ${s.chars} ${say('caracteres', 'chars')}${s.deduped ? ` · ${s.deduped} ${say('calado(s)', 'silenced')}` : ''}`);
+  }
+  console.log(say('Hooks que rodaram:', 'Hooks that ran:'));
+  for (const [k, h] of Object.entries(r.hooks)) {
+    const tempo = h.p50Ms != null ? ` · p50 ${h.p50Ms} ms${h.p95Ms !== h.p50Ms ? ` / p95 ${h.p95Ms} ms` : ''}` : '';
+    console.log(`  ${k}: ${h.runs}×${tempo}`);
+    for (const [out, n] of Object.entries(h.outcomes)) {
+      const motivo = k.startsWith('pretool') && PRETOOL_MOTIVO[out] ? ` — ${PRETOOL_MOTIVO[out][pt ? 0 : 1]}` : '';
+      console.log(`    ${out} ${n}${motivo}`);
+    }
+  }
+  console.log(say('Últimos eventos:', 'Latest events:'));
+  for (const e of r.timeline.slice(-15)) {
+    const extra = [e.outcome, e.chars != null ? `${e.chars} ch` : null, e.durationMs != null ? `${e.durationMs} ms` : null].filter(Boolean).join(' · ');
+    console.log(`  ${hora(e.at)} ${e.type}${e.mode ? ` ${e.mode}` : ''}${extra ? ` — ${extra}` : ''}`);
+  }
+  console.log(say(`Limites: só aparece o que o hook registra; as métricas guardam os últimos ${MAX_EVENTS} eventos. \`--json\` não tem caminho, prompt nem comando, e pode ir num relato de problema.`,
+    `Limits: only what a hook records shows up; metrics keep the last ${MAX_EVENTS} events. \`--json\` has no path, prompt or command, and can go in a bug report.`));
+}
+
 function main() {
   const root = resolveRoot();
   const args = process.argv.slice(2);
-  const unsupported = args.filter((value) => !/^--days=/.test(value) && !['--audit', '--json'].includes(value));
+  const unsupported = args.filter((value) => !/^--days=/.test(value) && !/^--session(=.+)?$/.test(value) && !['--audit', '--json'].includes(value));
   if (unsupported.length) throw new Error(`unknown option(s): ${unsupported.join(', ')}`);
+  const sessionArg = args.find((value) => /^--session(=|$)/.test(value));
+  if (sessionArg) {
+    const asked = sessionArg.includes('=') ? sessionArg.slice('--session='.length) : currentSessionId();
+    const report = buildSessionReport(readMetrics(root).events, asked);
+    const pt = detectLang(loadConfig(root)) === 'pt';
+    if (args.includes('--json')) console.log(JSON.stringify(report, null, 2));
+    else printSession(report, pt);
+    return;
+  }
   const daysArg = args.find((value) => value.startsWith('--days='));
   const days = daysArg ? Number(daysArg.slice('--days='.length)) : 30;
   if (!Number.isInteger(days) || days < 1 || days > 365) throw new Error('--days must be an integer from 1 to 365');

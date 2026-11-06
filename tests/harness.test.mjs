@@ -253,7 +253,8 @@ test('o hook PreToolUse não importa módulos pesados no topo', async () => {
   const estaticos = (arquivo) => [...readFileSync(localPath(`../scripts/${arquivo}`, import.meta.url), 'utf8')
     .matchAll(/^import\s[^'"]*['"]([^'"]+)['"]/gm)].map((m) => m[1]).filter((m) => !m.startsWith('node:'));
   assert.deepEqual(estaticos('pre-tool.mjs').sort(), ['./lib/hook-input.mjs', './lib/hook-output.mjs', './lib/roots.mjs']);
-  assert.deepEqual(estaticos('lib/hook-output.mjs'), ['./roots.mjs']);
+  // telemetry (77 linhas de state-store, só node:) registra cada saída para o `health --session`.
+  assert.deepEqual(estaticos('lib/hook-output.mjs').sort(), ['./roots.mjs', './telemetry.mjs']);
   assert.deepEqual(estaticos('lib/hook-input.mjs'), []);
 });
 

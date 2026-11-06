@@ -48,6 +48,8 @@ async function refresh($: EngineInterface) {
     if (typeof lastUsd === 'number' && usd >= lastUsd) argv.push(`--last-usd=${usd - lastUsd}`)
     lastUsd = usd
   }
+  // Janelas de limite da conta (vazio fora de assinatura): o status.mjs prevê se acabam antes de renovar.
+  if (usage.rateLimits?.length) argv.push(`--limits=${JSON.stringify(usage.rateLimits)}`)
   const r = await $.process.run(argv, { cwd: root, timeoutMs: 8000 })
   if (r.exitCode !== 0) return
   band = JSON.parse(r.stdout.trim()) as Band

@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 const { resolveRoot, loadConfig, isMain, sanitizeModelText } = await import('./lib/roots.mjs');
 const { makeT, detectLang } = await import('./lib/i18n.mjs');
 const { recordMetric } = await import('./lib/telemetry.mjs');
-const { buildIndex, reportOne } = await import('./symbols.mjs');
+const { buildIndex, reportOne, corposDefinicao } = await import('./symbols.mjs');
 const { findReferences, formatReferences } = await import('./refs.mjs');
 const { buildImpact, formatImpact } = await import('./impact.mjs');
 const { buildOverview, formatOverview } = await import('./overview.mjs');
@@ -42,7 +42,7 @@ export const TOOLS = [
   {
     name: 'find_symbol',
     description: 'Where a function, class, method, type or SQL table is defined in this project: file and line range of the definition, not every textual mention. Use before grep.',
-    inputSchema: { type: 'object', properties: { names: { type: 'array', items: { type: 'string' }, description: 'One or more names' }, all: { type: 'boolean', description: 'Include partial matches' } }, required: ['names'] },
+    inputSchema: { type: 'object', properties: { names: { type: 'array', items: { type: 'string' }, description: 'One or more names' }, all: { type: 'boolean', description: 'Include partial matches' }, body: { type: 'boolean', description: 'With the code' } }, required: ['names'] },
     annotations: leitura,
   },
   {
@@ -97,7 +97,12 @@ export function callTool(name, args = {}, root = projectRoot()) {
       if (!nomes.length) return { text: 'names is required', isError: true };
       const index = buildIndex(root, cfg, {});
       if (!index.fileCount) return { text: t('sym.none', { root }) };
-      const blocos = nomes.map((q) => reportOne(q, index, { wantAll: Boolean(arg(args, 'all')), ms: null, t }).join('\n'));
+      const blocos = nomes.map((q) => {
+        const result = {};
+        const linhas = reportOne(q, index, { wantAll: Boolean(arg(args, 'all')), ms: null, t, result });
+        if (arg(args, 'body') && result.kind === 'symbol') linhas.push(...corposDefinicao(q, index, root, t));
+        return linhas.join('\n');
+      });
       return { text: blocos.join('\n\n') };
     }
     if (name === 'references') {

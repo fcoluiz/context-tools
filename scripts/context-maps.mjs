@@ -27,6 +27,7 @@ import { compareReviewedSources, fingerprintKey, fingerprintSourcesInRoot, loadF
 import { sessionWriteFiles } from './lib/session-write-journal.mjs';
 import { reviewFinding } from './lib/review-findings.mjs';
 import { readHookEvent } from './lib/hook-input.mjs';
+import { resetRereads } from './lib/reread.mjs';
 const t = makeT(detectLang(safe(() => loadConfig(resolveRoot()), {})));
 
 const GIT_TIMEOUT_MS = 5000;
@@ -780,6 +781,8 @@ function afterMapReview(m, files) {
 
 function runSessionStart() {
   const root = workspaceRoot();
+  // Compactar ou retomar tira as leituras do contexto: o aviso de releitura recomeça do zero.
+  safe(() => resetRereads(root, currentSessionId()), null);
   const recordedIssues = recordSessionBaseline(root);
   const codex = runtimeHost() === 'codex';
   const baselineIssues = codex ? [] : recordedIssues;

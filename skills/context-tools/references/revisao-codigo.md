@@ -17,7 +17,7 @@ arquivo de relatório sem pedido.
 
 1. Bug: entrada que leva a resultado errado, chamador fora do diff que quebra, erro engolido.
 2. Segurança: entrada sem validação na fronteira, segredo no código, caminho ou SQL montado com texto
-   do usuário.
+   do usuário (pedido de segurança: `references/seguranca.md`; interface: `references/frontend.md`).
 3. Perda de dado e carga real: lote grande, laço com consulta dentro, arquivo lido inteiro.
 4. Lógica com ramo, laço, parser, dinheiro ou segurança sem teste.
 5. O que dá para cortar: código que não precisa existir, abstração com um uso só, dependência que a
@@ -32,4 +32,5 @@ arquivo de relatório sem pedido.
   acontece se ficar.
 - Na auditoria, ordene por prioridade e diga o que corrigir primeiro.
 - Feche com `Veredito:` (pode seguir, seguir depois de corrigir, ou não seguir) e `Não verificado:`
-  (o que não foi lido, uso dinâmico, carga que você supôs).
+  (o que não foi lido, uso dinâmico, carga que você supôs). Na auditoria, `Cobertura:` o que foi lido
+  e o que ficou de fora; "nada encontrado" só vale para o que foi lido.

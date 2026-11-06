@@ -39,6 +39,7 @@ caminho). Os scripts individuais continuam funcionando como antes.
 | pergunta | verbo |
 |---|---|
 | onde X está definido? | `ct find <nome> [<nome>…]` |
+| …e já me mostre o código | `ct find <nome> --body[=N]` |
 | quem usa X, e de qual função? | `ct refs <nome> [--strings]` |
 | onde fica na tela "Código do cliente", e que código o lê? (Delphi) | `ct ui <texto da tela>` |
 | o que está em jogo antes de mudar X? | `ct impact <símbolo-ou-arquivo>` |
@@ -48,20 +49,23 @@ caminho). Os scripts individuais continuam funcionando como antes.
 | por que este código é assim? | `ct why <símbolo>` |
 | o que meu diff mexe fora dele? | `ct changes [--base=<ref>]` |
 | o que deixamos para depois, e há quanto tempo? | `ct debt [--all] [--json]` |
-| quanto esta sessão já custou, e os testes valem? | `ct status [--json]` |
+| quanto esta sessão já custou, os testes valem, e quando o limite de uso acaba? | `ct status [--json]` |
 | que testes cobrem este arquivo, e como rodá-los? | `ct verify <arquivo> [<arquivo>…]` |
 | um pacote de evidências com orçamento para um símbolo ou arquivo | `ct pack <símbolo-ou-arquivo> [--budget=N]` |
 | esta documentação ainda é verdade? | `ct check [--strict]` |
 | revisei este mapa/documento — registrar | `ct ack <mapa-ou-doc.md>` |
+| qual documento do `ai-context/` fala disso? | `ct docs search <termo>` |
 | o que a próxima sessão precisa saber? | `ct handoff [--salvar]` |
 | compactar esta sessão sem perder o essencial | `ct handoff --compactar` |
 | como está a saúde da instalação local? | `ct health [--days=30] [--audit] [--json]` |
+| o que cada hook fez nesta sessão, e por que calou? | `ct health --session [--json]` |
 | o mesmo em JSON versionado, para CI ou painel | `ct snapshot [--days=30] [--sessions=20]` |
 
 Nas versões do Claude Code que carregam mods de plugin, uma **faixa acima do prompt** mostra o custo
 da sessão, o custo do último turno, os turnos, o contexto com o multiplicador de custo por mensagem
-que ele implica (e quando dividir compensa) e se os testes rodaram depois da última edição de código;
-o Codex vê o mesmo com `ct status`. Uma **regra mínima** curta no início da sessão pede o mínimo de
+que ele implica (e quando dividir compensa), se os testes rodaram depois da última edição de código
+e, passada a metade de uma janela do limite de uso, quando ela acaba no ritmo atual se isso vier
+antes de renovar; o Codex vê o mesmo com `ct status`. Uma **regra mínima** curta no início da sessão pede o mínimo de
 código que resolve, nunca à custa de validação, tratamento de erro ou segurança (`"leanRule": false`
 desliga).
 

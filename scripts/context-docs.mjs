@@ -16,6 +16,7 @@ import {
   documentationStatus,
   documentationStopReport,
   initializeDocumentation,
+  documentationEvidence,
 } from './lib/documentation.mjs';
 import { contextMapsPromptAudit, contextMapsStopReport } from './context-maps.mjs';
 import { readHookEvent } from './lib/hook-input.mjs';
@@ -159,6 +160,30 @@ async function main() {
   }
   if (action === 'status') {
     printResult(documentationStatus(root, cfg), json);
+    return;
+  }
+  if (action === 'search') {
+    // Primeira etapa da busca: uma linha por documento, para abrir só o certo. O texto inteiro
+    // fica no arquivo; ler o índice todo ou vários documentos para achar um custava mais contexto.
+    const query = process.argv.slice(2).filter((value) => !value.startsWith('--') && value !== 'search').join(' ').trim();
+    const pt = documentationStatus(root, cfg).language === 'pt';
+    if (!query) {
+      console.error(pt ? 'uso: docs search <termo>' : 'usage: docs search <term>');
+      process.exitCode = 1;
+      return;
+    }
+    const limit = Math.min(30, Math.max(1, Number.parseInt(arg('--limit', '10'), 10) || 10));
+    const results = documentationEvidence(root, query, cfg, { limit });
+    if (json) { console.log(JSON.stringify({ query, results }, null, 2)); return; }
+    if (!results.length) {
+      console.log(pt ? `Nenhum documento do ai-context fala de "${sanitizeModelText(query, 120)}".` : `No ai-context document mentions "${sanitizeModelText(query, 120)}".`);
+      return;
+    }
+    console.log(pt ? `📚 ${results.length} documento(s) para "${sanitizeModelText(query, 120)}" — abra só o que serve:` : `📚 ${results.length} document(s) for "${sanitizeModelText(query, 120)}" — open only the one you need:`);
+    for (const r of results) {
+      const revisto = r.freshness.startsWith('reviewed:') ? r.freshness.slice(9) : (pt ? 'sem revisão' : 'not reviewed');
+      console.log(`  ${sanitizeModelText(r.text, 260)} (${revisto})`);
+    }
     return;
   }
   if (action === 'audit') {

@@ -8,6 +8,7 @@
 //   symbols.mjs <nome>            → onde está definido (regex, case-insensitive)
 //   symbols.mjs <a> <b> <c>       → vários de uma vez: índice construído UMA vez só
 //   symbols.mjs <nome> --all      → inclui correspondências parciais
+//   symbols.mjs <nome> --body[=N] → também o CÓDIGO da definição exata (até N linhas, padrão 80)
 //   symbols.mjs --stats           → tamanho do índice e como ele foi obtido
 //   symbols.mjs ... --fresh       → ignora cache e reconstrói (escotilha, sempre disponível)
 //   symbols.mjs ... --root=<dir>  → força a raiz (senão: CLAUDE_PROJECT_DIR, cwd, ou o repo acima)
@@ -583,6 +584,39 @@ function reportOne(query, { defs, byFile, byFilePos, fileCount, repos }, { wantA
   return out;
 }
 
+/**
+ * Corpo das definições EXATAS de `query`: poupa o Read com offset que viria logo depois do find.
+ * Até 3 definições e `max` linhas cada; uma definição maior é cortada e diz onde continua.
+ * Chave de configuração e caso de teste só entram quando são tudo o que existe.
+ */
+function corposDefinicao(query, { defs }, root, t, max = BODY_DEFAULT_LINES) {
+  const nua = query.replace(QUALIFICADOR_RE, '').toLowerCase();
+  const exatos = [];
+  for (const [name, locs] of defs) if (name.toLowerCase() === nua) for (const l of locs) exatos.push({ name, ...l });
+  const principais = exatos.filter((h) => !/^(key|test) /.test(h.kind || ''));
+  const escolhidos = (principais.length ? principais : exatos).slice(0, BODY_MAX_DEFS);
+  const out = [];
+  for (const h of escolhidos) {
+    const texto = lerTexto(join(root, h.file));
+    if (texto === null) continue;
+    const linhas = texto.split('\n');
+    let fim = Math.min(Number.isInteger(h.end) && h.end >= h.line ? h.end : h.line, linhas.length);
+    // Parser sem fechamento real fecha no próximo símbolo: as linhas em branco do fim não são corpo.
+    while (fim > h.line && !linhas[fim - 1].trim()) fim--;
+    const ate = Math.min(fim, h.line + max - 1);
+    const largura = String(ate).length;
+    out.push('', t('sym.body', { file: sanitizeModelText(h.file, 180), from: h.line, to: fim }));
+    for (let n = h.line; n <= ate; n++) out.push(`${String(n).padStart(largura)}  ${linhas[n - 1].replace(/\r$/, '')}`);
+    if (ate < fim) out.push(t('sym.bodyCut', { shown: ate - h.line + 1, total: fim - h.line + 1, file: sanitizeModelText(h.file, 180), next: ate + 1 }));
+  }
+  if (exatos.length > escolhidos.length) out.push('', t('sym.bodyMore', { n: exatos.length - escolhidos.length }));
+  return out;
+}
+
+const BODY_DEFAULT_LINES = 80;
+const BODY_MAX_LINES = 400;
+const BODY_MAX_DEFS = 3;
+
 /** Como o índice foi obtido. Observável de propósito: numa ferramenta distribuída, o
  *  usuário precisa saber se está lendo disco ou cache para confiar (ou desconfiar). */
 function tierLabel(index, t) {
@@ -599,6 +633,8 @@ function main() {
   const wantAll = args.includes('--all');
   const fresh = args.includes('--fresh');
   const queries = args.filter((a) => !a.startsWith('--'));
+  const bodyArg = args.find((a) => a === '--body' || a.startsWith('--body='));
+  const bodyLines = bodyArg?.includes('=') ? Math.min(BODY_MAX_LINES, Math.max(1, Number.parseInt(bodyArg.slice(7), 10) || BODY_DEFAULT_LINES)) : BODY_DEFAULT_LINES;
 
   const t = makeT(detectLang(cfg));
 
@@ -640,7 +676,9 @@ function main() {
   const querySummary = { queryCount: queries.length, classifiedQueries: 0, symbolMatches: 0, fileMatches: 0, misses: 0 };
   const blocks = queries.map((q) => {
     const result = {};
-    const block = reportOne(q, index, { wantAll, ms: queries.length > 1 ? null : ms, t, result }).join('\n');
+    const linhasBloco = reportOne(q, index, { wantAll, ms: queries.length > 1 ? null : ms, t, result });
+    if (bodyArg && result.kind === 'symbol') linhasBloco.push(...corposDefinicao(q, index, root, t, bodyLines));
+    const block = linhasBloco.join('\n');
     if (result.kind === 'symbol') querySummary.symbolMatches++;
     else if (result.kind === 'file') querySummary.fileMatches++;
     else if (result.kind === 'miss') querySummary.misses++;
@@ -660,7 +698,7 @@ function main() {
 // `CACHE_TIER_MIN_FILES` é exportado só para o teste: ele precisa gerar arquivos suficientes
 // para cair no tier B, e copiar o número à mão criava segunda fonte de verdade — mudar o
 // limiar aqui deixaria o teste medindo outra coisa, calado.
-export { bareName, buildIndex, reportOne, mtimeGranularityIsFine, CACHE_TIER_MIN_FILES, escopoLabel, irmaosPorPrefixo, QUALIFICADOR_RE, comIntervalos };
+export { bareName, buildIndex, reportOne, mtimeGranularityIsFine, CACHE_TIER_MIN_FILES, escopoLabel, irmaosPorPrefixo, QUALIFICADOR_RE, comIntervalos, corposDefinicao };
 
 if (isMain(import.meta.url)) {
   const started = Date.now();

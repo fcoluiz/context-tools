@@ -47,6 +47,7 @@ O custo não é ler o arquivo. É **procurar onde a coisa está**, sessão após
 | pergunta | comando |
 |---|---|
 | onde X está definido? | `symbols.mjs <nome> [<nome>…]` |
+| …com o código da definição exata (até N linhas, padrão 80; no MCP, `body` do `find_symbol`) | `symbols.mjs <nome> --body[=N]` |
 | quem usa X, e de qual função? | `refs.mjs <nome> [--all] [--strings] [--json]` |
 | que controle de formulário mostra este texto, e que código o usa? (Delphi) | `ui.mjs <texto da tela> [--in=<formulário>] [--all] [--json]` |
 | como é este projeto? | `overview.mjs [--json] [--budget=N]` |
@@ -57,12 +58,13 @@ O custo não é ler o arquivo. É **procurar onde a coisa está**, sessão após
 | **por que este código é assim?** | `why.mjs <símbolo>` |
 | o que meu diff mexe fora dele (símbolos mudados/removidos usados em outro lugar)? | `changes.mjs [--base=<ref>] [--json]` |
 | que trabalho adiado (TODO/FIXME/HACK/XXX) existe, há quanto tempo, e sem gatilho para voltar? | `debt.mjs [--all] [--json]` |
-| quanto esta sessão já custou, quanto pesa o contexto, os testes valem? | `status.mjs [--json] [--session=<id>] [--host=claude|codex]` |
+| quanto esta sessão já custou, quanto pesa o contexto, os testes valem, quando o limite de uso acaba? | `status.mjs [--json] [--session=<id>] [--host=claude|codex]` |
 | o que a próxima sessão precisa saber? | `handoff.mjs [--salvar]` |
 | revisei este mapa/documento — registrar | `ack.mjs <mapa-ou-doc.md>` |
 | como montar um pacote de evidências limitado? | `context-pack.mjs <símbolo-ou-arquivo> [--budget=N]` |
 | quais provedores semânticos opcionais estão disponíveis? | `providers.mjs [--json] [--install-plan]` |
 | como está a saúde e o uso local do plugin? | `health.mjs [--days=30] [--audit] [--json]` |
+| o que cada hook fez nesta sessão, quanto disse ao agente e por que calou? | `health.mjs --session[=<id>] [--json]` |
 | o mesmo, mais sessões e inventário, em JSON versionado para CI ou painel | `snapshot-export.mjs [--days=30] [--sessions=20]` |
 | quanto custa o hook Bash do Codex? | `npm run benchmark:pretool -- --samples=5` |
 | quanto custa a checagem de prompt do Codex? | `npm run benchmark:prompt-audit -- --samples=7` |
@@ -961,6 +963,7 @@ registrado.
 
 | evento | o que faz | custo |
 |---|---|---|
+| `PreToolUse` (Bash) | uma leitura simples pelo shell (`cat`, `sed -n 'A,Bp'`, `head`, `nl -ba | sed -n`, `Get-Content`) do mesmo trecho de um arquivo que não mudou desde que foi lido nesta sessão ganha uma linha dizendo isso; a leitura roda. A ferramenta Read do Claude Code já faz isso sozinha, então vale sobretudo para o Codex. O SessionStart zera o registro da sessão (depois de compactar, reler é o certo) | só na leitura repetida |
 | `PreToolUse` (Grep / Bash) | responde antes do Grep do Claude, de um `grep`/`rg` digitado no Bash do Claude (filtro `if` do hook: sem custo nos outros comandos) ou de um `rg`/`grep` do Codex quando o padrão é um símbolo; anota os arquivos indicados para o `health.mjs` dizer se o agente os usou (Claude). Com padrão qualificado (`DateTimeUtils\.EnsureDateTime`, `util.cleanRegex`), lista as chamadas dentro do arquivo que define o nome escritas sem o prefixo, que essa busca não encontra — cada uma com o método que a contém. Quando um nome é definido em vários lugares, um pacote de evidências curto: as definições, uma linha com os arquivos que só o importam e uma linha de nomes parecidos — não as linhas que o Grep vai devolver em seguida. Um teste cujo nome só contém o termo não é resposta | só quando responde |
 | `PostToolUse` (Grep / Bash) | depois de um Grep, ou de um `grep`/`rg`, que devolveu número de linha: diz em qual função, método ou classe cai cada linha encontrada, com o intervalo dela e, quando cabe, a linha da declaração (os parâmetros), a partir do outline dos arquivos que apareceram (sem índice). Código de produção primeiro, testes no fim; até 20 arquivos, e os que ficam de fora são nomeados como não anotados — nunca corta em silêncio. O Grep mostra `356: if (_maxDepth …` sem o método em volta; no benchmark de resultado, um agente respondeu só com isso e nomeou o método errado | só quando algum arquivo encontrado tem parser; no máximo 2.000 caracteres |
 | `PostToolUse` (Claude, qualquer ferramenta) | quando a última requisição cruzou 200k de contexto e a sessão ainda não foi avisada, dá o aviso do `Stop` no meio do turno (mesmo handoff, mesmo estado) e pede ao agente que pare a lista no passo atual e pergunte ao usuário | **uma vez por sessão**; no resto, lê um arquivo de estado pequeno e a cauda do transcript e sai |
@@ -973,7 +976,7 @@ registrado.
 | `SessionStart` | lista mapas de contexto e marca os defasados; mostra aviso visível quando há ação necessária | ~175 tokens |
 | `SessionStart` | garante a estrutura padrão do `ai-context`, aponta o índice e avisa a primeira configuração; enquanto o índice for o único documento, diz que ainda não há o que ler em vez de mandar lê-lo | só quando a documentação está habilitada |
 | `SessionStart` | uma linha com o comando de teste do projeto, o que o `npm test` roda de fato e como rodar um arquivo de teste só, quando o runner diz; num projeto JavaScript com dependências declaradas e nenhuma instalada, que os testes vão falhar até instalá-las. No benchmark de resultado, os agentes gastavam de 3 a 8 turnos de uma correção descobrindo isso | ~30 tokens; calado quando não há comando detectável ou `verify.enabled` é falso |
-| faixa acima do prompt (mods do Claude Code, `modules` em `hooks/hooks.json`) | ao fim de cada turno, roda `status.mjs --band` uma vez, fora do caminho do turno: custo da sessão, custo do último turno, turnos, contexto e multiplicador de custo, estado dos testes, e um alerta quando dividir compensa ou o último teste falhou | 0 tokens: desenhada pela interface, nunca vai ao modelo |
+| faixa acima do prompt (mods do Claude Code, `modules` em `hooks/hooks.json`) | ao fim de cada turno, roda `status.mjs --band` uma vez, fora do caminho do turno: custo da sessão, custo do último turno, turnos, contexto e multiplicador de custo, estado dos testes, as janelas do limite de uso acima de 50% (de `$.session.usage()`), e um alerta quando dividir compensa, o último teste falhou ou uma janela acaba no ritmo atual antes de renovar | 0 tokens: desenhada pela interface, nunca vai ao modelo |
 | `SessionStart` | diz se a última divisão de sessão ganhou, empatou ou perdeu | só quando houve divisão |
 | `SessionStart` | avisa o usuário (não o agente) que há versão nova, com o comando de atualização; lê um cache e o renova com um `git ls-remote --tags` destacado quando tem mais de 24 h | só quando há versão nova; de novo após 7 dias sem atualizar |
 | `SubagentStart` | dá aos subagentes que exploram (Explore, Plan e general-purpose no Claude; default, explorer e worker no Codex) o atalho do `ct.mjs` e os nomes das áreas mapeadas: o aviso do `SessionStart` só chega à thread principal, e são esses agentes que re-exploram. Calado quando o projeto não tem mapas de contexto: medido com controle, nenhum subagente usou o atalho sozinho. `"subagentContext": false` desliga | ~115 tokens por subagente desses (456 caracteres com 8 mapas) |
@@ -1210,6 +1213,7 @@ context-docs init
 context-docs create --type feature --name credito-cliente
 context-docs status
 context-docs audit
+context-docs search <termo>   # uma linha por documento: caminho, título, tipo, data de revisão
 ```
 
 `init` e `create` criam somente estrutura ou template. O agente deve investigar e preencher o

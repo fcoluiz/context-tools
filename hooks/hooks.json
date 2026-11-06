@@ -116,6 +116,26 @@
             "type": "command",
             "if": "Bash(rg *)",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-tool.mjs\""
+          },
+          {
+            "type": "command",
+            "if": "Bash(cat *)",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-tool.mjs\""
+          },
+          {
+            "type": "command",
+            "if": "Bash(sed -n *)",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-tool.mjs\""
+          },
+          {
+            "type": "command",
+            "if": "Bash(head *)",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-tool.mjs\""
+          },
+          {
+            "type": "command",
+            "if": "Bash(nl *)",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-tool.mjs\""
           }
         ]
       }

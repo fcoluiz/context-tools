@@ -182,12 +182,16 @@ test('status: sem transcript não inventa nada', () => {
   } finally { rm(root); }
 });
 
-test('faixa: módulo declarado num arquivo de hooks próprio, sem repetir hooks/hooks.json', () => {
+test('faixa: módulo no hooks/hooks.json, e o plugin.json sem "types" nem "hooks"', () => {
+  // Medido: um Claude Code anterior a ~2.1.78 descarta TODOS os hooks do plugin quando o
+  // plugin.json tem "types"; a chave "modules" no hooks.json ele ignora sem perder os hooks.
   const manifest = JSON.parse(readFileSync(localPath('../.claude-plugin/plugin.json', import.meta.url), 'utf8'));
-  assert.equal(manifest.hooks, './hooks/band.json');
-  const band = JSON.parse(readFileSync(localPath('../hooks/band.json', import.meta.url), 'utf8'));
-  assert.deepEqual(band.hooks, {});
-  assert.deepEqual(band.modules, ['./band/register.tsx']);
+  assert.equal(manifest.types, undefined, '"types" no plugin.json desliga os hooks em Claude Code antigo');
+  assert.equal(manifest.hooks, undefined);
+  const hooks = JSON.parse(readFileSync(localPath('../hooks/hooks.json', import.meta.url), 'utf8'));
+  assert.deepEqual(hooks.modules, ['./band/register.tsx']);
   const mod = readFileSync(localPath('../hooks/band/register.tsx', import.meta.url), 'utf8');
   assert.match(mod, /scripts\/status\.mjs`, '--band'/);
+  const codigo = mod.replace(/^\s*\/\/.*$/gm, '');
+  assert.doesNotMatch(codigo, /\$\.state\.|\batom\(/, 'sem $.state: ele exige o contrato em "types"');
 });

@@ -4,13 +4,16 @@
 // O cálculo é do `scripts/status.mjs --band` (o mesmo do `ct status` do Codex): aqui só entram o
 // custo em dólar e os turnos, que só o Claude Code sabe. Roda uma vez por turno, ao fim dele, sem
 // segurar o turno; a falha de qualquer parte cala a faixa, nunca a sessão.
-import { atom, read, update } from 'claude-code'
+//
+// Sem `$.state` de propósito: `$.state` exige um contrato declarado em `"types"` no plugin.json, e
+// um Claude Code anterior a ~2.1.78 descarta TODOS os hooks do plugin quando vê esse campo. O valor
+// fica neste módulo e `$.ui.invalidate` redesenha; um hot reload só esvazia a faixa até o próximo turno.
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Band } from './types'
 
-const band = atom({ plugin: 'context-tools', key: 'band' } as const, null)
-const lastUsd = atom({ plugin: 'context-tools', key: 'lastUsd' } as const, null)
+let band: Band | null = null
+let lastUsd: number | null = null
 
 export const register: Register = on => {
   on('turn.complete', async ($, e, next) => {
@@ -20,13 +23,12 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const b = await read($, band)
-    if (e.props.hasSurvey || b === null || !b.text) return next(e)
+    if (e.props.hasSurvey || band === null || !band.text) return next(e)
     const { Box, Text } = $.ui.resolve(e)
     return (
       <Box flexDirection="column">
-        <Text dimColor>{b.text}</Text>
-        {b.warn ? <Text color="yellow">{b.warn}</Text> : null}
+        <Text dimColor>{band.text}</Text>
+        {band.warn ? <Text color="yellow">{band.warn}</Text> : null}
       </Box>
     )
   })
@@ -40,15 +42,14 @@ async function refresh($: EngineInterface) {
     $.session.root(),
   ])
   const usd = usage.cost?.usd
-  const prev = await read($, lastUsd)
   const argv = ['node', `${$.plugin.root}/scripts/status.mjs`, '--band', `--root=${root}`, `--session=${sid}`, `--turns=${turns}`]
   if (typeof usd === 'number') {
     argv.push(`--usd=${usd}`)
-    if (typeof prev === 'number' && usd >= prev) argv.push(`--last-usd=${usd - prev}`)
-    await update($, lastUsd, () => usd)
+    if (typeof lastUsd === 'number' && usd >= lastUsd) argv.push(`--last-usd=${usd - lastUsd}`)
+    lastUsd = usd
   }
   const r = await $.process.run(argv, { cwd: root, timeoutMs: 8000 })
   if (r.exitCode !== 0) return
-  const next: Band = JSON.parse(r.stdout.trim())
-  await update($, band, () => next)
+  band = JSON.parse(r.stdout.trim()) as Band
+  $.ui.invalidate('ui.render')
 }

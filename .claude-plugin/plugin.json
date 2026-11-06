@@ -15,7 +15,5 @@
     "docs",
     "audit"
   ],
-  "license": "MIT",
-  "hooks": "./hooks/band.json",
-  "types": "./hooks/band/types.d.ts"
+  "license": "MIT"
 }

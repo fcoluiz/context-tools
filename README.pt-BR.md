@@ -156,8 +156,8 @@ codex plugin add context-tools@context-tools-codex
 node /caminho/para/context-tools/install.mjs /caminho/para/projeto --target=both
 ```
 
-Copia os scripts para o projeto e registra os hooks. Idempotente; `--dry-run` simula e `--no-hooks`
-instala só os scripts. Também cria um `.gitignore` dentro de `.claude/` para que o estado local da
+Copia os scripts e a skill para o projeto e registra os hooks. Idempotente; `--dry-run` simula,
+`--no-hooks` pula os hooks e `--no-skill` a skill. Também cria um `.gitignore` dentro de `.claude/` para que o estado local da
 ferramenta nunca apareça no seu `git status`.
 
 ## Experimente

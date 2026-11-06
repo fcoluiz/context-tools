@@ -56,6 +56,8 @@ export function detectLocalCopy(root, id) {
       const legacy = enabledLegacy(settings);
       if (hooks || legacy.length) items.push({ path, hooks, legacyPlugins: legacy });
     }
+    const skill = join(root, '.claude', 'skills', 'context-tools');
+    if (isOurSkill(skill)) items.push({ path: skill, skill: true });
   } else if (id === 'codex') {
     const path = join(root, '.codex', 'hooks.json');
     const settings = existsSync(path) ? readJson(path) : null;

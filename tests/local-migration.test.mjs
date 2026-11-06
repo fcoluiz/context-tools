@@ -94,6 +94,25 @@ test('Codex: hooks de .codex/hooks.json e a skill local duplicada', () => {
   }
 });
 
+test('Claude: a skill local duplicada em .claude/skills sai, a alheia fica', () => {
+  const root = temp('ct-mig-claude-skill-');
+  const home = temp('ct-mig-home-');
+  try {
+    mkdirSync(join(root, '.claude', 'skills', 'context-tools', 'references'), { recursive: true });
+    writeFileSync(join(root, '.claude', 'skills', 'context-tools', 'SKILL.md'), '---\nname: context-tools\n---\n');
+    mkdirSync(join(root, '.claude', 'skills', 'minha'), { recursive: true });
+    writeFileSync(join(root, '.claude', 'skills', 'minha', 'SKILL.md'), '---\nname: minha\n---\n');
+    assert.equal(detectLocalCopy(root, 'claude').found, true);
+    const result = migrateLocalCopy(root, 'claude', { env: { CONTEXT_TOOLS_HOME: home }, now: NOW });
+    assert.equal(existsSync(join(root, '.claude', 'skills', 'context-tools')), false);
+    assert.equal(existsSync(join(root, '.claude', 'skills', 'minha', 'SKILL.md')), true, 'skill alheia fica');
+    assert.equal(existsSync(join(result.backup, '.claude', 'skills', 'context-tools', 'SKILL.md')), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test('dry-run e projeto sem cópia local não mudam nada', () => {
   const root = oldClaudeProject();
   const clean = temp('ct-mig-clean-');

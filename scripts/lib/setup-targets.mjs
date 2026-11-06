@@ -210,7 +210,7 @@ export const TARGETS = {
     pluginUpdateArgs: (plugin, marketplace, opts = {}) => ['plugin', 'update', `${plugin}@${marketplace}`, '--scope', claudeScope(opts)],
     findInstalled: (data, plugin, marketplace) => findByNameAndMarketplace(pluginListArray(data), plugin, marketplace),
     findMarketplace: (data, marketplace) => marketplaceListArray(data)?.find((item) => item?.name === marketplace),
-    bootstrapArgs: (repoRoot, projectRoot) => [join(repoRoot, 'install.mjs'), projectRoot, '--target=claude', '--no-hooks'],
+    bootstrapArgs: (repoRoot, projectRoot) => [join(repoRoot, 'install.mjs'), projectRoot, '--target=claude', '--no-hooks', '--no-skill'],
     removeManagedProjectHooks: removeManagedClaudeProjectHooks,
     needsHookTrustReminder: false,
     verifyCommands: [

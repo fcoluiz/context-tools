@@ -774,7 +774,7 @@ que ainda rodam uma cópia standalone: os listados em `~/.claude.json` e em `[pr
 `~/.codex/config.toml`. Tira só os hooks que o instalador standalone escreveu
 (comandos que apontam para `.claude/scripts/` ou `.codex/scripts/`), põe `false` no plugin do
 marketplace antigo (`context-tools@luiz-context-tools`) em `enabledPlugins` (configuração do projeto e
-do usuário), remove uma `.agents/skills/context-tools/` duplicada e marca `context-tools-install.json`
+do usuário), remove uma `.agents/skills/context-tools/` ou `.claude/skills/context-tools/` duplicada e marca `context-tools-install.json`
 como `global`. Todo arquivo alterado é copiado antes para `~/.context-tools/migrations/<data>/`, fora
 do projeto. `context-tools.json`, `.claude/context/` e `ai-context/` não são tocados. No modo
 interativo pergunta uma vez; `--yes` aceita; `--no-migrate` pula. Para fazer depois:
@@ -799,8 +799,10 @@ ajustar em máquina nenhuma.
 node /caminho/para/context-tools/install.mjs /caminho/do/projeto
 ```
 
-Copia os scripts para `<projeto>/.claude/scripts/` e registra os hooks usando `$CLAUDE_PROJECT_DIR`.
-Idempotente. `--dry-run` simula, `--no-hooks` instala só os scripts.
+Copia os scripts para `<projeto>/.claude/scripts/`, a skill e suas referências para
+`<projeto>/.claude/skills/context-tools/` e registra os hooks usando `$CLAUDE_PROJECT_DIR`.
+Idempotente. `--dry-run` simula, `--no-hooks` pula os hooks, `--no-skill` pula a skill (o setup o
+passa quando o plugin está instalado, porque o plugin traz a dele).
 
 Também cria `.claude/.gitignore` cobrindo os arquivos de estado (cache, travas, baseline), para não
 poluírem seu `git status`. O `.gitignore` da raiz não é tocado: ele é seu.

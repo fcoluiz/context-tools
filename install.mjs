@@ -9,6 +9,7 @@
 // Uso:
 //   node install.mjs <projeto>          → instala scripts + hooks
 //   node install.mjs <projeto> --no-hooks
+//   node install.mjs <projeto> --no-skill   → sem a skill (o plugin já traz a dele)
 //   node install.mjs <projeto> --dry-run
 //   node install.mjs <projeto> --target=auto|claude|codex|both
 //
@@ -46,6 +47,7 @@ if (targetMode && targetMode !== 'claude') {
 }
 const dry = args.includes('--dry-run');
 const noHooks = args.includes('--no-hooks');
+const noSkill = args.includes('--no-skill');
 const target = resolve(args.find((a) => !a.startsWith('--')) || process.cwd());
 
 const say = (s) => console.log(s);
@@ -73,7 +75,22 @@ for (const f of readdirSync(join(HERE, 'scripts', 'lib'))) {
   if (!dry) copyFileSync(join(HERE, 'scripts', 'lib', f), join(dstLib, f));
   copied++;
 }
-say(`  → ${copied} arquivo(s)\n`);
+// A skill vai com as referências que o SKILL.md manda ler sob demanda, como o install-codex.mjs faz
+// em `.agents/skills/`. Sem o plugin, é o único jeito de o Claude ver a skill; com o plugin, o
+// setup passa `--no-skill` para ela não aparecer duas vezes.
+let skill = false;
+if (!noSkill) {
+  const dstSkill = join(target, '.claude', 'skills', 'context-tools');
+  for (const f of ['SKILL.md', ...readdirSync(join(HERE, 'skills', 'context-tools', 'references')).map((r) => `references/${r}`)]) {
+    act(`skills/context-tools/${f}`);
+    if (!dry) {
+      mkdirSync(dirname(join(dstSkill, f)), { recursive: true });
+      copyFileSync(join(HERE, 'skills', 'context-tools', f), join(dstSkill, f));
+    }
+  }
+  skill = true;
+}
+say(`  → ${copied} arquivo(s)${skill ? ' + 1 skill' : ''}\n`);
 
 // ---- 1b. .claude/.gitignore ----
 // Os scripts gravam estado em .claude/ (cache de símbolos, travas anti-loop, baseline de

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { loadConfig, runtimeHost } from '../scripts/lib/roots.mjs';
 import { fingerprintSourcesInRoot } from '../scripts/lib/source-fingerprints.mjs';
+import { TARGETS } from '../scripts/lib/setup-targets.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const script = (name) => fileURLToPath(new URL(`../scripts/${name}`, import.meta.url));
@@ -387,12 +388,29 @@ test('instalação both cria as duas integrações sem misturar os diretórios',
     );
     assert.ok(existsSync(join(root, '.agents', 'skills', 'context-tools', 'SKILL.md')));
     assert.ok(existsSync(join(root, '.agents', 'skills', 'context-tools', 'references', 'revisao.md')), 'a skill sem as referências manda ler arquivo que não existe');
+    // Paridade: sem plugin, o Claude só vê a skill se ela for copiada para `.claude/skills/`.
+    assert.ok(existsSync(join(root, '.claude', 'skills', 'context-tools', 'SKILL.md')));
+    assert.ok(existsSync(join(root, '.claude', 'skills', 'context-tools', 'references', 'revisao.md')));
     const hooks = JSON.parse(readFileSync(join(root, '.codex', 'hooks.json'), 'utf8'));
     assert.ok(hooks.hooks.PreToolUse.some(group => group.matcher === 'Bash'));
     const commands = Object.values(hooks.hooks)
       .flatMap((groups) => groups.flatMap((group) => group.hooks.map((hook) => hook.command)));
     assert.ok(commands.some((command) => command.includes('node ".codex/scripts/codex-hook.mjs')));
     assert.ok(commands.every((command) => !command.includes('git rev-parse')));
+  } finally {
+    rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});
+
+test('com o plugin, o bootstrap do Claude não copia a skill (senão ela aparece duas vezes)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'context-tools-install-'));
+  try {
+    const args = TARGETS.claude.bootstrapArgs(ROOT, root);
+    assert.ok(args.includes('--no-skill'));
+    const result = spawnSync(process.execPath, args, { cwd: ROOT, encoding: 'utf8' });
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    assert.ok(existsSync(join(root, '.claude', 'scripts', 'ct.mjs')));
+    assert.equal(existsSync(join(root, '.claude', 'skills')), false);
   } finally {
     rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }

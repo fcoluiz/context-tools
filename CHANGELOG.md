@@ -8,6 +8,15 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The standalone Claude install now brings the skill.** `install.mjs` copied only scripts and hooks,
+  so Claude without the plugin never saw the skill or the references it points to, while the Codex
+  standalone install already copied both to `.agents/skills/`. It now copies `SKILL.md` and
+  `references/` to `.claude/skills/context-tools/`. The setup passes the new `--no-skill` when the
+  plugin is installed, since the plugin brings its own and the skill would show up twice; migrating
+  to the global plugin also removes a duplicate `.claude/skills/context-tools/`.
+
 ## [2.11.0] — 2026-11-06
 
 ### Added

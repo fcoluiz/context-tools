@@ -2,14 +2,16 @@
 // 📟 Estado da sessão numa linha — "quanto já custou, quanto pesa o contexto e os testes valem?"
 //
 // A mesma resposta da faixa acima do prompt do Claude Code (`hooks/band/register.tsx`), para quem
-// não tem faixa: o Codex, ou um terminal. Lê só o transcript da sessão; não escreve nada.
+// não tem faixa: o Codex, ou um terminal. Lê o transcript da sessão; a única escrita são as
+// leituras do limite de uso da conta (lib/limits.mjs), para prever quando ele acaba.
 //
 //   turnos e mensagens · contexto atual e o multiplicador de custo por mensagem que ele implica
 //   (a curva medida de `multiplicadorDeCusto`) · se já compensa dividir a sessão · testes: rodaram
-//   depois da última edição de código? passaram?
+//   depois da última edição de código? passaram? · limite de uso: quanto foi e, no ritmo atual,
+//   se acaba antes de renovar
 //
 // Uso:
-//   status.mjs [--json | --band [--usd=] [--last-usd=] [--turns=]] [--session=<id>] [--transcript=<caminho>] [--host=claude|codex] [--root=<dir>]
+//   status.mjs [--json | --band [--usd=] [--last-usd=] [--turns=] [--limits=<json>]] [--session=<id>] [--transcript=<caminho>] [--host=claude|codex] [--root=<dir>]
 
 import { readFileSync, statSync } from 'node:fs';
 import { resolveRoot, loadConfig, isMain, safe } from './lib/roots.mjs';
@@ -19,6 +21,7 @@ import {
 } from './lib/sessao.mjs';
 import { sessionActivity, unverifiedEdits, looksLikeTestRun } from './lib/verification.mjs';
 import { sessionId } from './lib/handoff-estado.mjs';
+import { fromClaude, samplesFromCodexTranscript, recordAndForecast, kindLabel, when } from './lib/limits.mjs';
 
 /** Mesmo limiar do aviso de divisão do `Stop` (handoff.mjs): acima dele, dividir costuma compensar. */
 export const LIMIAR_DIVISAO = 200000;
@@ -94,10 +97,13 @@ export function atividadeCodex(raw) {
 
 export function buildStatus(root, opts = {}) {
   const cfg = opts.cfg || loadConfig(root);
+  const agora = opts.now ?? Date.now();
+  // O limite é da conta: a faixa o mostra mesmo antes de achar o transcript desta sessão.
+  const doClaude = () => safe(() => recordAndForecast(fromClaude(opts.limits).map((l) => ({ ...l, at: agora })), { now: agora, env: opts.env || process.env }), []);
   const alvo = escolherTranscript(root, opts);
-  if (!alvo) return { status: 'no-session' };
+  if (!alvo) return { status: 'no-session', limits: doClaude() };
   const raw = safe(() => readFileSync(alvo.caminho, 'utf8'), '');
-  if (!raw) return { status: 'no-session' };
+  if (!raw) return { status: 'no-session', limits: doClaude() };
   const m = metricasDaSessao(alvo.caminho) || {};
   const extra = Array.isArray(cfg?.verify?.testPatterns) ? cfg.verify.testPatterns.filter((p) => typeof p === 'string') : [];
   const atividade = alvo.host === 'codex' ? atividadeCodex(raw) : sessionActivity(alvo.caminho);
@@ -105,6 +111,9 @@ export function buildStatus(root, opts = {}) {
   const rodouTeste = atividade.commands.some((c) => looksLikeTestRun(c.command, extra));
   const ultimo = alvo.host === 'claude' ? ultimoTesteClaude(raw, extra) : (rodouTeste ? 'unknown' : null);
   const contexto = m.contexto || 0;
+  const limits = alvo.host === 'codex'
+    ? safe(() => recordAndForecast(samplesFromCodexTranscript(raw), { now: agora, env: opts.env || process.env }), [])
+    : doClaude();
   return {
     status: 'ok',
     host: alvo.host,
@@ -121,13 +130,20 @@ export function buildStatus(root, opts = {}) {
       lastRun: ultimo,
       unverified: pendentes,
     },
+    limits,
   };
+}
+
+/** Uma janela em texto curto: `5h 42%`, com a hora de renovar quando se sabe. */
+function janela(l, t, now) {
+  const base = `${kindLabel(l.kind)} ${Math.round(l.percent)}%`;
+  return l.resetsAt ? t('status.limit.resets', { w: base, at: when(l.resetsAt, now) }) : base;
 }
 
 const mil = (n) => n >= 1000 ? `${Math.round(n / 1000)}k` : String(n);
 
 export function formatStatus(r, t) {
-  if (r.status !== 'ok') return t('status.none');
+  if (r.status !== 'ok') return [t('status.none'), linhaLimites(r, t)].filter(Boolean).join('\n');
   const partes = [
     t('status.msgs', { n: r.messages }),
     t('status.ctx', { ctx: mil(r.context), mult: r.costMultiplier.toFixed(1) }),
@@ -141,7 +157,17 @@ export function formatStatus(r, t) {
   } else if (tt.state !== 'none') {
     linhas.push(t(`status.tests.${tt.state}`));
   }
+  const lim = linhaLimites(r, t);
+  if (lim) linhas.push(lim);
   return linhas.join('\n');
+}
+
+function linhaLimites(r, t) {
+  const lim = r.limits || [];
+  if (!lim.length) return '';
+  const now = Date.now();
+  const acaba = lim.find((l) => l.exhaustAt);
+  return `⏳ ${lim.map((l) => janela(l, t, now)).join(' · ')}${acaba ? ` — ${t('status.limit.out', { w: kindLabel(acaba.kind), at: when(acaba.exhaustAt, now) })}` : ''}`;
 }
 
 const dolar = (n) => `$${n < 10 ? n.toFixed(2) : n.toFixed(1)}`;
@@ -165,6 +191,11 @@ export function formatBand(r, t, { usd = null, lastUsd = null, turns = null } = 
     if (r.splitAdvised) alerta = t('band.split');
     else if (tt.state === 'fail') alerta = t('band.fail');
   }
+  // Limite só aparece quando importa: metade gasta, ou acabando antes de renovar.
+  const lim = (r.limits || []).filter((l) => l.exhaustAt || l.percent >= 50);
+  for (const l of lim) partes.push(`⏳ ${kindLabel(l.kind)} ${Math.round(l.percent)}%${l.exhaustAt ? ` → ~${when(l.exhaustAt)}` : ''}`);
+  const acaba = lim.find((l) => l.exhaustAt);
+  if (acaba && !alerta) alerta = t('band.limit', { w: kindLabel(acaba.kind), at: when(acaba.exhaustAt), reset: acaba.resetsAt ? when(acaba.resetsAt) : '?' });
   return { text: partes.join(' · '), warn: alerta };
 }
 
@@ -179,7 +210,8 @@ function main() {
   const cfg = loadConfig(root);
   const t = makeT(detectLang(cfg));
   const host = flag(args, 'host');
-  const r = buildStatus(root, { cfg, session: flag(args, 'session'), transcript: flag(args, 'transcript'), host: host === 'codex' || host === 'claude' ? host : null });
+  const limits = safe(() => JSON.parse(flag(args, 'limits') || 'null'), null);
+  const r = buildStatus(root, { cfg, session: flag(args, 'session'), transcript: flag(args, 'transcript'), host: host === 'codex' || host === 'claude' ? host : null, limits });
   if (args.includes('--band')) console.log(JSON.stringify(formatBand(r, t, { usd: numFlag(args, 'usd'), lastUsd: numFlag(args, 'last-usd'), turns: numFlag(args, 'turns') })));
   else if (args.includes('--json')) console.log(JSON.stringify(r, null, 2));
   else console.log(formatStatus(r, t));

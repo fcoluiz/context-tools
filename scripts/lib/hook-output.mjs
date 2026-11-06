@@ -11,6 +11,7 @@ import { appendFileSync, closeSync, mkdirSync, openSync, readdirSync, statSync, 
 import { createHash } from 'node:crypto';
 import { basename, join } from 'node:path';
 import { loadConfig, safe, scriptCommand, statePath } from './roots.mjs';
+import { recordMetric } from './telemetry.mjs';
 
 export const HOOK_DEDUPE_WINDOW_MS = 90 * 1000;
 /**
@@ -110,6 +111,15 @@ export function writeHookOutput(root, payload, opts = {}) {
     parsed = rest;
   }
   if (process.env.CONTEXT_TOOLS_HOOK_LOG) logHookOutput(process.env.CONTEXT_TOOLS_HOOK_LOG, event, parsed, emit);
+  // Para o `health --session`: quem falou, quanto, e quem calou por já ter dito o mesmo.
+  if (context || message) {
+    safe(() => recordMetric(root, 'hook-output', {
+      event,
+      script: basename(String(process.argv[1] || '')).replace(/.mjs$/, '') || 'unknown',
+      outcome: !emit ? 'deduped' : (context && !emitContext) ? 'partly-deduped' : 'emitted',
+      chars: (emitContext ? context.length : 0) + (emitMessage ? message.length : 0),
+    }), null);
+  }
   if (!emit) return false;
   process.stdout.write(parsed ? JSON.stringify(parsed) : payload);
   return true;

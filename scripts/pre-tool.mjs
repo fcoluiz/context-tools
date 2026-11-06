@@ -88,6 +88,8 @@ export async function executarPreTool(entrada) {
     // O parser é deliberadamente conservador: se não reconhecer com segurança, deixa o
     // comando passar sem contexto adicional.
     const comando = String(evento.tool_input?.command ?? '');
+    const releitura = await avisoReleitura(evento, comando);
+    if (releitura !== null) return releitura;
     const m = comando.match(/(?:^|[;&|]\s*)(?:rg|grep)\s+(?:(?:-[A-Za-z0-9-]+)\s+)*(?:"([^"]+)"|'([^']+)'|(\S+))/);
     padrao = m ? String(m[1] ?? m[2] ?? m[3] ?? '').trim() : '';
   } else {
@@ -103,7 +105,11 @@ export async function executarPreTool(entrada) {
     || process.env.CLAUDE_CODE_SESSION_ID
     || process.env.CLAUDE_SESSION_ID
     || 'sem-sessao';
-  if (jaRespondido(root, `${sid}|${padrao.toLowerCase()}`)) return '';
+  if (jaRespondido(root, `${sid}|${padrao.toLowerCase()}`)) {
+    const { recordMetric } = await import('./lib/telemetry.mjs');
+    recordMetric(root, 'pretool', { host: ferramenta, outcome: 'already-answered', patternLength: padrao.length });
+    return '';
+  }
 
   // Só a partir daqui vale carregar o índice e o i18n.
   const { buildIndex, reportOne } = await import('./symbols.mjs');
@@ -241,6 +247,35 @@ async function avisoQualificado(padrao, ferramenta, handlerDurationMs) {
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
       additionalContext: t('pre.qualified', { q: padrao, prefix: prefixo, name: nome, n: semPrefixo.length, list: lista + mais }).slice(0, MAX_BLOCO),
+    },
+  });
+}
+
+/**
+ * Leitura pelo shell do mesmo trecho de um arquivo que não mudou nesta sessão (lib/reread). Só
+ * avisa, em uma linha; a leitura roda. Devolve null quando o comando não é uma leitura simples,
+ * para o resto do hook seguir; '' quando é leitura mas não há o que dizer.
+ */
+async function avisoReleitura(evento, comando) {
+  const { parseReadCommand, checkReread } = await import('./lib/reread.mjs');
+  const leitura = parseReadCommand(comando);
+  if (!leitura) return null;
+  const root = resolveRoot();
+  const sid = process.env.CONTEXT_TOOLS_SESSION_ID || process.env.CLAUDE_CODE_SESSION_ID
+    || process.env.CLAUDE_SESSION_ID || (evento.session_id ? String(evento.session_id) : '');
+  if (!root || !sid) return '';
+  const cwd = typeof evento.cwd === 'string' && evento.cwd ? evento.cwd : process.cwd();
+  const rep = checkReread(root, sid, cwd, leitura);
+  if (!rep) return '';
+  const { makeT, detectLang } = await import('./lib/i18n.mjs');
+  const { recordMetric } = await import('./lib/telemetry.mjs');
+  const t = makeT(detectLang(loadConfig(root)));
+  recordMetric(root, 'pretool', { host: 'Bash', outcome: 'reread', times: rep.times });
+  const trecho = rep.range === 'all' ? '' : `:${rep.range}`;
+  return JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      additionalContext: t('pre.reread', { file: rep.file, range: trecho, minutes: rep.minutes, times: rep.times }),
     },
   });
 }

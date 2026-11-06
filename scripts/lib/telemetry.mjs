@@ -8,11 +8,19 @@ import { readState, transactState } from './state-store.mjs';
 export const MAX_EVENTS = 2000;
 const FILE = (root) => statePath(root, '.context-tools-metrics.json');
 
+/** Sessão do host, para o `health --session` separar o que rodou nesta conversa. Não é conteúdo. */
+function currentSession(env = process.env) {
+  const sid = env.CONTEXT_TOOLS_SESSION_ID || env.CLAUDE_CODE_SESSION_ID || env.CLAUDE_SESSION_ID || '';
+  return sid ? sanitizeModelText(sid, 64) : undefined;
+}
+
 export function recordMetric(root, type, data = {}) {
   if (!root || !type) return;
+  const session = currentSession();
   const event = {
     at: Date.now(),
     type: sanitizeModelText(type, 60),
+    ...(session ? { session } : {}),
     ...Object.fromEntries(Object.entries(data).map(([k, v]) => [k, typeof v === 'string' ? sanitizeModelText(v, 120) : v])),
   };
   return transactState(FILE(root), () => ({ version: 1, events: [] }), (current) => {

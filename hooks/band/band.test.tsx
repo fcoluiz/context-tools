@@ -16,7 +16,7 @@ test('before any turn the band leaves the row to the engine', async ($, on) => {
 
 test('after a turn the band draws what status.mjs --band answered, on every surface', async ($, on) => {
   const runs: string[][] = []
-  on('session.usage', () => ({ value: { startedAt: 0, context: { used: 156000, limit: 200000 }, rateLimits: [], cost: { usd: 1.2 } } }) as never)
+  on('session.usage', () => ({ value: { startedAt: 0, context: { used: 156000, limit: 200000 }, rateLimits: [{ kind: 'five_hour', percentUsed: 61, resetsAt: '2026-11-06T18:00:00Z' }], cost: { usd: 1.2 } } }) as never)
   on('session.turns', () => ({ value: 3 }))
   on('session.id', () => ({ value: 's1' }))
   on('session.root', () => ({ value: '/repo' }))
@@ -35,6 +35,7 @@ test('after a turn the band draws what status.mjs --band answered, on every surf
   for (let i = 0; i < 200; i++) await Promise.resolve()
   expect(runs[0]).toContain('--band')
   expect(runs[0]).toContain('--usd=1.2')
+  expect(runs[0]).toContain('--limits=[{"kind":"five_hour","percentUsed":61,"resetsAt":"2026-11-06T18:00:00Z"}]')
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ ...BAND, surface })
     expect((await ui.find({ type: 'Text', text: /ctx 156k/ }))?.text).toBe(OUT.text)

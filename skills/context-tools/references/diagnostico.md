@@ -5,6 +5,9 @@ Parte da skill `context-tools`; lida sob demanda. Prefixo dos comandos: o mesmo 
 - `ct.mjs health [--days=30] [--audit] [--json]`: saúde local, atualidade do conhecimento e uso.
   Resposta emitida por hook não prova uso; digest em dia não prova correção. Contadores crus:
   `node "${PLUGIN_ROOT}/scripts/metrics.mjs" [--json|--clear]`.
+- `ct.mjs health --session [--json]`: o que cada hook fez NESTA sessão, quanto disse ao agente e por que
+  calou (já respondido, sem definição, acertos demais). O `--json` não tem caminho nem prompt: serve
+  para relatar um problema.
 - `ct.mjs providers [--install-plan]`: language servers opcionais; nenhum hook instala nada.
 - `map-suggestions.mjs`: arquivos sem mapa que co-mudam com fontes mapeadas (pista, não confirmação).
 - `ct.mjs drift --base=<ref> [--strict]`: mapas/documentos cuja fonte mudou no diff sem revisão

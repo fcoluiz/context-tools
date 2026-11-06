@@ -8,6 +8,55 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Re-read notice for shell reads.** A `cat`, `sed -n 'A,Bp'`, `head`, `nl -ba | sed -n` or
+  `Get-Content` of the same range of a file that has not changed since it was read in this session
+  gets one line: already read N min ago, unchanged, reuse that output. The read still runs. Claude
+  Code's Read tool already answers "File unchanged since last read" by itself, so this mostly helps
+  Codex, where every read goes through the shell; Claude's Bash hook now also fires for those read
+  commands. SessionStart clears the session's record, since after compaction re-reading is right.
+- **`ct health --session [--json]`.** What each hook did in this session: how many times it ran, how
+  much it told the agent (characters and an estimate in tokens), how many repeats the dedupe
+  silenced, and why the PreToolUse stayed quiet (no definition, too many hits, already answered).
+  Metrics now carry the session id and every hook output is recorded. The JSON has no path, prompt
+  or command, so it can go in a bug report.
+- **`ct find <name> --body[=N]`.** Also prints the code of the exact definition (up to N lines,
+  default 80, at most 3 definitions), which saves the Read with an offset that usually follows a
+  find. A longer body is cut and says where it continues. The MCP `find_symbol` tool takes `body`.
+- **When the usage limit runs out.** `ct status` and the band show each usage-limit window (5 h,
+  7 days) and, when the pace measured over at least 10 minutes of readings would use it up before
+  it resets, the time it runs out. The band only shows a window past 50% or about to run out. Claude
+  Code hands the band its `rateLimits`; on Codex every `token_count` in the transcript carries
+  `rate_limits`. The limit belongs to the account, so readings are kept under `CONTEXT_TOOLS_HOME`
+  (`limit-samples.json`) and count across projects; nothing leaves the machine.
+- **Security and frontend references in the skill.** `references/seguranca.md` (read on demand for a
+  security request): find the boundaries, follow the data, a short checklist per area (injection,
+  web, access, secrets, data and load, dependencies, crypto), a finding only with who attacks
+  through which input and what they get, and a `Cobertura:` line with what was and was not read.
+  `references/frontend.md` (read before creating or changing a screen or component): reuse the
+  project's components and tokens, `ct impact` before changing a component's interface, states,
+  accessibility, narrow screens, data and rendering pitfalls, and "say you did not check it
+  visually" when the screen could not be run. The code-review reference now also closes an audit
+  with `Cobertura:`.
+- **Backend, queue and server references in the skill.** Three more on-demand references, each a
+  short checklist plus what to check before calling it done and which `ct` verbs to use:
+  `references/backend.md` (validation at the boundary, one error format, paginated lists,
+  idempotent `POST`, transactions with no network call inside, N+1, migrations compatible with the
+  version still running), `references/filas-workers.md` (BullMQ and similar: idempotent jobs under
+  at-least-once delivery, retries with backoff and no retry for permanent errors, visible final
+  failure, stalled jobs from CPU-bound work, Redis with AOF and `noeviction`, graceful shutdown,
+  bounded retention, one cron run across replicas) and `references/servidores.md` (configuration
+  from validated environment variables, one artifact for every environment, stateless processes,
+  logs to stdout, SIGTERM, separate liveness and readiness checks, pinned images without root, known
+  rollback). The frontend reference gained forms, state in the URL, focus in modals, destructive
+  actions, reduced motion and how to pick selectors in browser tests; the security reference gained
+  deny-by-default routes, login throttling, session cookies and secrets in logs. The skill now lists
+  every reference by area in one block, and its description names backend, frontend, security,
+  queues and deploy, so the skill is picked up for that work.
+- **`ct docs search <term>`.** One line per `ai-context/` document (path, title, type, excerpt, review
+  date), ranked by title, path, references and headings, so the agent opens only the right document.
+
 ## [2.10.1] — 2026-11-06
 
 ### Fixed

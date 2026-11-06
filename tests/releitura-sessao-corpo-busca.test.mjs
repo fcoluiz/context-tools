@@ -154,7 +154,8 @@ test('limite de uso: a faixa só mostra quando importa e avisa se acaba antes de
   const { formatBand } = await import('../scripts/status.mjs');
   const { makeT } = await import('../scripts/lib/i18n.mjs');
   const t = makeT('en');
-  const now = Date.now();
+  // 10h de hoje: com Date.now() o reset (+3 h) caía no dia seguinte à noite e ganhava a data.
+  const now = new Date().setHours(10, 0, 0, 0);
   assert.equal(formatBand({ status: 'no-session', limits: [{ kind: 'five_hour', percent: 20, resetsAt: now + 3600e3, exhaustAt: null }] }, t).text, '');
   const b = formatBand({ status: 'no-session', limits: [{ kind: 'five_hour', percent: 72, resetsAt: now + 3 * 3600e3, exhaustAt: now + 3600e3 }] }, t);
   assert.match(b.text, /^⏳ 5h 72% → ~\d\d:\d\d$/);

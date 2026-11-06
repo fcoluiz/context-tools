@@ -122,6 +122,16 @@ export function sessionTestLine(root, cfg, t) {
   return t('ver.session', { cmd: command, script, single, install: missingDependencies(root, command) });
 }
 
+/**
+ * Regra de trabalho curta para quem vai escrever código: reaproveitar antes de criar, o mínimo que
+ * resolve, um teste pequeno onde há lógica arriscada e dizer o que não foi verificado. Ideia vinda de
+ * plugins de "solução mínima", que injetam 3–5 mil caracteres por sessão; aqui são ~340.
+ * `"leanRule": false` desliga.
+ */
+export function leanRuleLine(cfg, t) {
+  return cfg?.leanRule === false ? '' : t('ver.lean');
+}
+
 const INSTALL = { npm: 'npm install', pnpm: 'pnpm install', yarn: 'yarn install', bun: 'bun install' };
 
 /**
@@ -176,7 +186,7 @@ function main() {
   const t = makeT(detectLang(cfg));
   if (args.includes('--stop-report')) return { mode: 'stop-report', warned: stopReport(root, cfg, t) || 0 };
   if (args.includes('--session-start')) {
-    const line = sessionTestLine(root, cfg, t);
+    const line = [sessionTestLine(root, cfg, t), leanRuleLine(cfg, t)].filter(Boolean).join('\n');
     if (line) writeHookOutput(root, { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: line } });
     return { mode: 'session-start', emitted: line ? 1 : 0 };
   }

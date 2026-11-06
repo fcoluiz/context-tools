@@ -46,6 +46,9 @@ caminho). Os scripts individuais continuam funcionando como antes.
 | como navegar este arquivo enorme? | `ct outline <arquivo> [filtro]` |
 | o que muda junto com este arquivo? | `ct coupling <arquivo>` |
 | por que este código é assim? | `ct why <símbolo>` |
+| o que meu diff mexe fora dele? | `ct changes [--base=<ref>]` |
+| o que deixamos para depois, e há quanto tempo? | `ct debt [--all] [--json]` |
+| quanto esta sessão já custou, e os testes valem? | `ct status [--json]` |
 | que testes cobrem este arquivo, e como rodá-los? | `ct verify <arquivo> [<arquivo>…]` |
 | um pacote de evidências com orçamento para um símbolo ou arquivo | `ct pack <símbolo-ou-arquivo> [--budget=N]` |
 | esta documentação ainda é verdade? | `ct check [--strict]` |
@@ -54,6 +57,13 @@ caminho). Os scripts individuais continuam funcionando como antes.
 | compactar esta sessão sem perder o essencial | `ct handoff --compactar` |
 | como está a saúde da instalação local? | `ct health [--days=30] [--audit] [--json]` |
 | o mesmo em JSON versionado, para CI ou painel | `ct snapshot [--days=30] [--sessions=20]` |
+
+Nas versões do Claude Code que carregam mods de plugin, uma **faixa acima do prompt** mostra o custo
+da sessão, o custo do último turno, os turnos, o contexto com o multiplicador de custo por mensagem
+que ele implica (e quando dividir compensa) e se os testes rodaram depois da última edição de código;
+o Codex vê o mesmo com `ct status`. Uma **regra mínima** curta no início da sessão pede o mínimo de
+código que resolve, nunca à custa de validação, tratamento de erro ou segurança (`"leanRule": false`
+desliga).
 
 O agente não precisa lembrar de nada disso. **Hooks** trazem as ferramentas sozinhos: antes de um
 `grep` por símbolo o índice responde primeiro, a sessão começa com uma lista curta dos mapas de

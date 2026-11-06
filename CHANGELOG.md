@@ -8,6 +8,26 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Band above the prompt (Claude Code).** On builds that load plugin mods, `hooks/band.json` adds a
+  hooks module that draws one dim row after each turn: session cost, last turn's cost, turns, context
+  with the per-message cost multiplier it implies, and whether tests ran (and passed) after the last
+  code edit, plus a yellow line when splitting the session pays off or the last test run failed. It is
+  drawn by the interface and never reaches the model. The numbers come from `status.mjs --band`.
+- **`ct status`** — the same reading for Codex and the terminal: messages, context and cost
+  multiplier, whether to split, and the test state of the session (`--json` for tools).
+- **`ct changes [--base=<ref>]`** — what the diff touches outside itself: changed or removed symbols
+  and the files outside the diff that still use them, removed-and-still-called first. Files that define
+  their own symbol of the same name are not counted.
+- **`ct debt [--all] [--json]`** — deferred work (TODO/FIXME/HACK/XXX, or `debt.markers`) in tracked
+  files, aged by `git blame`, flagging the ones that say nothing about when they come back.
+- **Code review and audit reference** in the skill (`references/revisao-codigo.md`): review the diff
+  with `ct changes`, findings as Fix / Should / Optional with a verdict and what was not verified.
+- **Lean rule at session start**, on by default (~340 characters): check whether the code already
+  exists, write the least that solves it, never cut validation, error handling or security, one small
+  test in the existing suite for risky logic, and say what was not verified. `"leanRule": false` turns it off.
+
 ## [2.9.21] — 2026-11-05
 
 ### Changed

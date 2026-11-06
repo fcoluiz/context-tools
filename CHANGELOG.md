@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.11.0] — 2026-11-06
+
 ### Added
 
 - **Re-read notice for shell reads.** A `cat`, `sed -n 'A,Bp'`, `head`, `nl -ba | sed -n` or

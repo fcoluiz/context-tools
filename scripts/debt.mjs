@@ -66,7 +66,8 @@ export function buildDebt(root, opts = {}) {
   if (!repos.length) return { status: 'no-git' };
   const items = [];
   for (const repo of repos) {
-    const out = git(repo.path, ['grep', '-n', '-I', '-E', `\\b(${markers.map(esc).join('|')})\\b`, '--', '.', ':(exclude)*.md', ':(exclude)CHANGELOG*']);
+    // `-w` em vez de `\b`: o `git grep -E` usa o regex do sistema, e o do macOS não conhece `\b`.
+    const out = git(repo.path, ['grep', '-n', '-I', '-w', '-E', `(${markers.map(esc).join('|')})`,'--', '.', ':(exclude)*.md', ':(exclude)CHANGELOG*']);
     for (const line of out.split('\n')) {
       const hit = parseHit(line, markerRe);
       if (hit) items.push({ ...hit, repo: repo.path, file: norm(relative(root, join(repo.path, hit.file))), repoFile: hit.file });

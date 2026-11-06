@@ -8,6 +8,14 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Claude Code builds older than ~2.1.78 lost every hook of the plugin in 2.10.0.** The `"types"`
+  field the band added to `plugin.json` made those builds drop the plugin's hooks without a word
+  (measured: 2.0.77, 2.1.0, 2.1.44, 2.1.66 and 2.1.72 ran no hook; 2.1.78 and later did). The band's
+  module now sits under `modules` in `hooks/hooks.json`, which those builds ignore, and keeps its
+  value in the module instead of `$.state`, so `plugin.json` needs neither `"hooks"` nor `"types"`.
+
 ## [2.10.0] — 2026-11-06
 
 ### Added

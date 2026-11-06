@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.10.1] — 2026-11-06
+
 ### Fixed
 
 - **Claude Code builds older than ~2.1.78 lost every hook of the plugin in 2.10.0.** The `"types"`

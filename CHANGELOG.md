@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.11.2] — 2026-11-07
+
 ### Changed
 
 - **The skill description now names the tasks it helps with, and it triggers more often.** It

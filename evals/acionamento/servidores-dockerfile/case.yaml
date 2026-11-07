@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: servidores-dockerfile
+description: "Pedido de servidores: a skill context-tools deve ser acionada."
+tags: [aciona, servidores]
+context:
+  scaffold_script: projeto.sh
+execution:
+  prompt: "Ajusta o Dockerfile para o processo rodar sem root."
+  max_turns: 5
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Skill]
+runs: 3
+graders:
+  - type: tool_used
+    name: skill-acionada
+    tool: Skill
+    input_match: context-tools

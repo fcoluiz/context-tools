@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: navegacao-quem-chama
+description: "Pedido de navegacao: a skill context-tools deve ser acionada."
+tags: [aciona, navegacao]
+context:
+  scaffold_script: projeto.sh
+execution:
+  prompt: "Quem chama o método salvarPedido? Quero mudar a assinatura dele."
+  max_turns: 5
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Skill]
+runs: 3
+graders:
+  - type: tool_used
+    name: skill-acionada
+    tool: Skill
+    input_match: context-tools

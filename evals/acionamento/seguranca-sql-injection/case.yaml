@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: seguranca-sql-injection
+description: "Pedido de seguranca: a skill context-tools deve ser acionada."
+tags: [aciona, seguranca]
+context:
+  scaffold_script: projeto.sh
+execution:
+  prompt: "Tem risco de SQL injection no login?"
+  max_turns: 5
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Skill]
+runs: 3
+graders:
+  - type: tool_used
+    name: skill-acionada
+    tool: Skill
+    input_match: context-tools

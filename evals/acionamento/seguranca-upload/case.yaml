@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: seguranca-upload
+description: "Pedido de seguranca: a skill context-tools deve ser acionada."
+tags: [aciona, seguranca]
+context:
+  scaffold_script: projeto.sh
+execution:
+  prompt: "Faz uma revisão de segurança da API de upload de arquivos."
+  max_turns: 5
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Skill]
+runs: 3
+graders:
+  - type: tool_used
+    name: skill-acionada
+    tool: Skill
+    input_match: context-tools

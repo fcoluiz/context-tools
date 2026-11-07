@@ -1,6 +1,6 @@
 ---
 name: context-tools
-description: Navegação de código e conhecimento do projeto sem re-explorar na mão. Use para achar onde um símbolo está definido, quem o usa, o impacto antes de mudá-lo, o panorama, navegar arquivo grande (>1.500 linhas) ou ver o que muda junto. Também para revisar diff, auditar, mexer em backend, frontend, segurança, filas ou deploy, antes de commitar documentação, com mapa defasado, ou para registrar algo "no contexto".
+description: Navegação de código e conhecimento do projeto sem re-explorar. Use antes de criar ou mudar código — onde um símbolo está definido, quem o usa, o impacto, arquivo grande (>1.500 linhas), o que muda junto. Também ao criar ou mudar rota, migração, consulta, tela, componente, worker, cron, Dockerfile ou CI; para panorama, revisar diff, auditar, segurança; antes de commitar doc; mapa defasado; "registre no contexto".
 ---
 
 # Ferramentas de contexto

@@ -3,3 +3,5 @@
 * text=auto
 *.bat text eol=crlf
 *.cmd text eol=crlf
+# Shell scripts always LF: with CRLF, bash on Windows fails on the first `\r`.
+*.sh text eol=lf

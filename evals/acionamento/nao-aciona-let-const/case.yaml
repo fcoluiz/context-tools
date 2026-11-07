@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: nao-aciona-let-const
+description: "Pergunta geral, sem projeto: a skill não deve ser acionada."
+tags: [nao-aciona]
+execution:
+  prompt: "Explica a diferença entre let e const em JavaScript."
+  max_turns: 5
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Skill]
+runs: 3
+graders:
+  - type: tool_used
+    name: skill-nao-acionada
+    tool: Skill
+    input_match: context-tools
+    min: 0
+    max: 0

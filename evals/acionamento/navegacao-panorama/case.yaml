@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: navegacao-panorama
+description: "Pedido de navegacao: a skill context-tools deve ser acionada."
+tags: [aciona, navegacao]
+context:
+  scaffold_script: projeto.sh
+execution:
+  prompt: "Me dá um panorama deste projeto antes de eu começar a mexer."
+  max_turns: 5
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Skill]
+runs: 3
+graders:
+  - type: tool_used
+    name: skill-acionada
+    tool: Skill
+    input_match: context-tools

@@ -10,6 +10,13 @@ reconstructed from git history.
 
 ### Changed
 
+- **The skill description now names the tasks it helps with, and it triggers more often.** It
+  leads with "use before creating or changing code" and lists the usual targets (route, migration,
+  query, screen, component, worker, cron, Dockerfile, CI). A new trigger suite in
+  `evals/acionamento/` (20 prompts that should trigger the skill, 4 that should not, run with
+  `claude plugin eval`) measured, at 3 runs per prompt: 25/60 → 43/60 triggers, with 12/12
+  correct on the prompts that should not trigger, before and after. Still missed: cron jobs,
+  SQL injection, and diff reviews, which go to the built-in `code-review` skill.
 - **"Save this to context" moved to a skill reference.** The step-by-step (document type by
   content, update vs. `docs create`, what not to write) now lives in `references/registro.md`, read
   only when the user asks to record something; `SKILL.md` keeps the trigger phrase and a pointer.

@@ -35,3 +35,6 @@ node_modules/
 # ferramentas rodam neste repo e as leem, mas são pessoais: não fazem parte da distribuição.
 .claude/context/
 ai-context/
+
+# Resultados do `claude plugin eval` (evals/): relatório e JSON de cada rodada, com transcrições.
+evals/results/

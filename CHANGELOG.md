@@ -13,6 +13,11 @@ reconstructed from git history.
 - **"Save this to context" moved to a skill reference.** The step-by-step (document type by
   content, update vs. `docs create`, what not to write) now lives in `references/registro.md`, read
   only when the user asks to record something; `SKILL.md` keeps the trigger phrase and a pointer.
+- **The security reference now says how to check a fix.** `references/seguranca.md` gained the
+  "Verificar" section the other area references already had: run `ct verify` on the changed files
+  and add a test where the attack input is now refused. A test checks every skill reference keeps
+  the agreed shape: a `#` title, at least one `ct.mjs` verb, only verbs that exist, and a
+  "Verificar" section in the area references.
 
 ## [2.11.1] — 2026-11-06
 

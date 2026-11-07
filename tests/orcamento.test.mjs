@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { localPath } from './paths.mjs';
+import { VERBS } from '../scripts/ct.mjs';
 
 const ROOT = localPath('../', import.meta.url);
 const SCRIPTS = join(ROOT, 'scripts');
@@ -47,6 +48,21 @@ test('descrição da skill (vai em todo prompt) e corpo da skill têm teto', () 
   for (const ref of citadas) {
     const texto = read('skills', 'context-tools', 'references', ref);
     assert.ok(texto.length <= 2500, `references/${ref} com ${texto.length} chars (teto 2.500)`);
+  }
+});
+
+test('referências da skill seguem o formato combinado', () => {
+  const dir = ['skills', 'context-tools', 'references'];
+  // As de área dizem como conferir o trabalho: sem "Verificar", o agente para no "escrevi".
+  const deArea = ['backend.md', 'filas-workers.md', 'frontend.md', 'seguranca.md', 'servidores.md'];
+  for (const ref of readdirSync(join(ROOT, ...dir))) {
+    const texto = read(...dir, ref);
+    assert.match(texto, /^# \S/, `references/${ref} não começa com um título "# "`);
+    // Pelo menos um verbo do ct.mjs, e todo verbo citado existe: verbo renomeado vira instrução morta.
+    const verbos = [...texto.matchAll(/ct\.mjs ([a-z]+)/g)].map((m) => m[1]);
+    assert.ok(verbos.length > 0, `references/${ref} não cita nenhum verbo do ct.mjs`);
+    for (const v of verbos) assert.ok(VERBS[v], `references/${ref} cita "ct.mjs ${v}", que não existe`);
+    if (deArea.includes(ref)) assert.match(texto, /^## Verificar$/m, `references/${ref} sem a seção "## Verificar"`);
   }
 });
 

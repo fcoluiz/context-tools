@@ -37,3 +37,8 @@ pedirem. Nunca rode código do alvo para provar um achado fora de um ambiente is
 - Correção mínima no lugar certo (validar na fronteira, parametrizar), não uma camada nova.
 - Feche com `Cobertura:` — as fronteiras e arquivos lidos e o que ficou de fora. "Nada encontrado"
   só vale para o que foi lido.
+
+## Verificar
+
+- Correção feita: `ct.mjs verify` nos arquivos mexidos e um teste com a entrada do ataque, que
+  agora é recusada.

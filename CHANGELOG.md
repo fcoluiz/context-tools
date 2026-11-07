@@ -8,6 +8,12 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Changed
+
+- **"Save this to context" moved to a skill reference.** The step-by-step (document type by
+  content, update vs. `docs create`, what not to write) now lives in `references/registro.md`, read
+  only when the user asks to record something; `SKILL.md` keeps the trigger phrase and a pointer.
+
 ## [2.11.1] — 2026-11-06
 
 ### Fixed

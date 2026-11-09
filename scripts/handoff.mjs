@@ -52,7 +52,7 @@ import { recordMetric } from './lib/telemetry.mjs';
 import { updateNotice } from './update-check.mjs';
 import { localCopyNotice } from './lib/local-migration.mjs';
 import { fingerprintSourcesInRoot, parseSourceFingerprints, sameDigest, sameSource } from './lib/source-fingerprints.mjs';
-import { readHookEvent } from './lib/hook-input.mjs';
+import { readClaudeStopContinuation, readHookEvent } from './lib/hook-input.mjs';
 
 const git = (repo, args) => safe(() => execFileSync('git', args, {
   cwd: repo, encoding: 'utf8', timeout: 20000, maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'],
@@ -798,7 +798,10 @@ async function main() {
   const root = resolveRoot(args);
   const cfg = loadConfig(root);
   const t = makeT(detectLang(cfg));
-  if (args.includes('--stop-report')) { stopReport(root, t); return; }
+  if (args.includes('--stop-report')) {
+    if (!(await readClaudeStopContinuation(runtimeHost()))) stopReport(root, t);
+    return;
+  }
   if (args.includes('--session-start')) { await sessionStart(root, cfg, t); return; }
   const valor = (nome) => {
     const a = args.find((x) => x === nome || x.startsWith(`${nome}=`));

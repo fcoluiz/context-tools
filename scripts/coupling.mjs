@@ -16,11 +16,12 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, basename, dirname } from 'node:path';
-import { resolveRoot, findRepos, sourceDirs, resolveSourceDirs, safe, loadConfig, isMain, statePath, stateDir, HISTORY_CODE_RE, sanitizeModelText } from './lib/roots.mjs';
+import { resolveRoot, findRepos, sourceDirs, resolveSourceDirs, safe, loadConfig, isMain, runtimeHost, statePath, stateDir, HISTORY_CODE_RE, sanitizeModelText } from './lib/roots.mjs';
 import { exitWhenFlushed, writeHookOutput } from './lib/hook-output.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
 import { sessionChangedFiles, currentSessionId } from './context-maps.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
+import { readClaudeStopContinuation } from './lib/hook-input.mjs';
 
 export const DEFAULTS = {
   since: '12 months ago',
@@ -341,7 +342,9 @@ function main() {
 if (isMain(import.meta.url)) {
   const started = Date.now();
   const root = resolveRoot(process.argv.slice(2));
-  try { main(); } catch (e) {
+  // `--hook` só roda no Stop: na continuação causada por um hook Stop, fica calado.
+  const continuation = process.argv.includes('--hook') && await readClaudeStopContinuation(runtimeHost());
+  try { if (!continuation) main(); } catch (e) {
     console.log(makeT(detectLang())('cou.fail', { err: e && e.message }));
   } finally {
     recordMetric(root, 'coupling', {

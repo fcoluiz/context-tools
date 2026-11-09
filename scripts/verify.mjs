@@ -10,6 +10,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { isMain, loadConfig, resolveRoot, runtimeHost, safe, statePath } from './lib/roots.mjs';
+import { readClaudeStopContinuation } from './lib/hook-input.mjs';
 import { exitWhenFlushed, writeHookOutput } from './lib/hook-output.mjs';
 import { makeT, detectLang } from './lib/i18n.mjs';
 import { recordMetric } from './lib/telemetry.mjs';
@@ -208,7 +209,8 @@ function main() {
 if (isMain(import.meta.url)) {
   const started = Date.now();
   let result = {};
-  try { result = main() || {}; } catch (error) {
+  const continuation = process.argv.includes('--stop-report') && await readClaudeStopContinuation(runtimeHost());
+  try { result = continuation ? { mode: 'stop-report', continuation: true } : main() || {}; } catch (error) {
     if (!process.argv.includes('--stop-report')) console.log(`verify: ${error?.message || error}`);
   } finally {
     safe(() => recordMetric(resolveRoot(process.argv.slice(2)), 'verify', { ...result, durationMs: Date.now() - started }), null);

@@ -668,7 +668,8 @@ pasta nova (rodada 7 do benchmark de resultado); o aviso para criar um mapa ou d
 usuário.
 
 Os avisos de `Stop` custam **zero quando não há o que avisar**. No Claude, avisos idênticos são
-deduplicados por hash. No Codex, `stop_hook_active` permite uma continuação automática por turno;
+deduplicados por hash, e um Stop que já é a continuação causada por hook Stop (`stop_hook_active`)
+não recebe aviso nenhum: cada parada reabre o turno no máximo uma vez. No Codex, `stop_hook_active` permite uma continuação automática por turno;
 uma pendência ainda aberta fica visível no fechamento e pode ser retomada em outra tarefa.
 
 ### O cache não pode mentir

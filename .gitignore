@@ -5,6 +5,7 @@ node_modules/
 .claude/.coupling-state
 .claude/.coupling-sessions.json
 .claude/.stop-report-state
+.claude/.context-maps-stop-state
 .claude/.context-maps-session-baseline.json
 .claude/.pre-tool-state.json
 .claude/.source-fingerprints.json

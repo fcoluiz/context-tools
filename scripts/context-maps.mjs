@@ -26,7 +26,7 @@ import { selectAutomaticReviewCandidates } from './lib/auto-review-candidates.mj
 import { compareReviewedSources, fingerprintKey, fingerprintSourcesInRoot, loadFingerprintState, parseSourceFingerprints, rememberFingerprint, sameDigest, sameSource, saveFingerprintState } from './lib/source-fingerprints.mjs';
 import { sessionWriteFiles } from './lib/session-write-journal.mjs';
 import { reviewFinding } from './lib/review-findings.mjs';
-import { readHookEvent } from './lib/hook-input.mjs';
+import { readClaudeStopContinuation, readHookEvent } from './lib/hook-input.mjs';
 import { resetRereads } from './lib/reread.mjs';
 const t = makeT(detectLang(safe(() => loadConfig(resolveRoot()), {})));
 
@@ -900,7 +900,9 @@ function runSessionStart() {
 // Trava anti-loop do Stop Claude. A condição pode persistir após o aviso, então o hash evita
 // repeti-lo sem parar e o TTL de 12h permite retomá-lo numa sessão futura. No Codex, o adaptador
 // usa stop_hook_active para permitir uma única continuação e precisa manter backlog visível.
-const STOP_STATE_FILE = statePath(workspaceRoot(), '.stop-report-state');
+// Arquivo próprio: uma cópia antiga instalada no projeto grava `.stop-report-state` com outro
+// texto, e as duas apagavam o hash uma da outra, de modo que nenhuma calava.
+const STOP_STATE_FILE = statePath(workspaceRoot(), '.context-maps-stop-state');
 const STOP_STATE_TTL_MS = 12 * 60 * 60 * 1000;
 
 function alreadyReported(text) {
@@ -1465,7 +1467,9 @@ async function runSubagentStart() {
 
 async function main() {
   const mode = process.argv[2] || '--session-start';
-  if (mode === '--stop-report') runStopReport();
+  if (mode === '--stop-report') {
+    if (!(await readClaudeStopContinuation(runtimeHost()))) runStopReport();
+  }
   else if (mode === '--subagent-start') await runSubagentStart();
   else runSessionStart();
 }

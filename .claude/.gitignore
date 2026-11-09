@@ -4,6 +4,7 @@
 # instala. Entrada nova de estado entra AQUI, e só aqui. Mantenha-a genérica — nada
 # específico deste repositório, porque tudo que estiver nela viaja para os outros projetos.
 .stop-report-state
+.context-maps-stop-state
 .coupling-state
 .coupling-sessions.json
 .context-maps-session-baseline.json

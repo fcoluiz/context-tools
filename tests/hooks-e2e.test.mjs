@@ -383,6 +383,47 @@ test('E2E: Stop não repete o mesmo aviso (trava anti-loop)', () => {
   } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 
+test('E2E: Stop do Claude fica calado na continuação causada por hook Stop (stop_hook_active)', () => {
+  // No Claude Code, contexto num Stop reabre o turno. Se o hook falar de novo na continuação, o
+  // laço só para no teto de bloqueios do host, com o aviso de hook travando o turno.
+  const raiz = repo();
+  const sid = `continuacao-${Date.now()}-${Math.random()}`;
+  const evento = (ativo) => JSON.stringify({ session_id: sid, hook_event_name: 'Stop', stop_hook_active: ativo });
+  try {
+    rodar('context-maps.mjs', ['--session-start'], raiz, { CLAUDE_CODE_SESSION_ID: sid });
+    appendFileSync(join(raiz, 'src', 'a.js'), 'export function gama() {}\n');
+    for (const [script, args] of [
+      ['context-maps.mjs', ['--stop-report']], ['context-docs.mjs', ['--stop-report']],
+      ['coupling.mjs', ['--changed', '--hook']], ['handoff.mjs', ['--stop-report', `--root=${raiz}`]],
+      ['verify.mjs', ['--stop-report', `--root=${raiz}`]],
+    ]) {
+      const r = rodar(script, args, raiz, { CLAUDE_CODE_SESSION_ID: sid }, evento(true));
+      assert.equal(r.status, 0, `${script}: ${r.stderr}`);
+      assert.equal(r.stdout.trim(), '', `${script} não pode falar na continuação`);
+    }
+    // O aviso existia: fora da continuação, o mesmo Stop fala.
+    const fora = rodar('context-maps.mjs', ['--stop-report'], raiz, { CLAUDE_CODE_SESSION_ID: sid }, evento(false));
+    assert.ok(fora.stdout.trim(), 'fora da continuação o aviso precisa sair');
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
+});
+
+test('E2E: trava anti-loop do mapa não briga com cópia antiga que grava .stop-report-state', () => {
+  // Uma cópia antiga em .claude/scripts grava o próprio hash em .stop-report-state. Com o mesmo
+  // arquivo, cada cópia apagava o hash da outra e o aviso voltava a cada Stop.
+  const raiz = repo();
+  const sid = `copia-antiga-${Date.now()}-${Math.random()}`;
+  // Sem a deduplicação de 90 s do writeHookOutput, que esconderia a trava testada aqui.
+  const env = { CLAUDE_CODE_SESSION_ID: sid, CONTEXT_TOOLS_HOOK_DEDUPE: '0' };
+  try {
+    rodar('context-maps.mjs', ['--session-start'], raiz, env);
+    appendFileSync(join(raiz, 'src', 'a.js'), 'export function delta() {}\n');
+    assert.ok(rodar('context-maps.mjs', ['--stop-report'], raiz, env).stdout.trim());
+    writeFileSync(join(raiz, '.claude', '.stop-report-state'), JSON.stringify({ sig: '12345', at: Date.now() }));
+    const segunda = rodar('context-maps.mjs', ['--stop-report'], raiz, env);
+    assert.equal(segunda.stdout.trim(), '', 'o hash de outra cópia não pode reabrir o aviso');
+  } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
+});
+
 test('E2E: coupling --hook devolve JSON ou silêncio, nunca texto solto', () => {
   const raiz = repo({ comMudanca: true });
   try {
@@ -723,7 +764,7 @@ test('E2E: o .gitignore instalado cobre TODO estado que os scripts gravam', () =
 
     // Os nomes precisam ser os que os scripts escrevem de verdade, não parecidos com eles.
     for (const real of ['.pre-tool-state.json', '.handoff-aviso.json', '.symbols-cache.json',
-      '.context-maps-session-baseline.json', '.stop-report-state', '.coupling-state', '.coupling-sessions.json',
+      '.context-maps-session-baseline.json', '.context-maps-stop-state', '.coupling-state', '.coupling-sessions.json',
       '.source-fingerprints.json', '.context-maps-session-notice.json', '.documentation-session-notice.json', '.session-reads.json',
       '.context-tools-metrics.1234.tmp']) {
       assert.ok(esperado.includes(real)

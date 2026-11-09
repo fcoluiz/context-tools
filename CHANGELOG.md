@@ -8,6 +8,18 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Claude Stop hooks no longer keep a turn open in a loop.** In Claude Code, context added by a
+  Stop hook hands the turn back to the model. The map, coupling, handoff, verify and documentation
+  reports now stay silent when the Stop event has `stop_hook_active` set, so each one speaks at
+  most once per stop. Before, a warning whose condition persisted (code touched without a map)
+  could reopen the turn until Claude Code cut it at 9 blocks in a row.
+- **The map report's repeat guard no longer fights an older local copy.** It now keeps its hash
+  in `.claude/.context-maps-stop-state`. A project that also had an older copy in
+  `.claude/scripts/` shared `.stop-report-state` with it, and each copy overwrote the other's hash,
+  so neither one stayed quiet.
+
 ## [2.11.2] — 2026-11-07
 
 ### Changed

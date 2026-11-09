@@ -19,7 +19,7 @@ import {
   documentationEvidence,
 } from './lib/documentation.mjs';
 import { contextMapsPromptAudit, contextMapsStopReport } from './context-maps.mjs';
-import { readHookEvent } from './lib/hook-input.mjs';
+import { isClaudeStopContinuation, readHookEvent } from './lib/hook-input.mjs';
 
 function arg(name, fallback = null) {
   const item = process.argv.find((value) => value.startsWith(`${name}=`));
@@ -114,6 +114,7 @@ async function main() {
       return;
     }
     const event = await readHookEvent();
+    if (isClaudeStopContinuation(event, 'claude')) return;
     let captureHint = '';
     try {
       const { readCaptureSuggestion } = await import('./lib/session-reads.mjs');

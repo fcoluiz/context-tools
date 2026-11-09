@@ -684,7 +684,9 @@ new folder (outcome round 7); the notice for creating a map or document goes to 
 
 `Stop` warnings cost **zero when there is nothing to warn about**, and have a hash-based
 anti-repetition lock: an identical warning does not repeat. Without it the condition would persist
-after the answer and could sustain a loop burning tokens on its own.
+after the answer and could sustain a loop burning tokens on its own. In Claude, a Stop that is
+already the continuation caused by a Stop hook (`stop_hook_active`) gets no warning at all, so each
+stop reopens the turn at most once.
 
 ### The cache cannot lie
 

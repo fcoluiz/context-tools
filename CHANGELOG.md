@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.11.3] — 2026-11-09
+
 ### Fixed
 
 - **Claude Stop hooks no longer keep a turn open in a loop.** In Claude Code, context added by a

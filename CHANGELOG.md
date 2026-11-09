@@ -8,6 +8,13 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`setup migrate` now finds local hooks written with a relative path.** Older installers wrote
+  `node ".claude/scripts/x.mjs"` without `$CLAUDE_PROJECT_DIR`. The detector missed those hooks, so
+  neither the local-copy notice nor `migrate` removed them, and the old copy kept running next to
+  the plugin.
+
 ## [2.11.3] — 2026-11-09
 
 ### Fixed

@@ -49,6 +49,30 @@ test('detecta hooks antigos (inclusive grep-context) e o plugin do marketplace a
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
+test('detecta e migra hooks antigos gravados com caminho relativo (.claude/scripts/…)', () => {
+  // Instaladores antigos gravavam `node ".claude/scripts/x.mjs"`, sem $CLAUDE_PROJECT_DIR: o
+  // detector não os via, e a cópia local seguia rodando junto com o plugin.
+  const root = temp('ct-mig-rel-');
+  const home = temp('ct-mig-rel-home-');
+  try {
+    writeJson(join(root, '.claude', 'settings.json'), { hooks: {
+      Stop: [{ matcher: '', hooks: [
+        { type: 'command', command: 'node ".claude/scripts/context-maps.mjs" --stop-report' },
+        { type: 'command', command: 'node ./.claude/scripts/coupling.mjs --changed --hook' },
+        { type: 'command', command: 'node ".claude/scripts/meu-hook.mjs"' },
+      ] }],
+      PreToolUse: [{ matcher: 'Grep|Bash', hooks: [{ type: 'command', command: 'node ".claude/scripts/pre-tool.mjs"' }] }],
+    } });
+    assert.equal(detectLocalCopy(root, 'claude').items[0].hooks, 3, 'meu-hook.mjs não é nosso');
+    migrateLocalCopy(root, 'claude', { env: { CONTEXT_TOOLS_HOME: home }, now: NOW });
+    assert.deepEqual(readJson(join(root, '.claude', 'settings.json')).hooks,
+      { Stop: [{ matcher: '', hooks: [{ type: 'command', command: 'node ".claude/scripts/meu-hook.mjs"' }] }] });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test('migra: tira só o que é nosso, desliga o plugin antigo, marca global e guarda cópia fora do projeto', () => {
   const root = oldClaudeProject();
   const home = temp('ct-mig-home-');

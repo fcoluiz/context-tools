@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.11.4] — 2026-11-11
+
 ### Fixed
 
 - **`setup migrate` now finds local hooks written with a relative path.** Older installers wrote

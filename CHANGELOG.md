@@ -39,10 +39,12 @@ reconstructed from git history.
   (`docs/benchmarks/delegation-ab-2026-11-16.pt-BR.md`): in a session with a large context, delegating
   bundled wide-search questions cut the marginal cost by 13% on average (53% in one case); on bug
   fixes, delegating only the investigation tied (the main session reads the file anyway before
-  editing), and handing the edit to the executor as well cut it by 20%. Building the
-  briefing in a separate turn had cancelled the gain. Two runs per case: a small sample.
-- **Outcome benchmark:** `delegate`, `delegate-forced`, `delegate-direct` and `delegate-full` arms, per-model cost,
-  `prelude` files to simulate a long session, and `check-all.mjs` for cases with several fixes.
+  editing), and handing the edit to the executor as well cut it by 13% on localized bugs and by 44%
+  where the cause sat far from the reported symptom (61 runs, all solved). Building the briefing in
+  a separate turn had cancelled the gain. Two or three runs per case: a small sample.
+- **Outcome benchmark:** `delegate`, `delegate-forced`, `delegate-direct` and `delegate-full` arms,
+  per-model cost, `prelude` files to simulate a long session, cases whose cause sits far from the
+  symptom, and `check-all.mjs` for cases with several fixes.
 
 ### Fixed
 

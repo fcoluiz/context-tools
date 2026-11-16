@@ -7,8 +7,8 @@ subagente é uma mini-sessão: lê o volume, devolve só a resposta.
 
 Delegue trabalho volumoso e de pouca decisão. Decisão de desenho, revisão e commit ficam com a
 sessão principal. Medido (A/B de 2026-11-16): compensa quando UMA chamada substitui várias rodadas
-de busca — junte as perguntas independentes numa chamada só — e na correção de bug localizado só se a
-edição também for delegada (quem edita lê o arquivo). Não compensa em tarefa de poucos turnos: cada
+de busca — junte as perguntas independentes numa chamada só — e na correção de bug só se a edição também
+for delegada (quem edita lê o arquivo); ganha mais quanto mais longe do sintoma estiver a causa. Não compensa em tarefa de poucos turnos: cada
 turno a mais da sessão principal relê o contexto inteiro dela.
 
 | papel | quando | escreve |

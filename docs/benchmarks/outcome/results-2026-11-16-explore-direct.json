@@ -1,0 +1,605 @@
+[
+  {
+    "case": "long-qa-newtonsoft-3",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 1.0898188,
+    "turns": 4,
+    "durationMs": 24802,
+    "tokens": {
+      "input": 4,
+      "output": 940,
+      "cacheCreation": 129993,
+      "cacheRead": 155294
+    },
+    "hooks": {
+      "emitted": 6,
+      "contextChars": 2363,
+      "deduped": 0,
+      "byScript": {
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 335
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 3,
+          "contextChars": 2028
+        }
+      }
+    },
+    "injected": {
+      "emitted": 4,
+      "contextChars": 2363,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 335
+        },
+        "PostToolUse:Grep": {
+          "emitted": 3,
+          "contextChars": 2028
+        }
+      }
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.0898188
+    },
+    "tools": [
+      "Grep: MaxDepth|_maxDepth|DefaultMaxDepth",
+      "Grep: EnsureDateTime\\(",
+      "Grep: Additional text encountered after finished reading JSON content"
+    ],
+    "answer": "1. Depth is checked in `JsonReader.Push()` (`Src/Newtonsoft.Json/JsonReader.cs:356`). When `Depth + 1 > _maxDepth`, it throws.\n   - The default is **64**, set in the `JsonReader()` constructor (`_maxDepth = 64`).\n   - The exception is a `JsonReaderException` with the message \"The reader's MaxDepth of {0} has been exceeded.\"\n   - `Pop()` resets the exceeded flag once `Depth` is back at or below the limit.\n\n2.\nBsonWriter.WriteValue\nJsonConvert.ToString\nJsonReader.ReadDateTimeString\nJsonTextWriter.WriteValue\nJsonTextWriter.DoWriteValueAsync\nJTokenReader.SetToken\nJTokenWriter.WriteValue\nDateTimeUtils.TryParseDateTimeIso\nDateTimeUtils.TryParseDateTime\nDateTimeUtils.TryParseDateTimeMicrosoft\nDateTimeUtils.TryParseDateTimeExact\nJsonSerializerInternalReader.EnsureType\nJsonSerializerInternalWriter.GetPropertyName\n\n3.\nRead()\nReadFinished()"
+  },
+  {
+    "case": "long-qa-newtonsoft-3",
+    "arm": "delegate-direct",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 1.1079019149999998,
+    "turns": 2,
+    "durationMs": 87274,
+    "tokens": {
+      "input": 4,
+      "output": 1318,
+      "cacheCreation": 130133,
+      "cacheRead": 155446
+    },
+    "hooks": {
+      "emitted": 8,
+      "contextChars": 3437,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 335
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 3,
+          "contextChars": 2544
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 1,
+          "contextChars": 318
+        }
+      }
+    },
+    "injected": {
+      "emitted": 6,
+      "contextChars": 3437,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 335
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Grep": {
+          "emitted": 3,
+          "contextChars": 2544
+        },
+        "PreToolUse:Bash": {
+          "emitted": 1,
+          "contextChars": 318
+        }
+      }
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.0985291999999998,
+      "claude-haiku-5-5": 0.009372715
+    },
+    "tools": [
+      "Agent",
+      "Grep: _maxDepth|MaxDepth|Additional text encountered after finished reading JSON content|EnsureDateTime\\(",
+      "Bash: cd <copy>/Src/Newtonsoft.Json && grep -n \"EnsureDateTime\\|static .*(\" Utilities/DateTimeUtils",
+      "Bash: grep -rln \"EnsureDateTime\" --include=*.cs . | grep -v -i tests; echo ---; cd Src/Newtonsoft.Json && for n in 596 726 884 1012; do awk -v n=$n 'NR<=n && /^ (priv",
+      "Bash: grep -rln \"EnsureDateTime\" --include=*.cs Src | grep -v -i tests; echo ---; cd Src/Newtonsoft.Json && for n in 596 726 884 1012; do awk -v n=$n 'NR<=n && /^ (pr",
+      "Bash: grep -rl \"EnsureDateTime\" --include=*.cs Src | grep -vi tests; echo ---; awk 'NR<=596 && /^ (private|public|internal|protected)[^=]*\\(/ {last=NR\": \"$0} NR==596{",
+      "Grep: ^ (private|public|internal|protected)[^=]*\\(",
+      "Grep: EnsureDateTime",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\Serialization\\JsonSerializerInternalReader.cs",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\Serialization\\JsonSerializerInternalWriter.cs",
+      "Read: <copy>\\Src\\Newtonsoft.Json\\Linq\\JTokenWriter.cs",
+      "Grep: private object EnsureType|internal object EnsureType|object EnsureType\\(",
+      "Grep: ^ (private|internal|public|protected)[^=]*\\("
+    ],
+    "answer": "**1.**\nThe check is in `JsonReader.Push()` (`Src/Newtonsoft.Json/JsonReader.cs`). It runs when `Depth + 1 > _maxDepth`.\nThe default maximum depth is 64, set in the `JsonReader` constructor (`_maxDepth = 64`). `JsonSerializerSettings.DefaultMaxDepth` is also 64.\nWhen the depth is exceeded it throws `JsonReaderException` with \"The reader's MaxDepth of {0} has been exceeded.\"\n\n**2.**\nDateTimeUtils.TryParseDateTimeIso\nDateTimeUtils.TryParseDateTime\nDateTimeUtils.TryParseDateTimeMicrosoft\nDateTimeUtils.TryParseDateTimeExact\nJsonConvert.ToString\nBsonWriter.WriteValue\nJsonTextWriter.WriteValue\nJsonTextWriter.DoWriteValueAsync\nJsonReader.ReadDateTimeString\nJTokenReader.SetToken\nJTokenWriter.WriteValue\nJsonSerializerInternalReader.EnsureType\nJsonSerializerInternalWriter.GetPropertyName\n\n**3.**\nRead()\nReadFinished()"
+  },
+  {
+    "case": "long-qa-newtonsoft-3",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 1.1231834,
+    "turns": 5,
+    "durationMs": 28999,
+    "tokens": {
+      "input": 6,
+      "output": 1053,
+      "cacheCreation": 130277,
+      "cacheRead": 299417
+    },
+    "hooks": {
+      "emitted": 6,
+      "contextChars": 2359,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 335
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 3,
+          "contextChars": 2024
+        }
+      }
+    },
+    "injected": {
+      "emitted": 4,
+      "contextChars": 2359,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 335
+        },
+        "PostToolUse:Grep": {
+          "emitted": 3,
+          "contextChars": 2024
+        }
+      }
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.1231834
+    },
+    "tools": [
+      "Grep: _maxDepth|MaxDepth = |DefaultMaxDepth",
+      "Grep: EnsureDateTime\\(",
+      "Grep: Additional text encountered after finished reading JSON content",
+      "Grep: EnsureDateTime\\("
+    ],
+    "answer": "**1.**\nThe limit is checked in `JsonReader.Push()`, in `Src/Newtonsoft.Json/JsonReader.cs`. Before it adds a container, it throws if `Depth + 1 > _maxDepth`.\nThe default is 64. The `JsonReader()` constructor sets `_maxDepth = 64`.\nIt throws `JsonReaderException`, created with `JsonReaderException.Create`, with the message \"The reader's MaxDepth of {0} has been exceeded.\"\n\n**2.**\nJsonConvert.ToString\nBsonWriter.WriteValue\nJsonReader.ReadDateTimeString\nJsonTextWriter.DoWriteValueAsync\nJsonTextWriter.WriteValue\nDateTimeUtils.TryParseDateTimeIso\nDateTimeUtils.TryParseDateTime\nDateTimeUtils.TryParseDateTimeMicrosoft\nDateTimeUtils.TryParseDateTimeExact\nJTokenReader.SetToken\nJTokenWriter.WriteValue\nJsonSerializerInternalReader.EnsureType\nJsonSerializerInternalWriter.GetPropertyName\n\n**3.**\nRead()\nReadFinished()"
+  },
+  {
+    "case": "long-qa-newtonsoft-3",
+    "arm": "delegate-direct",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 1.2035225349999998,
+    "turns": 4,
+    "durationMs": 74515,
+    "tokens": {
+      "input": 8,
+      "output": 2384,
+      "cacheCreation": 132704,
+      "cacheRead": 445650
+    },
+    "hooks": {
+      "emitted": 13,
+      "contextChars": 5594,
+      "deduped": 1,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 335
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 2,
+          "contextChars": 480
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 6,
+          "contextChars": 3587
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 2,
+          "contextChars": 1192
+        }
+      }
+    },
+    "injected": {
+      "emitted": 11,
+      "contextChars": 5594,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 335
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 2,
+          "contextChars": 480
+        },
+        "PostToolUse:Grep": {
+          "emitted": 6,
+          "contextChars": 3587
+        },
+        "PreToolUse:Grep": {
+          "emitted": 2,
+          "contextChars": 1192
+        }
+      }
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.198474,
+      "claude-haiku-5-5": 0.005048535
+    },
+    "tools": [
+      "Agent",
+      "Grep: _maxDepth|MaxDepth|DefaultMaxDepth",
+      "Grep: EnsureDateTime",
+      "Grep: Additional text encountered",
+      "Grep: MaxDepth",
+      "SendMessage",
+      "Agent",
+      "Grep: EnsureDateTime",
+      "Grep: Additional text encountered",
+      "Grep: ^\\s+(public|private|internal|protected)[^=;]*\\("
+    ],
+    "answer": "**1.**\nThe depth check is in the `JsonReader` class, in its private `Push()` method: `if (_maxDepth != null && Depth + 1 > _maxDepth && !_hasExceededMaxDepth)`.\nThe default maximum depth is 64. The `JsonReader()` constructor sets `_maxDepth = 64`, and `JsonSerializerSettings.DefaultMaxDepth` is also 64.\nWhen the depth is exceeded it throws a `JsonReaderException`, created through `JsonReaderException.Create`, with the message \"The reader's MaxDepth of {0} has been exceeded.\"\n\n**2.**\nDateTimeUtils.TryParseDateTimeIso\nDateTimeUtils.TryParseDateTime\nDateTimeUtils.TryParseDateTimeMicrosoft\nDateTimeUtils.TryParseDateTimeExact\nJsonReader.ReadDateTimeString\nJsonConvert.ToString\nBsonWriter.WriteValue\nJsonTextWriter.WriteValue\nJsonTextWriter.DoWriteValueAsync\nJTokenReader.SetToken\nJTokenWriter.WriteValue\nJsonSerializerInternalReader.EnsureType\nJsonSerializerInternalWriter.GetPropertyName\n\n**3.**\nRead()\nReadFinished()"
+  },
+  {
+    "case": "long-qa-commons-lang-2",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 1.1502564000000002,
+    "turns": 4,
+    "durationMs": 26611,
+    "tokens": {
+      "input": 8,
+      "output": 1106,
+      "cacheCreation": 129981,
+      "cacheRead": 441282
+    },
+    "hooks": {
+      "emitted": 5,
+      "contextChars": 1631,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 467
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 2,
+          "contextChars": 1164
+        }
+      }
+    },
+    "injected": {
+      "emitted": 3,
+      "contextChars": 1631,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 467
+        },
+        "PostToolUse:Grep": {
+          "emitted": 2,
+          "contextChars": 1164
+        }
+      }
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.1502564000000002
+    },
+    "tools": [
+      "Grep: Strings must not be null|Minimum abbreviation width|minAbbrevWidth|abbrevMarkerLength",
+      "Grep: public static (String abbreviate|int getFuzzyDistance|double getJaroWinklerDistance|int getLevenshteinDistance)\\(|return (abbreviate|getLevenshteinDistance|getF",
+      "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java"
+    ],
+    "answer": "**1.**\nThe smallest accepted `maxWidth` is **4**. `abbreviate(str, maxWidth)` passes `ELLIPSIS3` (\"...\") with offset 0 to the 4-argument overload. That overload computes `minAbbrevWidth = abbrevMarker.length() + 1`, which is 3 + 1 = 4.\nIf `maxWidth < minAbbrevWidth`, it throws `IllegalArgumentException(\"Minimum abbreviation width is 4\")`.\nThe check only runs for a non-empty `str`; a null or empty string is returned as is before it.\n\n**2.**\ngetFuzzyDistance(CharSequence term, CharSequence query, Locale locale)\ngetJaroWinklerDistance(CharSequence first, CharSequence second)\ngetLevenshteinDistance(CharSequence s, CharSequence t)\ngetLevenshteinDistance(CharSequence s, CharSequence t, int threshold)"
+  },
+  {
+    "case": "long-qa-commons-lang-2",
+    "arm": "delegate-direct",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 1.08914765,
+    "turns": 2,
+    "durationMs": 51582,
+    "tokens": {
+      "input": 4,
+      "output": 1014,
+      "cacheCreation": 129147,
+      "cacheRead": 155490
+    },
+    "hooks": {
+      "emitted": 9,
+      "contextChars": 4251,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 467
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 5,
+          "contextChars": 3544
+        }
+      }
+    },
+    "injected": {
+      "emitted": 7,
+      "contextChars": 4251,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 467
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Grep": {
+          "emitted": 5,
+          "contextChars": 3544
+        }
+      }
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.08457,
+      "claude-haiku-5-5": 0.004577649999999999
+    },
+    "tools": [
+      "Agent",
+      "Grep: Strings must not be null|abbrevMarkerLength|ABBREVIATE|public static String abbreviate\\(|private static String abbreviate|IllegalArgumentException\\(",
+      "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java",
+      "Grep: public static .*\\(|private static .*\\(|static .*\\(",
+      "Grep: public static (int|double|String|boolean) (getFuzzyDistance|getJaroWinklerDistance|getLevenshteinDistance|joinWith|repeat|replaceEachOnce|truncate)\\(|public sta",
+      "Grep: (getFuzzyDistance|getJaroWinklerDistance|getLevenshteinDistance)\\(",
+      "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java",
+      "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java",
+      "Grep: ELLIPSIS3 =|String ELLIPSIS3"
+    ],
+    "answer": "**1.**\nWith the default `\"...\"` marker and no offset, the smallest `maxWidth` accepted is **4**.\nThe four-argument `abbreviate(String, String, int, int)` sets `minAbbrevWidth = abbrevMarkerLength + 1`. For `\"...\"` that is 3 + 1 = 4.\nBelow 4 it throws `IllegalArgumentException(String.format(\"Minimum abbreviation width is %d\", minAbbrevWidth))`, so the message reads \"Minimum abbreviation width is 4\".\n`abbreviate(str, maxWidth)` reaches this check by calling `abbreviate(str, \"...\", 0, maxWidth)`.\n\n**2.**\ngetFuzzyDistance(CharSequence term, CharSequence query, Locale locale)\ngetJaroWinklerDistance(CharSequence first, CharSequence second)\ngetLevenshteinDistance(CharSequence s, CharSequence t)\ngetLevenshteinDistance(CharSequence s, CharSequence t, int threshold)"
+  },
+  {
+    "case": "long-qa-commons-lang-2",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 1.1896169999999997,
+    "turns": 5,
+    "durationMs": 26560,
+    "tokens": {
+      "input": 8,
+      "output": 1154,
+      "cacheCreation": 134681,
+      "cacheRead": 445285
+    },
+    "hooks": {
+      "emitted": 6,
+      "contextChars": 3559,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 467
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 3,
+          "contextChars": 3092
+        }
+      }
+    },
+    "injected": {
+      "emitted": 4,
+      "contextChars": 3559,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 467
+        },
+        "PostToolUse:Grep": {
+          "emitted": 3,
+          "contextChars": 3092
+        }
+      }
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.1896169999999997
+    },
+    "tools": [
+      "Grep: Strings must not be null|Minimum abbreviation width",
+      "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java",
+      "Grep: must not be null",
+      "Grep: public static String abbreviate\\(final String str, final int|ELLIPSIS3 =|return abbreviate\\(str, ELLIPSIS3"
+    ],
+    "answer": "**1.**\nThe minimum is **4**. `abbreviate(str, maxWidth)` passes `\"...\"` (`ELLIPSIS3`) with offset 0 to `abbreviate(str, abbrevMarker, offset, maxWidth)`.\nThat method sets `minAbbrevWidth = abbrevMarker.length() + 1`, which is 3 + 1 = 4.\nIf `maxWidth < minAbbrevWidth`, it throws `IllegalArgumentException(\"Minimum abbreviation width is 4\")`.\nAn empty or null `str` is returned before this check, so it never throws.\n\n**2.**\ngetFuzzyDistance(CharSequence term, CharSequence query, Locale locale)\ngetJaroWinklerDistance(CharSequence first, CharSequence second)\ngetLevenshteinDistance(CharSequence s, CharSequence t)\ngetLevenshteinDistance(CharSequence s, CharSequence t, int threshold)"
+  },
+  {
+    "case": "long-qa-commons-lang-2",
+    "arm": "delegate-direct",
+    "rep": 2,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 1.0924249350000002,
+    "turns": 2,
+    "durationMs": 43595,
+    "tokens": {
+      "input": 4,
+      "output": 1067,
+      "cacheCreation": 129547,
+      "cacheRead": 155487
+    },
+    "hooks": {
+      "emitted": 7,
+      "contextChars": 2506,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 467
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 3,
+          "contextChars": 1799
+        }
+      }
+    },
+    "injected": {
+      "emitted": 5,
+      "contextChars": 2506,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 467
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Grep": {
+          "emitted": 3,
+          "contextChars": 1799
+        }
+      }
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.0888294,
+      "claude-haiku-5-5": 0.0035955350000000004
+    },
+    "tools": [
+      "Agent",
+      "Grep: public static String abbreviate|minAbbrevWidth|Strings must not be null|abbrevMarker.length|IllegalArgumentException\\(\"",
+      "Grep: Strings must not be null",
+      "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java",
+      "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java",
+      "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java",
+      "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java",
+      "Read: <copy>\\src\\main\\java\\org\\apache\\commons\\lang3\\StringUtils.java",
+      "Grep: String ELLIPSIS3 ="
+    ],
+    "answer": "1. With the default `\"...\"` marker and no offset, the smallest `maxWidth` accepted is **4**. The core overload `abbreviate(String, String, int, int)` computes `minAbbrevWidth = abbrevMarkerLength + 1`, which is 3 + 1 for `\"...\"`. If `maxWidth < minAbbrevWidth`, it throws `IllegalArgumentException(\"Minimum abbreviation width is 4\")`, using the format `\"Minimum abbreviation width is %d\"`. This check runs before the \"string already fits\" return, so it throws even for short strings. Only null or empty `str` returns earlier.\n\n2.\n```\ngetFuzzyDistance(CharSequence term, CharSequence query, Locale locale)\ngetJaroWinklerDistance(CharSequence first, CharSequence second)\ngetLevenshteinDistance(CharSequence s, CharSequence t)\ngetLevenshteinDistance(CharSequence s, CharSequence t, int threshold)\n```"
+  }
+]

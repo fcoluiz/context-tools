@@ -1,0 +1,640 @@
+[
+  {
+    "case": "long-session-semver-3-bugs",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.2783976,
+    "turns": 9,
+    "durationMs": 48080,
+    "tokens": {
+      "input": 16,
+      "output": 2410,
+      "cacheCreation": 131899,
+      "cacheRead": 874708
+    },
+    "hooks": {
+      "emitted": 7,
+      "contextChars": 1483,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 2,
+          "contextChars": 388
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 289
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 212
+        }
+      }
+    },
+    "injected": {
+      "emitted": 5,
+      "contextChars": 1483,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "PostToolUse:Grep": {
+          "emitted": 2,
+          "contextChars": 388
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 501
+        }
+      }
+    },
+    "filesChanged": 3,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.2783976
+    },
+    "tools": [
+      "Read: <copy>\\ranges\\max-satisfying.js",
+      "Edit: <copy>\\ranges\\max-satisfying.js",
+      "Grep: const replaceCaret = ",
+      "Edit: <copy>\\classes\\range.js",
+      "Grep: case 'patch':",
+      "Edit: <copy>\\classes\\semver.js",
+      "PowerShell: node -e \"const s=require('./');console.log(s.maxSatisfying(['1.2.3','1.2.4','1.3.0'],'^1.2.0'),s.satisfies('0.3.0','^0.2.3'),s.satisfies('0.2.5','^0.2.3'),s.sat",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.maxSatisfying(['1.2.3','1.2"
+    ],
+    "answer": "I'm leaving `classes/range.js` and `classes/semver.js` without a context map or ai-context document. Each change was a one-line bug fix that kept the documented semver behaviour intact. The rules involved (caret ranges and incrementing a prerelease patch) are already written up in the project's README and code comments, so a separate document would only repeat them."
+  },
+  {
+    "case": "long-session-semver-3-bugs",
+    "arm": "delegate-direct",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.25191445,
+    "turns": 9,
+    "durationMs": 70519,
+    "tokens": {
+      "input": 14,
+      "output": 2449,
+      "cacheCreation": 131662,
+      "cacheRead": 732348
+    },
+    "hooks": {
+      "emitted": 7,
+      "contextChars": 1768,
+      "deduped": 0,
+      "byScript": {
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 1,
+          "contextChars": 433
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 289
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 212
+        }
+      }
+    },
+    "injected": {
+      "emitted": 5,
+      "contextChars": 1768,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PreToolUse:Bash": {
+          "emitted": 1,
+          "contextChars": 433
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 501
+        }
+      }
+    },
+    "filesChanged": 3,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.2488016,
+      "claude-haiku-5-5": 0.0031128500000000003
+    },
+    "tools": [
+      "Agent",
+      "Bash: cd \"<copy>\" && cat -n ranges/max-satisfying.js && grep -n \"replaceCaret\" -A40 classes/r",
+      "Bash: cd \"<copy>\" && sed -n '377,400p' classes/range.js | cat -n | sed 's/^/L+376 /'; grep -n",
+      "Read: <copy>\\ranges\\max-satisfying.js",
+      "Read: <copy>\\classes\\range.js",
+      "Read: <copy>\\classes\\semver.js",
+      "Edit: <copy>\\ranges\\max-satisfying.js",
+      "Edit: <copy>\\classes\\range.js",
+      "Edit: <copy>\\classes\\semver.js",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.maxSatisfying(['1.2.3','1.2"
+    ],
+    "answer": "I'm not adding an `ai-context` document or a context map for `classes/range.js` and `classes/semver.js`. Each change fixed a single wrong condition and left the behaviour and structure of the files as they were. The library's tests and README already describe what those functions should do, so a new document wouldn't add anything a later session needs."
+  },
+  {
+    "case": "long-session-semver-3-bugs",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.2366526,
+    "turns": 8,
+    "durationMs": 39295,
+    "tokens": {
+      "input": 14,
+      "output": 1975,
+      "cacheCreation": 131402,
+      "cacheRead": 729403
+    },
+    "hooks": {
+      "emitted": 7,
+      "contextChars": 1483,
+      "deduped": 0,
+      "byScript": {
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 2,
+          "contextChars": 388
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 212
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 289
+        }
+      }
+    },
+    "injected": {
+      "emitted": 5,
+      "contextChars": 1483,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "PostToolUse:Grep": {
+          "emitted": 2,
+          "contextChars": 388
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 501
+        }
+      }
+    },
+    "filesChanged": 3,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.2366526
+    },
+    "tools": [
+      "Read: <copy>\\ranges\\max-satisfying.js",
+      "Edit: <copy>\\ranges\\max-satisfying.js",
+      "Grep: const replaceCaret = ",
+      "Edit: <copy>\\classes\\range.js",
+      "Grep: case 'patch':",
+      "Edit: <copy>\\classes\\semver.js",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('.');console.log(s.maxSatisfying(['1.2.3','1.2."
+    ],
+    "answer": "I didn't add a context map or an `ai-context` document for `classes/range.js` or `classes/semver.js`. These were three one-line bug fixes in a small, well-tested library. They don't change any behaviour a reader needs explained, and the existing tests already cover the logic. Nothing else is pending."
+  },
+  {
+    "case": "long-session-semver-3-bugs",
+    "arm": "delegate-direct",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.2065422749999997,
+    "turns": 6,
+    "durationMs": 65792,
+    "tokens": {
+      "input": 12,
+      "output": 1938,
+      "cacheCreation": 130965,
+      "cacheRead": 587453
+    },
+    "hooks": {
+      "emitted": 7,
+      "contextChars": 1771,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 436
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 289
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 212
+        }
+      }
+    },
+    "injected": {
+      "emitted": 5,
+      "contextChars": 1771,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 436
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 501
+        }
+      }
+    },
+    "filesChanged": 3,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.2040186,
+      "claude-haiku-5-5": 0.0025236750000000004
+    },
+    "tools": [
+      "Agent",
+      "Read: <copy>\\ranges\\max-satisfying.js",
+      "Grep: replaceCaret|case 'patch'|M === '0'",
+      "Read: <copy>\\classes\\range.js",
+      "Read: <copy>\\classes\\semver.js",
+      "Read: <copy>\\classes\\range.js",
+      "Edit: <copy>\\ranges\\max-satisfying.js",
+      "Edit: <copy>\\classes\\range.js",
+      "Edit: <copy>\\classes\\semver.js",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.maxSatisfying(['1.2.3','1.2"
+    ],
+    "answer": "I'm not adding an `ai-context` document or a context map for `classes/range.js` or `classes/semver.js`. Each fix only corrects one condition back to what the code's own comments already say it should do, and you didn't ask for documentation. If you want one for these areas later, I can write it."
+  },
+  {
+    "case": "long-session-yaml-2-bugs",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.1561912,
+    "turns": 7,
+    "durationMs": 40874,
+    "tokens": {
+      "input": 8,
+      "output": 1409,
+      "cacheCreation": 129980,
+      "cacheRead": 440696
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 1304,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 662
+        }
+      }
+    },
+    "injected": {
+      "emitted": 2,
+      "contextChars": 1304,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "PostToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 662
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.1561912
+    },
+    "tools": [
+      "Grep: function mergeMappings|CHOMPING_STRIP|chomping ===",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\dist\\js-yaml.mjs",
+      "Edit: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./lib/loader');console.log(y.load('base: &b {a: "
+    ],
+    "answer": "Both bugs are fixed, each by a one-line change in `lib/loader.js`:\n\n1. **Merge keys:** I changed `mergeMappings` in `lib/loader.js`. Its check was reversed: it copied a key from the merged mapping only when the target already had that key. Now it copies only the keys the target doesn't have.\n2. **Strip indicator (`|-`):** I changed `readBlockScalar` in `lib/loader.js`. It mixed up the `+` and `-` indicators, so `-` kept the trailing newlines and `+` dropped them. They now map the right way round.\n\nI checked them by running the loader directly. The merge example now gives `{ a: 1, b: 2, c: 3 }`, `|-` gives `'text'`, and `|+` still gives `'text\\n\\n'`. I haven't run `npm test`, because dependencies aren't installed in this repo. I didn't touch the tests or the built files in `dist/`."
+  },
+  {
+    "case": "long-session-yaml-2-bugs",
+    "arm": "delegate-direct",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.2015935199999996,
+    "turns": 7,
+    "durationMs": 59992,
+    "tokens": {
+      "input": 10,
+      "output": 1763,
+      "cacheCreation": 130800,
+      "cacheRead": 587023
+    },
+    "hooks": {
+      "emitted": 5,
+      "contextChars": 1505,
+      "deduped": 0,
+      "byScript": {
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 623
+        }
+      }
+    },
+    "injected": {
+      "emitted": 3,
+      "contextChars": 1505,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 623
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.1991045999999999,
+      "claude-haiku-5-5": 0.0024889200000000004
+    },
+    "tools": [
+      "Agent",
+      "Grep: mergeMappings|function storeMappingPair|function readBlockScalar|CHOMPING_",
+      "Bash: node \"<plugin>/scripts/ct.mjs\" find readBlockScalar; node \"<plugin>/scripts/ct.mjs\" find mergeMappings",
+      "Read: <copy>/lib/loader.js",
+      "Read: <copy>/lib/loader.js",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./');console.log(JSON.stringify(y.load('base: &b"
+    ],
+    "answer": "Both bugs are fixed. I ran both examples from the reports directly and they now give the expected results. Explicit keys still take precedence over merged ones, and `|+` still keeps trailing newlines. I didn't run the test suite, because dependencies aren't installed (`npm test` fails without `npm install`).\n\n1. Merge keys: changed `lib/loader.js`, function `mergeMappings`. The check was inverted, so it only overwrote keys the mapping already had instead of adding the missing ones.\n2. Strip indicator: changed `lib/loader.js`, function `readBlockScalar`. The `+` and `-` indicators were swapped, so `|-` behaved like `|+` (keep)."
+  },
+  {
+    "case": "long-session-yaml-2-bugs",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.1862692,
+    "turns": 7,
+    "durationMs": 32057,
+    "tokens": {
+      "input": 10,
+      "output": 1475,
+      "cacheCreation": 129990,
+      "cacheRead": 584046
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 1143,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 501
+        }
+      }
+    },
+    "injected": {
+      "emitted": 2,
+      "contextChars": 1143,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "PostToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 501
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.1862692
+    },
+    "tools": [
+      "Grep: function mergeMappings|CHOMPING_STRIP|function storeMappingPair",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd <copy> && node -e \"const y=require('./');console.log(JSON.stringify(y.load('base: &b {"
+    ],
+    "answer": "I fixed both bugs. I checked them by running the loader directly with node; I didn't run the test suite because dependencies aren't installed.\n\n1. **Merge keys:** in `lib/loader.js`, function `mergeMappings`, the key check was inverted, so merged keys were only copied when they already existed. It now copies keys the target mapping doesn't have, and an explicit key still wins over a merged one. The report's example now returns `{a:1,b:2,c:3}`.\n2. **Strip indicator:** in `lib/loader.js`, function `readBlockScalar`, the `+` and `-` chomping indicators were swapped. They now map correctly: `|-` gives `'text'` and `|+` gives `'text\\n\\n'`."
+  },
+  {
+    "case": "long-session-yaml-2-bugs",
+    "arm": "delegate-direct",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.232393325,
+    "turns": 6,
+    "durationMs": 20587,
+    "tokens": {
+      "input": 8,
+      "output": 1278,
+      "cacheCreation": 3022,
+      "cacheRead": 575057
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 882,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 1,
+          "contextChars": 240
+        }
+      }
+    },
+    "injected": {
+      "emitted": 2,
+      "contextChars": 882,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.2302826,
+      "claude-haiku-5-5": 0.002110725
+    },
+    "tools": [
+      "Agent",
+      "Bash: cd \"<copy>\" && grep -n \"mergeMappings\\|storeMappingPair\\|CHOMPING_\\|readBlockScalar\" lib/",
+      "Read: <copy>/lib/loader.js",
+      "Read: <copy>/lib/loader.js",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./');console.log(JSON.stringify(y.load('base: &b"
+    ],
+    "answer": "Both bugs are fixed, each with a one-line change. I checked them by running the loader directly. I didn't run the test suite because dependencies aren't installed.\n\n1. Merge keys: `lib/loader.js`, function `mergeMappings`. A condition was inverted, so it only copied keys the target already had, which meant nothing was ever merged. It now copies only the keys that are missing. The reported case returns `{a:1,b:2,c:3}`, and a key written explicitly in the mapping still overrides the merged one.\n2. Strip indicator: `lib/loader.js`, function `readBlockScalar`. The `+` and `-` chomping indicators were swapped. `|-` now returns `'text'`, and `|+` still keeps its trailing newlines (`'text\\n\\n'`)."
+  }
+]

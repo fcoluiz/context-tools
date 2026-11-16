@@ -1197,6 +1197,15 @@ contexto principal da hora, mais o que o subagente acumulou ficando lá para tod
 seguinte. A estimativa vem marcada como tal. No Codex, o relatório lista os rollouts filhos da sessão
 (`parent_thread_id`), só com tokens.
 
+**Medido** (A/B, 2026-11-16, sessão principal no Opus 5.5, [relatório](benchmarks/delegation-ab-2026-11-16.pt-BR.md)):
+delegar compensa quando uma chamada substitui várias rodadas de busca numa sessão de contexto grande —
+−13% no custo marginal de perguntas de busca larga agrupadas, −53% num caso — e não compensa numa
+correção pequena, em que a sessão principal lê o arquivo de qualquer jeito para editá-lo. Cada turno a
+mais da principal relê o contexto inteiro dela, então no Claude o explorador e o verificador são
+chamados direto: o hook `SubagentStart` entrega a linha do `ct` a todo agente `ct-*`, e o briefing só é
+preciso para declarar escopo de escrita ou levar um handoff. Só com a sugestão de delegar, o Opus não
+delegou tarefas de 2 a 11 turnos, o que os números confirmam.
+
 ```bash
 node scripts/ct.mjs brief "onde o desconto é calculado?" --role=explorer --files=src/pedido.ts
 node scripts/ct.mjs brief "renomeie calcTotal para computeTotal" --role=executor --allow=src/pedido.ts,src/carrinho.ts

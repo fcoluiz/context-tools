@@ -34,6 +34,15 @@ reconstructed from git history.
   estimate, labelled as such, of the same work done in the main context. `ct delegate
   scope|status|clear` manage the write scopes.
 
+- **Delegated agents get the `ct` command at `SubagentStart` (Claude)**, so the main session can call
+  the explorer or the verifier in one turn, without a briefing. Measured in an A/B on Opus 5.5
+  (`docs/benchmarks/delegation-ab-2026-11-16.pt-BR.md`): in a session with a large context, delegating
+  bundled wide-search questions cut the marginal cost by 13% on average (53% in one case); on small
+  bug fixes it tied, because the main session reads the file anyway before editing. Building the
+  briefing in a separate turn had cancelled the gain. Two runs per case: a small sample.
+- **Outcome benchmark:** `delegate`, `delegate-forced` and `delegate-direct` arms, per-model cost,
+  `prelude` files to simulate a long session, and `check-all.mjs` for cases with several fixes.
+
 ### Fixed
 
 - **`setup migrate` now finds local hooks written with a relative path.** Older installers wrote

@@ -1217,6 +1217,15 @@ main context: each subagent request re-reading the main context of the time, plu
 accumulated staying there for every later main request. The estimate is labelled as such. On Codex
 the report lists the child rollouts of the session (`parent_thread_id`) with tokens only.
 
+**Measured** (A/B, 2026-11-16, Opus 5.5 main session, [report](benchmarks/delegation-ab-2026-11-16.pt-BR.md)):
+delegating pays when one call replaces several rounds of search in a session with a large context —
+−13% marginal cost on bundled wide-search questions, −53% in one case — and does not pay on a small
+bug fix, where the main session reads the file anyway to edit it. Every extra main-session turn
+re-reads the whole main context, so on Claude the explorer and the verifier are called directly: the
+`SubagentStart` hook hands every `ct-*` agent the `ct` command line, and a briefing is needed only for
+a write scope or to carry a handoff. Asked only to consider delegating, Opus did not delegate tasks of
+2 to 11 turns, which the numbers support.
+
 ```bash
 node scripts/ct.mjs brief "where is the discount computed?" --role=explorer --files=src/pedido.ts
 node scripts/ct.mjs brief "rename calcTotal to computeTotal" --role=executor --allow=src/pedido.ts,src/carrinho.ts

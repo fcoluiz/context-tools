@@ -85,6 +85,24 @@ async function pairHook(kind) {
   }
 }
 
+// Delegação (lib/delegation.mjs): um subagente `ct-*` só edita o escopo declarado e não muda o
+// git. Também roda dentro dos hooks que já existiam, pelo mesmo motivo da dupla. O Codex dá ao
+// subagente o sandbox da sessão que o chamou; esta trava é a única diferença por papel.
+async function delegationHook() {
+  try {
+    const { delegationDenial } = await import('./lib/delegation.mjs');
+    return delegationDenial({ event: evento, cwd });
+  } catch {
+    return null; // M4: a trava nunca derruba um hook que já funcionava.
+  }
+}
+
+const deny = (reason) => {
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } }));
+  process.stderr.write(`${reason}\n`);
+  return 2;
+};
+
 async function main() {
   // Track explicit file edits around the tool call. This is Codex-only, local, and silent;
   // Stop later uses the recorded paths instead of claiming every shared-workspace diff.
@@ -92,12 +110,8 @@ async function main() {
     // Edição fora da vez na dupla: recusada antes de virar autoria. JSON de PreToolUse e saída 2
     // com o motivo no stderr, as duas formas de bloqueio que o Codex aceita.
     if (args[0] === '--pre-tool-use') {
-      const denial = await pairHook('pre-tool');
-      if (denial) {
-        process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: denial } }));
-        process.stderr.write(`${denial}\n`);
-        return 2;
-      }
+      const denial = await delegationHook() || await pairHook('pre-tool');
+      if (denial) return deny(denial);
     }
     try {
       process.chdir(cwd);
@@ -114,6 +128,8 @@ async function main() {
   // cold-start de Node em cada chamada Codex; os demais scripts continuam no caminho genérico
   // abaixo porque ainda precisam do contrato CLI/args e da adaptação de Stop.
   if (script === 'pre-tool.mjs') {
+    const denial = await delegationHook();
+    if (denial) return deny(denial);
     try {
       process.chdir(cwd);
       if (typeof evento.tool_input?.command === 'string' && evento.tool_input.command.includes('--context-tools-edit=')) {

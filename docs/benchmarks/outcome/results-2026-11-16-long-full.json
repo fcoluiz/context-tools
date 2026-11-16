@@ -1,0 +1,383 @@
+[
+  {
+    "case": "long-session-semver-3-bugs",
+    "arm": "delegate-full",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.20377841,
+    "turns": 4,
+    "durationMs": 71729,
+    "tokens": {
+      "input": 10,
+      "output": 2423,
+      "cacheCreation": 132549,
+      "cacheRead": 446362
+    },
+    "hooks": {
+      "emitted": 11,
+      "contextChars": 2871,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 2,
+          "contextChars": 480
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 4,
+          "contextChars": 1296
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 289
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 212
+        }
+      }
+    },
+    "injected": {
+      "emitted": 9,
+      "contextChars": 2871,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Grep": {
+          "emitted": 4,
+          "contextChars": 1296
+        },
+        "SubagentStart:context-tools:ct-executor": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 501
+        }
+      }
+    },
+    "filesChanged": 3,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.1981644,
+      "claude-haiku-5-5": 0.005614010000000001
+    },
+    "tools": [
+      "Agent",
+      "Grep: compare|rcompare|sort",
+      "Grep: replaceCaret|=== '0'|case 'patch'|prerelease.length",
+      "Read: <copy>\\ranges\\max-satisfying.js",
+      "Read: <copy>\\classes\\range.js",
+      "Read: <copy>\\classes\\semver.js",
+      "Bash: node <plugin>/scripts/ct.mjs delegate scope --role=executor --allow=ranges/max-satisfying.js,classes/range.js,classes/semver.js",
+      "Agent",
+      "Read: <copy>\\ranges\\max-satisfying.js",
+      "Grep: if \\(M === '0' && m === '0'\\) \\{",
+      "Grep: if \\(this\\.prerelease\\.length >= 0\\) \\{",
+      "Edit: <copy>\\ranges\\max-satisfying.js",
+      "Edit: <copy>\\classes\\range.js",
+      "Edit: <copy>\\classes\\semver.js",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.maxSatisfying(['1.2.3','1.2",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.maxSatisfying(['1.2.3','1.2"
+    ],
+    "answer": "I didn't add documentation or a context map for these changes. Each fix just puts back what the original node-semver library does, so there's no new behaviour or design decision to record. The existing test suite already covers these functions."
+  },
+  {
+    "case": "long-session-semver-3-bugs",
+    "arm": "delegate-full",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.2346572850000002,
+    "turns": 3,
+    "durationMs": 45571,
+    "tokens": {
+      "input": 8,
+      "output": 1636,
+      "cacheCreation": 3814,
+      "cacheRead": 434495
+    },
+    "hooks": {
+      "emitted": 8,
+      "contextChars": 2274,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 2,
+          "contextChars": 480
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 699
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 289
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 212
+        }
+      }
+    },
+    "injected": {
+      "emitted": 6,
+      "contextChars": 2274,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 699
+        },
+        "SubagentStart:context-tools:ct-executor": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 501
+        }
+      }
+    },
+    "filesChanged": 3,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.2291834,
+      "claude-haiku-5-5": 0.0054738849999999995
+    },
+    "tools": [
+      "Agent",
+      "Read: <copy>\\ranges\\max-satisfying.js",
+      "Grep: M === '0'|replaceCaret|case 'patch'|prerelease.length",
+      "Read: <copy>\\classes\\range.js",
+      "Read: <copy>\\classes\\semver.js",
+      "Bash: node <plugin>/scripts/ct.mjs delegate scope --role=executor --allow=ranges/max-satisfying.js,classes/range.js,classes/semver.js",
+      "Agent",
+      "Read: <copy>\\ranges\\max-satisfying.js",
+      "Read: <copy>\\classes\\range.js",
+      "Read: <copy>\\classes\\semver.js",
+      "Edit: <copy>\\ranges\\max-satisfying.js",
+      "Edit: <copy>\\classes\\range.js",
+      "Edit: <copy>\\classes\\semver.js",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./'); console.log(s.maxSatisfying(['1.2.3','1.",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./'); console.log(s.maxSatisfying(['1.2.3','1."
+    ],
+    "answer": "I didn't add a context map or an `ai-context` document. Each change is a one-line bug fix inside library logic that already exists, and the existing test suite covers that logic, so a document wouldn't add anything lasting."
+  },
+  {
+    "case": "long-session-yaml-2-bugs",
+    "arm": "delegate-full",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.1476266899999998,
+    "turns": 4,
+    "durationMs": 57708,
+    "tokens": {
+      "input": 6,
+      "output": 1654,
+      "cacheCreation": 131149,
+      "cacheRead": 300420
+    },
+    "hooks": {
+      "emitted": 6,
+      "contextChars": 1434,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 2,
+          "contextChars": 480
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 312
+        }
+      }
+    },
+    "injected": {
+      "emitted": 4,
+      "contextChars": 1434,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "SubagentStart:context-tools:ct-executor": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 312
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.14238,
+      "claude-haiku-5-5": 0.005246689999999999
+    },
+    "tools": [
+      "Agent",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./');console.log(JSON.stringify(y.load('base: &b",
+      "Bash: cd \"<copy>\" && sed -n 288,352p lib/loader.js; echo ----; sed -n 843,852p lib/loader.js; e",
+      "Bash: node <plugin>/scripts/ct.mjs delegate scope --role=executor --allow=lib/loader.js",
+      "Agent",
+      "Grep: if \\(_hasOwnProperty\\.call\\(destination, key\\)\\) \\{|chomping = \\(ch === 0x2B/\\* \\+ \\*/\\) \\? CHOMPING_STRIP : CHOMPING_KEEP;",
+      "Edit: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./');console.log(JSON.stringify(y.load('base: &b",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./');console.log(JSON.stringify(y.load('base: &b"
+    ],
+    "answer": "Both bugs are fixed. Each was one inverted condition in `lib/loader.js`.\n\n1. **Merge keys:** I changed `mergeMappings` in `lib/loader.js`. It was copying merged keys only when the target already had them; it now copies only the keys the target doesn't have, so `.x` returns `{a:1, b:2, c:3}`.\n2. **Strip indicator `|-`:** I changed the chomping-indicator parsing in `readBlockScalar` in `lib/loader.js`. `+` and `-` were swapped; now `-` strips and `+` keeps, so `.s` returns `'text'`.\n\nI checked both by running the code directly. The two reported examples now return the expected values, and `|+` still keeps its trailing newlines. I didn't run `npm test` because dependencies aren't installed, and I didn't change any tests."
+  },
+  {
+    "case": "long-session-yaml-2-bugs",
+    "arm": "delegate-full",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.1499872500000001,
+    "turns": 4,
+    "durationMs": 66176,
+    "tokens": {
+      "input": 6,
+      "output": 1758,
+      "cacheCreation": 131198,
+      "cacheRead": 300406
+    },
+    "hooks": {
+      "emitted": 8,
+      "contextChars": 3040,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 2,
+          "contextChars": 480
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 3,
+          "contextChars": 1918
+        }
+      }
+    },
+    "injected": {
+      "emitted": 6,
+      "contextChars": 3040,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Grep": {
+          "emitted": 3,
+          "contextChars": 1918
+        },
+        "SubagentStart:context-tools:ct-executor": {
+          "emitted": 1,
+          "contextChars": 240
+        }
+      }
+    },
+    "filesChanged": 1,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.1448492000000001,
+      "claude-haiku-5-5": 0.00513805
+    },
+    "tools": [
+      "Agent",
+      "Grep: CHOMPING_STRIP|CHOMPING_KEEP|CHOMPING_CLIP|storeMappingPair|isMerge|<<",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./');console.log(JSON.stringify(y.load('s: |-\\n ",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\type\\merge.js",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\loader.js",
+      "Grep: function mergeMappings",
+      "Bash: node <plugin>/scripts/ct.mjs delegate scope --role=executor --allow=lib/loader.js",
+      "Agent",
+      "Grep: if \\(_hasOwnProperty\\.call\\(destination, key\\)\\)|chomping = \\(ch === 0x2B",
+      "Edit: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: node -e \"const y=require('./');console.log(JSON.stringify(y.load('base: &b {a: 1, b: 2}\\nx:\\n <<: *b\\n c: 3\\n').x), JSON.stringify(y.load('s: |-\\n text\\n\\n').s)",
+      "Bash: node -e \"const y=require('./');console.log(JSON.stringify(y.load('base: &b {a: 1, b: 2}\\nx:\\n <<: *b\\n c: 3\\n').x), JSON.stringify(y.load('s: |-\\n text\\n\\n').s)"
+    ],
+    "answer": "Both bugs are fixed, and the examples from both reports now return the right values. I didn't run the test suite, because dependencies aren't installed and `npm test` would fail. I checked the fixes by loading the library directly with node: the merge example gives `{\"a\":1,\"b\":2,\"c\":3}`, `|-` gives `\"text\"`, and `|+` still gives `\"text\\n\\n\"`.\n\n1. Merge keys: `lib/loader.js`, `mergeMappings`. The check was reversed, so it only copied keys `x` already had; it now copies only the keys `x` doesn't have.\n2. Strip indicator: `lib/loader.js`, `readBlockScalar`. The `+` (keep) and `-` (strip) cases were swapped; `+` now keeps trailing newlines and `-` removes them."
+  }
+]

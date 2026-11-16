@@ -1219,8 +1219,10 @@ the report lists the child rollouts of the session (`parent_thread_id`) with tok
 
 **Measured** (A/B, 2026-11-16, Opus 5.5 main session, [report](benchmarks/delegation-ab-2026-11-16.pt-BR.md)):
 delegating pays when one call replaces several rounds of search in a session with a large context —
-−13% marginal cost on bundled wide-search questions, −53% in one case — and does not pay on a small
-bug fix, where the main session reads the file anyway to edit it. Every extra main-session turn
+−13% marginal cost on bundled wide-search questions, −53% in one case. On a bug fix, delegating only
+the investigation tied, because whoever edits must read the file first; with the executor making the
+edit too (scope declared with `ct delegate scope` in the same message), it cost 20% less and the main
+session never read the code. Every extra main-session turn
 re-reads the whole main context, so on Claude the explorer and the verifier are called directly: the
 `SubagentStart` hook hands every `ct-*` agent the `ct` command line, and a briefing is needed only for
 a write scope or to carry a handoff. Asked only to consider delegating, Opus did not delegate tasks of

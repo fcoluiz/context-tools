@@ -110,11 +110,24 @@ export const DELEGATE_DIRECT_PROMPT = [
   'Put independent questions in one call. Decide from what it returns; you may then edit a file yourself once you know the exact change.',
   'Keep the final answer here.',
 ].join(' ');
+// `delegate-full`: a principal não lê nem edita. No `delegate-direct` a correção empatou porque o Edit
+// exige ler o arquivo antes, e a principal relia o que o explorador achou; aqui a edição vai ao
+// executor, com o escopo de escrita declarado na mesma mensagem que o chama.
+export const DELEGATE_FULL_PROMPT = [
+  'Do not search, read or edit the repository code yourself.',
+  'Hand every investigation to the context-tools:ct-explorer agent: call it directly with the full question, and ask it to return',
+  'the exact file, line and current text of each place that matters and the minimal change that fixes it. Put independent questions in one call.',
+  'Then hand the edits to the context-tools:ct-executor agent. In one message, first run',
+  `${CT} delegate scope --role=executor --allow=FILES with the comma-separated files to change,`,
+  'then call the executor with the exact old and new text of every change, all changes in one call.',
+  'Check its report and keep the final answer here.',
+].join(' ');
 const BRACOS_EMBUTIDOS = {
   without: {}, with: { pluginDir: PLUGIN_DIR }, 'context-tools': { pluginDir: PLUGIN_DIR },
   delegate: { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_PROMPT },
   'delegate-forced': { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_FORCED_PROMPT },
   'delegate-direct': { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_DIRECT_PROMPT },
+  'delegate-full': { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_FULL_PROMPT },
 };
 
 /**

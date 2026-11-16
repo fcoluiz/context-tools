@@ -1199,8 +1199,10 @@ seguinte. A estimativa vem marcada como tal. No Codex, o relatório lista os rol
 
 **Medido** (A/B, 2026-11-16, sessão principal no Opus 5.5, [relatório](benchmarks/delegation-ab-2026-11-16.pt-BR.md)):
 delegar compensa quando uma chamada substitui várias rodadas de busca numa sessão de contexto grande —
-−13% no custo marginal de perguntas de busca larga agrupadas, −53% num caso — e não compensa numa
-correção pequena, em que a sessão principal lê o arquivo de qualquer jeito para editá-lo. Cada turno a
+−13% no custo marginal de perguntas de busca larga agrupadas, −53% num caso. Na correção de bug,
+delegar só a investigação empatou, porque quem edita precisa ler o arquivo antes; com o executor
+fazendo também a edição (escopo declarado com `ct delegate scope` na mesma mensagem), custou 20% menos
+e a principal não leu o código. Cada turno a
 mais da principal relê o contexto inteiro dela, então no Claude o explorador e o verificador são
 chamados direto: o hook `SubagentStart` entrega a linha do `ct` a todo agente `ct-*`, e o briefing só é
 preciso para declarar escopo de escrita ou levar um handoff. Só com a sugestão de delegar, o Opus não

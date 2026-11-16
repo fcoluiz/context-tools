@@ -89,6 +89,16 @@ if (!noSkill) {
     }
   }
   skill = true;
+  // Os agentes delegados (`ct-*`) vão junto com a skill, e pelo mesmo motivo: o plugin já os
+  // carrega de `agents/`, e duas cópias apareceriam duas vezes na lista de agentes.
+  const dstAgents = join(target, '.claude', 'agents');
+  for (const f of readdirSync(join(HERE, 'agents')).filter((name) => /^ct-[\w-]+\.md$/.test(name))) {
+    act(`.claude/agents/${f}`);
+    if (!dry) {
+      mkdirSync(dstAgents, { recursive: true });
+      copyFileSync(join(HERE, 'agents', f), join(dstAgents, f));
+    }
+  }
 }
 say(`  → ${copied} arquivo(s)${skill ? ' + 1 skill' : ''}\n`);
 

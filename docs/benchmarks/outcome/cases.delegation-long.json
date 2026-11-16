@@ -1,0 +1,80 @@
+{
+  "description": "Delegation A/B in a simulated long session: the two session cases of cases.delegation.json, with about 80k tokens of this repository public docs pasted first as notes read earlier, so the main context is large from the start.",
+  "cases": [
+    {
+      "id": "long-session-semver-3-bugs",
+      "git": "https://github.com/npm/node-semver.git",
+      "ref": "6e05b7637396ac66522cff8731f07cfe0ef49a29",
+      "prompt": "Three bug reports arrived for this repository today. Handle them one after another, as in a normal work session.\n\n1. A user reports: semver.maxSatisfying(['1.2.3', '1.2.4', '1.3.0'], '^1.2.0') returns '1.2.3' instead of '1.3.0'.\n2. A user reports: semver.satisfies('0.3.0', '^0.2.3') returns true, but a caret range on a 0.x version must not allow a minor bump (^0.2.3 means >=0.2.3 <0.3.0-0).\n3. A user reports: semver.inc('1.2.0-5', 'patch') returns '1.2.1', but incrementing the patch of a prerelease should release that patch and return '1.2.0'.\n\nFix each one in this repository with a minimal change. Do not change the tests. When all are fixed, say in one line per report which file and function you changed.",
+      "setup": [
+        [
+          "node",
+          "{casesDir}/semver-bugs.mjs",
+          "inject",
+          "max-satisfying"
+        ],
+        [
+          "node",
+          "{casesDir}/semver-bugs.mjs",
+          "inject",
+          "caret-zero-minor"
+        ],
+        [
+          "node",
+          "{casesDir}/semver-bugs.mjs",
+          "inject",
+          "inc-patch-prerelease"
+        ]
+      ],
+      "check": {
+        "command": [
+          "node",
+          "{casesDir}/check-all.mjs",
+          "{casesDir}/semver-bugs.mjs",
+          "max-satisfying",
+          "caret-zero-minor",
+          "inc-patch-prerelease"
+        ]
+      },
+      "prelude": [
+        "../../reference.md",
+        "../../reference.pt-BR.md",
+        "../../../CHANGELOG.md"
+      ]
+    },
+    {
+      "id": "long-session-yaml-2-bugs",
+      "git": "https://github.com/nodeca/js-yaml.git",
+      "ref": "2cef47bebf60da141b78b085f3dea3b5733dcc12",
+      "prompt": "Two bug reports arrived for this repository today. Handle them one after another, as in a normal work session.\n\n1. A user reports: merge keys stopped working. yaml.load('base: &b {a: 1, b: 2}\\nx:\\n  <<: *b\\n  c: 3\\n').x returns { c: 3 } instead of { a: 1, b: 2, c: 3 }.\n2. A user reports: a literal block with the strip indicator keeps its trailing newlines. yaml.load('s: |-\\n  text\\n\\n').s returns 'text\\n\\n' instead of 'text'.\n\nFix each one in this repository with a minimal change. Do not change the tests. When all are fixed, say in one line per report which file and function you changed.",
+      "setup": [
+        [
+          "node",
+          "{casesDir}/held-out-bugs.mjs",
+          "inject",
+          "yaml-merge-keys"
+        ],
+        [
+          "node",
+          "{casesDir}/held-out-bugs.mjs",
+          "inject",
+          "yaml-block-chomping"
+        ]
+      ],
+      "check": {
+        "command": [
+          "node",
+          "{casesDir}/check-all.mjs",
+          "{casesDir}/held-out-bugs.mjs",
+          "yaml-merge-keys",
+          "yaml-block-chomping"
+        ]
+      },
+      "prelude": [
+        "../../reference.md",
+        "../../reference.pt-BR.md",
+        "../../../CHANGELOG.md"
+      ]
+    }
+  ]
+}

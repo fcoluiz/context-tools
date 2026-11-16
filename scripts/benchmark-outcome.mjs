@@ -56,8 +56,12 @@ export function loadCases(file) {
   const subst = (v) => (typeof v === 'string' ? v.split('{casesDir}').join(base) : v);
   return cases.map((c) => {
     if (!c.id || !(c.repo || c.git) || !c.prompt || !c.check) throw new Error(`case needs id, repo or git, prompt and check: ${JSON.stringify(c).slice(0, 120)}`);
+    // `prelude`: arquivos (relativos ao arquivo de casos) colados antes do pedido, como notas já lidas
+    // nesta sessão. Simula uma sessão longa, com o contexto principal grande, sem rodar horas de agente.
+    const prelude = (c.prelude || []).map((p) => readFileSync(resolve(base, p), 'utf8')).join('\n\n');
     return {
       ...c,
+      prompt: prelude ? `Notes read earlier in this work session (context only; nothing to do about them):\n\n${prelude}\n\n---\n\n${c.prompt}` : c.prompt,
       repo: c.repo ? resolve(base, c.repo) : null,
       setup: (c.setup || []).map((cmd) => cmd.map(subst)),
       check: c.check.command ? { command: c.check.command.map(subst) } : c.check,
@@ -72,7 +76,59 @@ export function plan(cases, arms = ['without', 'with'], reps = 1) {
   return out;
 }
 
-const BRACOS_EMBUTIDOS = { without: {}, with: { pluginDir: PLUGIN_DIR }, 'context-tools': { pluginDir: PLUGIN_DIR } };
+// `delegate`: o braço `with` mais uma instrução de sistema para entregar o trabalho volumoso aos
+// subagentes `ct-*` do plugin. Comparado com `with`, isola o efeito da delegação: mesmo plugin,
+// mesma skill, mesmos agentes disponíveis; só muda a instrução.
+// Sem `|`, `<`, `>`, `&`, `^` nem aspas: no Windows o `claude` do npm é um `.cmd`, e o `cmd.exe`
+// interpreta esses caracteres no meio do argumento (um `|` virou pipe e o braço nem começou).
+const CT = `node ${join(PLUGIN_DIR, 'scripts', 'ct.mjs').replace(/\\/g, '/')}`;
+export const DELEGATE_PROMPT = [
+  'Delegate bulky, low-judgment work to the cheap context-tools subagents instead of doing it in this context:',
+  'wide searches (where something is defined or used, who calls it) go to the context-tools:ct-explorer agent;',
+  'running the tests goes to context-tools:ct-verifier; mechanical edits you have already decided go to context-tools:ct-executor.',
+  `Build each subagent prompt by running ${CT} brief followed by the task in quotes and --role=explorer, --role=verifier or --role=executor`,
+  '(add --files=a,b for the files in focus and --allow=FILES for the files an executor may edit),',
+  'and pass its output as the prompt. Keep the decisions and the final answer here, and check what a subagent returns before relying on it.',
+].join(' ');
+// `delegate-forced`: a investigação TEM de ir para o explorador. Com o `delegate`, o Opus não delegou
+// nenhuma vez em tarefas de 2 a 11 turnos (rodada de 2026-11-16): este braço mede o custo de delegar
+// mesmo assim.
+export const DELEGATE_FORCED_PROMPT = [
+  'Do not search or read the repository code yourself.',
+  'Hand every investigation (where something is defined, who calls it, where a bug comes from) to the context-tools:ct-explorer agent,',
+  `with its prompt built by running ${CT} brief followed by the question in quotes and --role=explorer.`,
+  'Decide from what it returns; you may then edit a file yourself once you know the exact change. Keep the final answer here.',
+].join(' ');
+// `delegate-direct`: como o forçado, mas sem o turno do `ct brief`. No A/B de 2026-11-16 o braço forçado
+// gastou o mesmo que o `with` na sessão longa: cada delegação custava dois turnos da principal
+// (montar o briefing, chamar o agente), e cada turno relia ~140k tokens. O agente recebe o `ct` pelo
+// SubagentStart.
+export const DELEGATE_DIRECT_PROMPT = [
+  'Do not search or read the repository code yourself.',
+  'Hand every investigation (where something is defined, who calls it, where a bug comes from) to the context-tools:ct-explorer agent:',
+  'call it directly with the full question, and ask it to return the exact file, line and current text of each place that matters.',
+  'Put independent questions in one call. Decide from what it returns; you may then edit a file yourself once you know the exact change.',
+  'Keep the final answer here.',
+].join(' ');
+// `delegate-full`: a principal não lê nem edita. No `delegate-direct` a correção empatou porque o Edit
+// exige ler o arquivo antes, e a principal relia o que o explorador achou; aqui a edição vai ao
+// executor, com o escopo de escrita declarado na mesma mensagem que o chama.
+export const DELEGATE_FULL_PROMPT = [
+  'Do not search, read or edit the repository code yourself.',
+  'Hand every investigation to the context-tools:ct-explorer agent: call it directly with the full question, and ask it to return',
+  'the exact file, line and current text of each place that matters and the minimal change that fixes it. Put independent questions in one call.',
+  'Then hand the edits to the context-tools:ct-executor agent. In one message, first run',
+  `${CT} delegate scope --role=executor --allow=FILES with the comma-separated files to change,`,
+  'then call the executor with the exact old and new text of every change, all changes in one call.',
+  'Check its report and keep the final answer here.',
+].join(' ');
+const BRACOS_EMBUTIDOS = {
+  without: {}, with: { pluginDir: PLUGIN_DIR }, 'context-tools': { pluginDir: PLUGIN_DIR },
+  delegate: { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_PROMPT },
+  'delegate-forced': { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_FORCED_PROMPT },
+  'delegate-direct': { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_DIRECT_PROMPT },
+  'delegate-full': { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_FULL_PROMPT },
+};
 
 /**
  * Braços de outras ferramentas: `{ "vars": { nome: valor }, "arms": { nome: espec } }`. A espec
@@ -113,6 +169,7 @@ export function claudeArgs(arm, { perRunCost, model } = {}, files = {}) {
   for (const p of [spec.pluginDir || []].flat()) args.push('--plugin-dir', p);
   if (files.settings) args.push('--settings', files.settings);
   if (files.mcp) args.push('--mcp-config', files.mcp);
+  if (spec.appendSystemPrompt) args.push('--append-system-prompt', spec.appendSystemPrompt);
   return args;
 }
 
@@ -327,6 +384,8 @@ async function executar(item, opts) {
     filesChanged: changed.filter((f) => !/^(ai-context|\.claude|\.codex)\//.test(f)).length,
     error: runError(json, r),
     model: json?.modelUsage ? Object.keys(json.modelUsage).join(',') : (opts.model || null),
+    // Custo por modelo, como o CLI informa: separa a sessão principal dos subagentes (braço `delegate`).
+    costByModel: json?.modelUsage ? Object.fromEntries(Object.entries(json.modelUsage).map(([m, u]) => [m, Number(u?.costUSD) || 0])) : null,
     tools: tools.map((t) => anonimizar(t, dir)),
     answer: anonimizar(resposta.slice(0, 2000), dir),
   };

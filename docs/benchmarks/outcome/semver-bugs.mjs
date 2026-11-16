@@ -23,6 +23,20 @@ const BUGS = {
     find: /(case 'patch':[\s\S]*?)if \(this\.prerelease\.length === 0\) \{/,
     replace: '$1if (this.prerelease.length >= 0) {',
   },
+  // Casos "difíceis" (A/B da delegação): a causa fica num módulo interno que várias funções usam,
+  // longe do sintoma relatado; remendar só a função citada no relato não passa no check.
+  // Numeric prerelease identifiers compared as text: rc.10 sorts before rc.9.
+  'prerelease-numeric-order': {
+    file: 'internal/identifiers.js',
+    find: /return a === b \? 0 : a < b \? -1 : 1/,
+    replace: 'return a === b ? 0 : `${a}` < `${b}` ? -1 : 1',
+  },
+  // Options reduced to `loose`: includePrerelease is silently dropped everywhere.
+  'options-include-prerelease': {
+    file: 'internal/parse-options.js',
+    find: / {2}return options(?=\r?\n\})/,
+    replace: '  return { loose: !!options.loose }',
+  },
 };
 
 const CHECKS = {
@@ -46,6 +60,26 @@ const CHECKS = {
     [s.inc('1.2.3-beta.1', 'patch'), '1.2.3'],
     [s.inc('1.2.3', 'minor'), '1.3.0'],
     [s.inc('1.2.3-0', 'prerelease'), '1.2.3-1'],
+  ],
+  'prerelease-numeric-order': (s) => [
+    [s.gt('1.0.0-rc.10', '1.0.0-rc.9'), true],
+    [s.sort(['1.0.0-rc.10', '1.0.0-rc.9', '1.0.0-rc.2']).join(), '1.0.0-rc.2,1.0.0-rc.9,1.0.0-rc.10'],
+    [s.compare('1.0.0-alpha.2', '1.0.0-alpha.10'), -1],
+    [s.maxSatisfying(['1.0.0-beta.9', '1.0.0-beta.10'], '>=1.0.0-beta.0'), '1.0.0-beta.10'],
+    [s.compare('1.0.0-alpha', '1.0.0-alpha.1'), -1],
+    [s.compare('1.0.0-alpha.beta', '1.0.0-alpha.1'), 1],
+    [s.compare('1.0.0-beta', '1.0.0-alpha'), 1],
+    [s.inc('1.0.0-rc.9', 'prerelease'), '1.0.0-rc.10'],
+  ],
+  'options-include-prerelease': (s) => [
+    [s.satisfies('1.3.0-beta.1', '^1.2.0', { includePrerelease: true }), true],
+    [s.satisfies('1.3.0-beta.1', '^1.2.0'), false],
+    [s.maxSatisfying(['1.2.0', '1.3.0-beta.1'], '^1.2.0', { includePrerelease: true }), '1.3.0-beta.1'],
+    [new s.Range('^1.2.0', { includePrerelease: true }).test('1.3.0-beta.1'), true],
+    [s.intersects('^1.2.0', '1.3.0-beta.1', { includePrerelease: true }), true],
+    [s.valid('=1.2.3', true), '1.2.3'],
+    [s.valid('=1.2.3', { loose: true }), '1.2.3'],
+    [s.valid('=1.2.3'), null],
   ],
 };
 

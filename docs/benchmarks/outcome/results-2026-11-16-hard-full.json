@@ -1,0 +1,1162 @@
+[
+  {
+    "case": "long-hard-semver-2-bugs",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.4095125999999998,
+    "turns": 12,
+    "durationMs": 55553,
+    "tokens": {
+      "input": 22,
+      "output": 2855,
+      "cacheCreation": 135868,
+      "cacheRead": 1326903
+    },
+    "hooks": {
+      "emitted": 8,
+      "contextChars": 2974,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 1,
+          "contextChars": 406
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 2,
+          "contextChars": 1449
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 298
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 227
+        }
+      }
+    },
+    "injected": {
+      "emitted": 6,
+      "contextChars": 2974,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "PreToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 406
+        },
+        "PostToolUse:Grep": {
+          "emitted": 2,
+          "contextChars": 1449
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 525
+        }
+      }
+    },
+    "filesChanged": 2,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.4095125999999998
+    },
+    "tools": [
+      "Read: <copy>\\internal\\identifiers.js",
+      "Edit: <copy>\\internal\\identifiers.js",
+      "Grep: includePrerelease",
+      "Read: <copy>\\classes\\range.js",
+      "Read: <copy>\\classes\\range.js",
+      "Bash: cd \"<copy>\" && node -e \" const s=require('./');const r=new s.Range('^1.2.0',{includePrerel",
+      "Grep: testSet\\(|^ test \\(",
+      "Bash: cd \"<copy>\" && cat functions/satisfies.js internal/parse-options.js && node -e \"const s=re",
+      "Edit: <copy>\\internal\\parse-options.js",
+      "Bash: cd \"<copy>\" && git log --oneline -1 && node -e \"const s=require('./');console.log(s.satisf",
+      "Read: <copy>\\test\\internal\\parse-options.js"
+    ],
+    "answer": "I didn't add a context map or `ai-context` document for these two fixes. Each one changes a single line in a small helper whose behaviour the existing tests already pin down (`test/internal/parse-options.js` and the identifier tests), so a separate document would only repeat them."
+  },
+  {
+    "case": "long-hard-semver-2-bugs",
+    "arm": "delegate-full",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.2973549550000003,
+    "turns": 6,
+    "durationMs": 124718,
+    "tokens": {
+      "input": 14,
+      "output": 3180,
+      "cacheCreation": 134439,
+      "cacheRead": 740678
+    },
+    "hooks": {
+      "emitted": 8,
+      "contextChars": 1839,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 3,
+          "contextChars": 720
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 298
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 227
+        }
+      }
+    },
+    "injected": {
+      "emitted": 6,
+      "contextChars": 1839,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 2,
+          "contextChars": 480
+        },
+        "SubagentStart:context-tools:ct-executor": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 525
+        }
+      }
+    },
+    "filesChanged": 2,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.2873036000000002,
+      "claude-haiku-5-5": 0.010051355000000001
+    },
+    "tools": [
+      "Agent",
+      "Bash: cd \"<copy>\" && cat internal/identifiers.js && grep -n \"comparePre\\|compareBuild\\|compareId",
+      "Bash: cd \"<copy>\" && grep -n \"testSet\\|replaceCaret\\|includePrerelease\\|-0\" classes/range.js | h",
+      "Bash: cd \"<copy>\" && sed -n 348,398p classes/range.js; echo ----; sed -n 543,575p classes/range.",
+      "Bash: cd \"<copy>\" && node -e \" const s=require('./index.js'); console.log(s.satisfies('1.3.0-bet",
+      "Bash: cd \"<copy>\" && grep -n '>=${M}.${m}.${p$' classes/range.js; grep -n 'z = options.includePr",
+      "SendMessage",
+      "Agent",
+      "Bash: cd \"<copy>\" && node -e \" const s=require('./'); const R=require('./classes/range.js'); con",
+      "Bash: cd \"<copy>\" && grep -n \"testSet\\|prerelease\\|includePrerelease\" classes/range.js | head -6",
+      "Bash: cd \"<copy>\" && sed -n 543,590p classes/range.js; sed -n 200,220p classes/range.js",
+      "Bash: cd \"<copy>\" && node -e \" const R=require('./classes/range.js');const SV=require('./classes",
+      "Bash: cd \"<copy>\" && grep -n \"return { loose\" internal/parse-options.js; node -e \" const s=requi",
+      "Bash: node <plugin>/scripts/ct.mjs delegate scope --role=executor --allow=internal/identifiers.js,internal/parse-options.js",
+      "Agent",
+      "Read: <copy>\\internal\\identifiers.js",
+      "Read: <copy>\\internal\\parse-options.js",
+      "Edit: <copy>\\internal\\identifiers.js",
+      "Edit: <copy>\\internal\\parse-options.js",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.sort(['1.0.0-rc.10','1.0.0-rc.",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.sort(['1.0.0-rc.10','1.0.0-rc."
+    ],
+    "answer": "I didn't add an `ai-context` document or a context map for `internal/identifiers.js` or `internal/parse-options.js`. Both changes are one-line bug fixes that restore node-semver's normal behaviour, with no new design, and the existing test suite already covers that behaviour. A document or map would add upkeep without telling anyone more."
+  },
+  {
+    "case": "long-hard-semver-2-bugs",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.5763506,
+    "turns": 16,
+    "durationMs": 65431,
+    "tokens": {
+      "input": 32,
+      "output": 3431,
+      "cacheCreation": 136701,
+      "cacheRead": 2069973
+    },
+    "hooks": {
+      "emitted": 10,
+      "contextChars": 3409,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 2,
+          "contextChars": 958
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 3,
+          "contextChars": 1332
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 298
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 227
+        }
+      }
+    },
+    "injected": {
+      "emitted": 8,
+      "contextChars": 3409,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "PreToolUse:Grep": {
+          "emitted": 2,
+          "contextChars": 958
+        },
+        "PostToolUse:Grep": {
+          "emitted": 3,
+          "contextChars": 1332
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 525
+        }
+      }
+    },
+    "filesChanged": 2,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.5763506
+    },
+    "tools": [
+      "Grep: compareIdentifiers|isNaN|anum|bnum",
+      "Read: <copy>\\internal\\identifiers.js",
+      "Edit: <copy>\\internal\\identifiers.js",
+      "Grep: includePrerelease",
+      "Read: <copy>\\classes\\range.js",
+      "Read: <copy>\\classes\\range.js",
+      "PowerShell: node -e \"const s=require('./');const r=new s.Range('^1.2.0',{includePrerelease:true});console.log(r.range, s.satisfies('1.3.0-beta.1','^1.2.0',{includePrereleas",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');const r=new s.Range('^1.2.0',{includePrerele",
+      "Read: <copy>\\classes\\comparator.js",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');const r=new s.Range('^1.2.0',{includePrerele",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');const r=new s.Range('^1.2.0',{includePrerele",
+      "Grep: ^ test \\(version\\)",
+      "Read: <copy>\\internal\\parse-options.js",
+      "Edit: <copy>\\internal\\parse-options.js",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.satisfies('1.3.0-beta.1','^1.2"
+    ],
+    "answer": "I didn't add documentation or a context map for these changes. Each was a one-line fix in a small internal helper (`internal/identifiers.js`, `internal/parse-options.js`), and the code is clear without a document."
+  },
+  {
+    "case": "long-hard-semver-2-bugs",
+    "arm": "delegate-full",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.2359902899999997,
+    "turns": 3,
+    "durationMs": 41114,
+    "tokens": {
+      "input": 8,
+      "output": 1549,
+      "cacheCreation": 4033,
+      "cacheRead": 434954
+    },
+    "hooks": {
+      "emitted": 8,
+      "contextChars": 1906,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 2,
+          "contextChars": 480
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 1,
+          "contextChars": 307
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 298
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 227
+        }
+      }
+    },
+    "injected": {
+      "emitted": 6,
+      "contextChars": 1906,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PreToolUse:Bash": {
+          "emitted": 1,
+          "contextChars": 307
+        },
+        "SubagentStart:context-tools:ct-executor": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 525
+        }
+      }
+    },
+    "filesChanged": 2,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.2268876,
+      "claude-haiku-5-5": 0.00910269
+    },
+    "tools": [
+      "Agent",
+      "Bash: cat -n internal/identifiers.js && grep -n \"comparePre\\|prerelease\" classes/semver.js | head -40 && grep -n \"replaceCaret\\|function testSet\\|includePrerelease\\|-",
+      "Bash: sed -n 76,86p classes/semver.js && echo ---- && sed -n 151,180p classes/semver.js && echo ---- && sed -n 340,400p classes/range.js && echo ---- && sed -n 1,60p ",
+      "Bash: grep -n 'ret = `>=${M}.${m}.${p$\\|ret = `>=${M}.${m}.${p}' classes/range.js; node -e \"const s=require('./');console.log(s.satisfies('1.3.0-beta.1','>=1.2.0',{in",
+      "Bash: node -e \"const s=require('./');console.log(s.gt('1.3.0-beta.1','1.2.0'), s.lt('1.3.0-beta.1','2.0.0-0'), s.satisfies('1.3.0-beta.1','>=1.2.0',{includePrerelease",
+      "Bash: grep -n \" test (\" -A12 classes/comparator.js; grep -n \"^const testSet\" -A25 classes/range.js | sed -n 13,25p; grep -n \"test (version)\" -A8 classes/range.js | he",
+      "Bash: node -e \"const s=require('./');const o={includePrerelease:true};console.log(new s.Comparator('>=1.2.0',o).test('1.3.0-beta.1'), new s.Range('>=1.2.0',o).set.map",
+      "Bash: sed -n 205,222p classes/range.js; sed -n 543,546p classes/range.js; sed -n 566,580p classes/range.js",
+      "Bash: node -e \"const s=require('./');const o={includePrerelease:true};const r=new s.Range('>=1.2.0',o);console.log(r.test('1.3.0-beta.1'), r.test(new s.SemVer('1.3.0-",
+      "Bash: sed -n 20,40p classes/range.js",
+      "Bash: cat internal/parse-options.js; sed -n 1,19p classes/range.js | grep -n \"options\"",
+      "Bash: node <plugin>/scripts/ct.mjs delegate scope --role=executor --allow=internal/identifiers.js,internal/parse-options.js",
+      "Agent",
+      "Read: <copy>\\internal\\identifiers.js",
+      "Read: <copy>\\internal\\parse-options.js",
+      "Edit: <copy>\\internal\\identifiers.js",
+      "Edit: <copy>\\internal\\parse-options.js",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.sort(['1.0.0-rc.10','1.0.0-rc.",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.sort(['1.0.0-rc.10','1.0.0-rc."
+    ],
+    "answer": "I'm not adding a context map or `ai-context` document for these. Each fix was one line in a small helper, and the code is clear without one."
+  },
+  {
+    "case": "long-hard-semver-2-bugs",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.4414382000000001,
+    "turns": 13,
+    "durationMs": 54432,
+    "tokens": {
+      "input": 24,
+      "output": 3103,
+      "cacheCreation": 135554,
+      "cacheRead": 1474251
+    },
+    "hooks": {
+      "emitted": 6,
+      "contextChars": 1468,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 349
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 298
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 227
+        }
+      }
+    },
+    "injected": {
+      "emitted": 4,
+      "contextChars": 1468,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "PostToolUse:Bash": {
+          "emitted": 1,
+          "contextChars": 349
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 525
+        }
+      }
+    },
+    "filesChanged": 2,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.4414382000000001
+    },
+    "tools": [
+      "Bash: cd \"<copy>\" && cat internal/identifiers.js && grep -n \"includePrerelease\\|prerelease\" clas",
+      "Read: <copy>\\classes\\range.js",
+      "Read: <copy>\\classes\\range.js",
+      "Bash: cd \"<copy>\" && node -e \"const R=require('./classes/range');console.log(new R('^1.2.0',{inc",
+      "Bash: cd \"<copy>\" && cat functions/satisfies.js && grep -n \"test\\b\\|test(\" classes/range.js clas",
+      "Read: <copy>\\classes\\range.js",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.gte('1.3.0-beta.1','1.2.0'),s.",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');const R=require('./classes/range');const r=n",
+      "Bash: cd \"<copy>\" && cat internal/parse-options.js",
+      "Edit: <copy>\\internal\\parse-options.js",
+      "Edit: <copy>\\internal\\identifiers.js",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.sort(['1.0.0-rc.10','1.0.0-rc."
+    ],
+    "answer": "I'm not adding a context map or `ai-context` document for these two files. Each fix was a one-line correction to a small helper, and there's no design or flow here that a future session would need explained. The two fixes listed above are unchanged and complete."
+  },
+  {
+    "case": "long-hard-semver-2-bugs",
+    "arm": "delegate-full",
+    "rep": 3,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.2345206399999997,
+    "turns": 3,
+    "durationMs": 47183,
+    "tokens": {
+      "input": 8,
+      "output": 1501,
+      "cacheCreation": 4135,
+      "cacheRead": 435113
+    },
+    "hooks": {
+      "emitted": 11,
+      "contextChars": 3247,
+      "deduped": 0,
+      "byScript": {
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 2,
+          "contextChars": 480
+        },
+        "pre-tool.mjs · PreToolUse": {
+          "emitted": 3,
+          "contextChars": 1283
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 365
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 298
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 227
+        }
+      }
+    },
+    "injected": {
+      "emitted": 9,
+      "contextChars": 3247,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PreToolUse:Bash": {
+          "emitted": 3,
+          "contextChars": 1283
+        },
+        "PostToolUse:Bash": {
+          "emitted": 1,
+          "contextChars": 365
+        },
+        "SubagentStart:context-tools:ct-executor": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 525
+        }
+      }
+    },
+    "filesChanged": 2,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.2257126,
+      "claude-haiku-5-5": 0.008808040000000001
+    },
+    "tools": [
+      "Agent",
+      "Bash: cd \"<copy>\" && cat internal/identifiers.js && grep -n \"comparePre\\b\" -A40 classes/semver.j",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.sort(['1.0.0-rc.10','1.0.0-rc.",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');const R=s.Range;console.log(new R('^1.2.0',{",
+      "Bash: cd \"<copy>\" && sed -n 136,146p classes/range.js; sed -n 496,506p classes/range.js; grep -n",
+      "Bash: cd \"<copy>\" && grep -n '>=\\${M}.\\${m}.\\${p$\\|>=\\${M}.\\${m}.\\${p\\s*$\\|^\\s*const compareIden",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(new s.Range('>=1.2.0-0 <2.0.0-0'",
+      "Bash: cd \"<copy>\" && sed -n 196,218p classes/range.js; sed -n 575,585p classes/range.js; node -e",
+      "Bash: cd \"<copy>\" && sed -n 1,40p classes/range.js; grep -n \"parseOptions\" -A12 internal/parse-o",
+      "Bash: node <plugin>/scripts/ct.mjs delegate scope --role=executor --allow=internal/identifiers.js,internal/parse-options.js",
+      "Agent",
+      "Read: <copy>\\internal\\identifiers.js",
+      "Read: <copy>\\internal\\parse-options.js",
+      "Edit: <copy>\\internal\\identifiers.js",
+      "Edit: <copy>\\internal\\parse-options.js",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.sort(['1.0.0-rc.10','1.0.0-rc.",
+      "Bash: cd \"<copy>\" && node -e \"const s=require('./');console.log(s.sort(['1.0.0-rc.10','1.0.0-rc."
+    ],
+    "answer": "I'm not adding a context map or `ai-context` document for these changes. Each fix is one line in a small helper file, and nothing about how the code is organised changed. A document here would mostly repeat the code."
+  },
+  {
+    "case": "long-hard-yaml-2-bugs",
+    "arm": "with",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.3614210000000004,
+    "turns": 11,
+    "durationMs": 67547,
+    "tokens": {
+      "input": 20,
+      "output": 2466,
+      "cacheCreation": 134634,
+      "cacheRead": 1174745
+    },
+    "hooks": {
+      "emitted": 7,
+      "contextChars": 2375,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 2,
+          "contextChars": 1260
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 201
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 272
+        }
+      }
+    },
+    "injected": {
+      "emitted": 5,
+      "contextChars": 2375,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "PostToolUse:Grep": {
+          "emitted": 2,
+          "contextChars": 1260
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 473
+        }
+      }
+    },
+    "filesChanged": 2,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.3614210000000004
+    },
+    "tools": [
+      "Grep: null|duplicated mapping key|function mergeMappings|overridableKeys",
+      "Glob: lib/**/*.js",
+      "Read: <copy>\\lib\\type\\null.js",
+      "Grep: overridableKeys|duplicated mapping key|function storeMappingPair|function mergeMappings",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Grep: function isPlainSafe|function chooseScalarStyle|testAmbiguousType|function testImplicitResolving|implicitTypes",
+      "Read: <copy>\\lib\\dumper.js",
+      "Edit: <copy>\\lib\\dumper.js",
+      "Bash: cd \"<copy>\" && node -e \" const y=require('./'); console.log(JSON.stringify(y.dump({a:'null'}"
+    ],
+    "answer": "I didn't add a context map or an `ai-context` doc for `lib/dumper.js` and `lib/loader.js`. Both changes are one-line fixes to existing js-yaml behaviour, nothing new was designed, and you didn't ask for documentation. If you want a map of the loader/dumper area anyway, I can write one."
+  },
+  {
+    "case": "long-hard-yaml-2-bugs",
+    "arm": "delegate-full",
+    "rep": 1,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.2261731550000006,
+    "turns": 3,
+    "durationMs": 39255,
+    "tokens": {
+      "input": 8,
+      "output": 1177,
+      "cacheCreation": 3695,
+      "cacheRead": 435006
+    },
+    "hooks": {
+      "emitted": 9,
+      "contextChars": 2573,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 2,
+          "contextChars": 480
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 2,
+          "contextChars": 978
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 272
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 201
+        }
+      }
+    },
+    "injected": {
+      "emitted": 7,
+      "contextChars": 2573,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Bash": {
+          "emitted": 1,
+          "contextChars": 647
+        },
+        "SubagentStart:context-tools:ct-executor": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 331
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 473
+        }
+      }
+    },
+    "filesChanged": 2,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.2193234000000002,
+      "claude-haiku-5-5": 0.006849755
+    },
+    "tools": [
+      "Agent",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./');console.log(JSON.stringify(y.dump({a:'null'}))",
+      "Read: <copy>/lib/dumper.js",
+      "Read: <copy>/lib/loader.js",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./');console.log(y.DEFAULT_SCHEMA.compiledImplicit.",
+      "Bash: node <plugin>/scripts/ct.mjs delegate scope --role=executor --allow=lib/dumper.js,lib/loader.js",
+      "Agent",
+      "Grep: for \\(index = 1, length = state.implicitTypes.length|if \\(!_hasOwnProperty.call\\(destination, key\\)\\)",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\dumper.js",
+      "Edit: <copy>\\lib\\dumper.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: git diff && echo \"---VERIFY---\" && node -e \"const y=require('./');console.log(JSON.stringify(y.load(y.dump({a:'null'}))));console.log(JSON.stringify(y.load('bas",
+      "Bash: git diff",
+      "Bash: node -e \"const y=require('./');console.log(JSON.stringify(y.load(y.dump({a:'null'}))));console.log(JSON.stringify(y.load('base: &b {a: 1, b: 2}\\nx:\\n <<: *b\\n b",
+      "Bash: ls node_modules/.bin/mocha"
+    ],
+    "answer": "I'm not adding documentation or a context map for these changes. They are two one-line bug fixes in a third-party library (js-yaml), and the code itself explains them. A map or `ai-context` document would only record a past fix, which is already in the git diff."
+  },
+  {
+    "case": "long-hard-yaml-2-bugs",
+    "arm": "with",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.4303316,
+    "turns": 9,
+    "durationMs": 41851,
+    "tokens": {
+      "input": 16,
+      "output": 1886,
+      "cacheCreation": 151942,
+      "cacheRead": 885058
+    },
+    "hooks": {
+      "emitted": 7,
+      "contextChars": 2590,
+      "deduped": 0,
+      "byScript": {
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 2,
+          "contextChars": 1475
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 272
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 201
+        }
+      }
+    },
+    "injected": {
+      "emitted": 5,
+      "contextChars": 2590,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "PostToolUse:Grep": {
+          "emitted": 2,
+          "contextChars": 1475
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 473
+        }
+      }
+    },
+    "filesChanged": 2,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.4303316
+    },
+    "tools": [
+      "Grep: function (isPlainSafe|storeMappingPair|chooseScalarStyle)|null|duplicated mapping key",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\dumper.js",
+      "Grep: testAmbiguity|function testImplicitResolving",
+      "Read: <copy>\\lib\\type\\null.js",
+      "Edit: <copy>\\lib\\dumper.js",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./');console.log(JSON.stringify(y.dump({a:'null'}))"
+    ],
+    "answer": "I didn't add an `ai-context` document or a context map for `lib/dumper.js` or `lib/loader.js`. Both changes were one-line fixes to existing functions, and a note in a new document would only repeat the code. If you want one anyway, I can write it."
+  },
+  {
+    "case": "long-hard-yaml-2-bugs",
+    "arm": "delegate-full",
+    "rep": 2,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.222025235,
+    "turns": 3,
+    "durationMs": 33736,
+    "tokens": {
+      "input": 8,
+      "output": 1145,
+      "cacheCreation": 3407,
+      "cacheRead": 434474
+    },
+    "hooks": {
+      "emitted": 9,
+      "contextChars": 2824,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 2,
+          "contextChars": 480
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 2,
+          "contextChars": 1229
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 272
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 201
+        }
+      }
+    },
+    "injected": {
+      "emitted": 7,
+      "contextChars": 2824,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Bash": {
+          "emitted": 1,
+          "contextChars": 556
+        },
+        "SubagentStart:context-tools:ct-executor": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 673
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 473
+        }
+      }
+    },
+    "filesChanged": 2,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.2156166000000002,
+      "claude-haiku-5-5": 0.006408635
+    },
+    "tools": [
+      "Agent",
+      "Bash: node -e \"const y=require('./'); console.log(JSON.stringify(y.dump({a:'null'}))); console.log(y.load('base: &b {a: 1, b: 2}\\nx:\\n <<: *b\\n b: 9\\n'))\" 2>&1 | head",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\dumper.js",
+      "Read: <copy>\\lib\\dumper.js",
+      "Bash: node -e \"const y=require('./'); console.log(y.load('a: null')); \" ; node -e \"const d=require('./lib/schema/default.js'); console.log(d.implicitTypes ? '' : Obje",
+      "Bash: grep -n \"implicitTypes\" lib/*.js | head; node -e \"const d=require('./lib/schema/default.js'); console.log(d.compiledImplicit.map(t=>t.tag))\" 2>&1 | head -3; gre",
+      "Bash: node <plugin>/scripts/ct.mjs delegate scope --role=executor --allow=lib/dumper.js,lib/loader.js",
+      "Agent",
+      "Grep: for \\(index = 1, length = state.implicitTypes.length|if \\(!_hasOwnProperty.call\\(destination, key\\)\\)|overridableKeys",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\dumper.js",
+      "Edit: <copy>\\lib\\dumper.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./'); console.log(JSON.stringify(y.load(y.dump({a:'",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./'); console.log(JSON.stringify(y.load(y.dump({a:'",
+      "Bash: cd \"<copy>\" && git diff"
+    ],
+    "answer": "I haven't added a context map or `ai-context` document for `lib/dumper.js` or `lib/loader.js`. Both changes are one-line bug fixes that leave the code's design and behaviour as intended. This copy of the repository is also temporary, so a map here would add something to maintain without helping much."
+  },
+  {
+    "case": "long-hard-yaml-2-bugs",
+    "arm": "with",
+    "rep": 3,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.2376072,
+    "turns": 7,
+    "durationMs": 43374,
+    "tokens": {
+      "input": 14,
+      "output": 1610,
+      "cacheCreation": 132252,
+      "cacheRead": 736676
+    },
+    "hooks": {
+      "emitted": 6,
+      "contextChars": 2433,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 1318
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 272
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 201
+        }
+      }
+    },
+    "injected": {
+      "emitted": 4,
+      "contextChars": 2433,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "PostToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 1318
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 473
+        }
+      }
+    },
+    "filesChanged": 2,
+    "error": null,
+    "model": "claude-opus-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.2376072
+    },
+    "tools": [
+      "Grep: function isPlainSafe|implicitTypes|testImplicitResolving|overridableKeys|function mergeMappings|duplicated mapping key",
+      "Read: <copy>\\lib\\dumper.js",
+      "Read: <copy>\\lib\\loader.js",
+      "Edit: <copy>\\lib\\dumper.js",
+      "Edit: <copy>\\lib\\loader.js",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./');console.log(JSON.stringify(y.dump({a:'null'}))"
+    ],
+    "answer": "I didn't add a context map or `ai-context` document for `lib/dumper.js` or `lib/loader.js`. Each change is a one-line bug fix inside an existing function, so it adds no new flow or rule worth writing down, and the fixes explain themselves in the diff."
+  },
+  {
+    "case": "long-hard-yaml-2-bugs",
+    "arm": "delegate-full",
+    "rep": 3,
+    "ok": true,
+    "check": "exit 0",
+    "costUsd": 1.189042815,
+    "turns": 4,
+    "durationMs": 62367,
+    "tokens": {
+      "input": 10,
+      "output": 1733,
+      "cacheCreation": 132210,
+      "cacheRead": 446689
+    },
+    "hooks": {
+      "emitted": 10,
+      "contextChars": 3444,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SubagentStart": {
+          "emitted": 2,
+          "contextChars": 480
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 3,
+          "contextChars": 1849
+        },
+        "context-docs.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 272
+        },
+        "context-maps.mjs · Stop": {
+          "emitted": 1,
+          "contextChars": 201
+        }
+      }
+    },
+    "injected": {
+      "emitted": 8,
+      "contextChars": 3444,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 642
+        },
+        "SubagentStart:context-tools:ct-explorer": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "PostToolUse:Grep": {
+          "emitted": 3,
+          "contextChars": 1849
+        },
+        "SubagentStart:context-tools:ct-executor": {
+          "emitted": 1,
+          "contextChars": 240
+        },
+        "Stop": {
+          "emitted": 2,
+          "contextChars": 473
+        }
+      }
+    },
+    "filesChanged": 2,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 1.1817178000000002,
+      "claude-haiku-5-5": 0.007325015000000001
+    },
+    "tools": [
+      "Agent",
+      "Grep: implicitTypes|testImplicitResolving|isNull|function chooseScalarStyle",
+      "Grep: overridableKeys|function storeMappingPair|function mergeMappings|duplicated mapping key",
+      "Read: <copy>\\lib\\loader.js",
+      "Read: <copy>\\lib\\dumper.js",
+      "Read: <copy>\\lib\\dumper.js",
+      "Read: <copy>\\lib\\type\\null.js",
+      "Bash: cd \"<copy>\" && node -e \"const y=require('./'); console.log(JSON.stringify(y.dump({a:'null'})",
+      "Bash: node <plugin>/scripts/ct.mjs delegate scope --role=executor --allow=lib/dumper.js,lib/loader.js",
+      "Agent",
+      "Grep: testImplicitResolving|index = 1, length = state.implicitTypes|destination\\[key\\] = source\\[key\\]|function mergeMappings",
+      "Read: <copy>/lib/loader.js",
+      "Read: <copy>/lib/dumper.js",
+      "Edit: <copy>/lib/dumper.js",
+      "Edit: <copy>/lib/loader.js",
+      "Bash: node -e \"const y=require('./'); console.log(JSON.stringify(y.load(y.dump({a:'null'})))); console.log(JSON.stringify(y.load('base: &b {a: 1, b: 2}\\nx:\\n <<: *b\\n",
+      "Bash: node -e \"const y=require('./'); console.log(JSON.stringify(y.load(y.dump({a:'null'})))); console.log(JSON.stringify(y.load('base: &b {a: 1, b: 2}\\nx:\\n <<: *b\\n",
+      "Bash: git diff -- lib/dumper.js lib/loader.js"
+    ],
+    "answer": "I didn't add a context map or an `ai-context` document for `lib/dumper.js` or `lib/loader.js`. Each fix is a single line that brings the code in line with standard YAML behaviour, and there's no new design or flow to describe. Writing a document for that would mostly repeat the code and the git history."
+  }
+]

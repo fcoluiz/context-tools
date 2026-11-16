@@ -8,6 +8,44 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Cheap subagents for bulky, low-judgment work, on Claude and Codex.** Five delegated agents on
+  the newest Haiku: `ct-explorer` (where is it, who uses it) and `ct-verifier` (runs the tests and
+  brings back only the exit code and the literal failing lines) are read-only; `ct-map-keeper`
+  (maps and `ai-context/`), `ct-translator` (pt-BR ↔ English docs) and `ct-executor` (mechanical
+  edits already decided) write only inside a declared scope. On Claude they ship in the plugin's
+  `agents/` folder (the standalone installer copies them to `.claude/agents/`); on Codex,
+  `install-codex.mjs` generates `.codex/agents/ct-*.toml` from the same source, picking the highest-versioned
+  `*-luna` model Codex lists (the fast, cheap line; `--agent-model=` overrides, `--no-agents` skips).
+- **`ct brief "<task>" --role=<role>`** prints the subagent's briefing: the task and when it is
+  done, the role's rules, the absolute `ct` command line, the "Where to start" section of the
+  up-to-date maps that cover the files named, a filtered outline of the large ones and what usually
+  changes with them, under a character budget. `--allow=` declares the write scope.
+- **A guard for delegated agents.** A `PreToolUse` check denies edits by read-only roles, edits
+  outside the declared scope, and shell commands that change git state, call `gh`, publish a
+  package or write files. On Claude it is a hook entry matched by the event's `agent_type`; on Codex
+  it runs inside the edit and Bash hooks that already existed, because a new Codex hook stays silent
+  until approved in `/hooks`. The main session is never affected. A Codex subagent's hook event carries
+  the main session's id and the subagent's own turn id, so the guard finds the child rollout that
+  opened that turn and reads its `agent_role`; when it cannot tell the role, it does not block.
+- **`ct delegate report`** measures each subagent of a session from its transcript (requests
+  counted once by message id, API list prices, Haiku's long-prompt tier) and prints next to it an
+  estimate, labelled as such, of the same work done in the main context. `ct delegate
+  scope|status|clear` manage the write scopes.
+
+- **Delegated agents get the `ct` command at `SubagentStart` (Claude)**, so the main session can call
+  the explorer or the verifier in one turn, without a briefing. Measured in an A/B on Opus 5.5
+  (`docs/benchmarks/delegation-ab-2026-11-16.pt-BR.md`): in a session with a large context, delegating
+  bundled wide-search questions cut the marginal cost by 13% on average (53% in one case); on bug
+  fixes, delegating only the investigation tied (the main session reads the file anyway before
+  editing), and handing the edit to the executor as well cut it by 13% on localized bugs and by 44%
+  where the cause sat far from the reported symptom (61 runs, all solved). Building the briefing in
+  a separate turn had cancelled the gain. Two or three runs per case: a small sample.
+- **Outcome benchmark:** `delegate`, `delegate-forced`, `delegate-direct` and `delegate-full` arms,
+  per-model cost, `prelude` files to simulate a long session, cases whose cause sits far from the
+  symptom, and `check-all.mjs` for cases with several fixes.
+
 ### Fixed
 
 - **`setup migrate` now finds local hooks written with a relative path.** Older installers wrote

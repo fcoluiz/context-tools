@@ -88,5 +88,6 @@ o que ele imprimir. Quem digita `/compact` é o usuário; no Codex, o texto vai 
 - fila, worker, cron, job: `references/filas-workers.md`
 - deploy, Docker, CI, configuração: `references/servidores.md`
 - `health`, `providers`, `drift`, métricas, `context-tools.json`: `references/diagnostico.md`
+- busca larga, rodar testes, edição mecânica: delegue a um subagente barato (`references/delegacao.md`)
 
 Dívida adiada: `ct.mjs debt`.

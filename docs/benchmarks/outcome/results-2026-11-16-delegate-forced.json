@@ -1,0 +1,271 @@
+[
+  {
+    "case": "qa-newtonsoft-ensuredatetime-callers",
+    "arm": "delegate-forced",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.13467303,
+    "turns": 3,
+    "durationMs": 43676,
+    "tokens": {
+      "input": 6,
+      "output": 1039,
+      "cacheCreation": 12350,
+      "cacheRead": 62945
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 1679,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 335
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 1344
+        }
+      }
+    },
+    "injected": {
+      "emitted": 2,
+      "contextChars": 1679,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 335
+        },
+        "PostToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 1344
+        }
+      }
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 0.132193,
+      "claude-haiku-5-5": 0.0024800300000000003
+    },
+    "tools": [
+      "Bash: node <plugin>/scripts/ct.mjs brief \"List every method outside the test project (Src/Newtonsoft.Json.Tests) that calls DateTimeUtils.EnsureDateT",
+      "Agent",
+      "Grep: EnsureDateTime\\(",
+      "Bash: node \"<plugin>/scripts/ct.mjs\" refs EnsureDateTime"
+    ],
+    "answer": "BsonWriter.WriteValue\nJsonConvert.ToString\nJsonReader.ReadDateTimeString\nJsonTextWriter.WriteValue\nJsonTextWriter.DoWriteValueAsync\nJTokenWriter.WriteValue\nJTokenReader.SetToken\nJsonSerializerInternalWriter.GetPropertyName\nJsonSerializerInternalReader.EnsureType\nDateTimeUtils.TryParseDateTimeIso\nDateTimeUtils.TryParseDateTime\nDateTimeUtils.TryParseDateTimeMicrosoft\nDateTimeUtils.TryParseDateTimeExact"
+  },
+  {
+    "case": "qa-commons-lang-strings-null",
+    "arm": "delegate-forced",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.135924775,
+    "turns": 3,
+    "durationMs": 37984,
+    "tokens": {
+      "input": 6,
+      "output": 1037,
+      "cacheCreation": 12492,
+      "cacheRead": 63616
+    },
+    "hooks": {
+      "emitted": 5,
+      "contextChars": 2090,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 467
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 2,
+          "contextChars": 1623
+        }
+      }
+    },
+    "injected": {
+      "emitted": 3,
+      "contextChars": 2090,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 467
+        },
+        "PostToolUse:Grep": {
+          "emitted": 2,
+          "contextChars": 1623
+        }
+      }
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 0.13342320000000002,
+      "claude-haiku-5-5": 0.002501575
+    },
+    "tools": [
+      "Bash: node <plugin>/scripts/ct.mjs brief \"Which methods of StringUtils (src/main/java/org/apache/commons/lang3/StringUtils.java) throw IllegalArgumen",
+      "Agent",
+      "Grep: Strings must not be null",
+      "Grep: getFuzzyDistance\\(|getJaroWinklerDistance\\(|getLevenshteinDistance\\("
+    ],
+    "answer": "getFuzzyDistance(CharSequence term, CharSequence query, Locale locale)\ngetJaroWinklerDistance(CharSequence first, CharSequence second)\ngetLevenshteinDistance(CharSequence s, CharSequence t)\ngetLevenshteinDistance(CharSequence s, CharSequence t, int threshold)"
+  },
+  {
+    "case": "py-requests-to-native-string-callers",
+    "arm": "delegate-forced",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.12705863,
+    "turns": 3,
+    "durationMs": 37238,
+    "tokens": {
+      "input": 6,
+      "output": 804,
+      "cacheCreation": 12049,
+      "cacheRead": 63018
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 1395,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 463
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 932
+        }
+      }
+    },
+    "injected": {
+      "emitted": 2,
+      "contextChars": 1395,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 463
+        },
+        "PostToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 932
+        }
+      }
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 0.12509959999999998,
+      "claude-haiku-5-5": 0.0019590299999999996
+    },
+    "tools": [
+      "Bash: node <plugin>/scripts/ct.mjs brief \"Which functions or methods under src/requests call to_native_string? List each as Class.method (or function",
+      "Agent",
+      "Bash: node \"<plugin>/scripts/ct.mjs\" refs to_native_string",
+      "Grep: to_native_string\\(",
+      "Bash: node \"<plugin>/scripts/ct.mjs\" outline src/requests/cookies.py class; node \"<plugin>/scripts/ct.mjs\" outline src/requests/mode"
+    ],
+    "answer": "PreparedRequest.prepare_method\nPreparedRequest.prepare_url\nPreparedRequest.prepare_headers\nSessionRedirectMixin.get_redirect_target\nSessionRedirectMixin.resolve_redirects\nMockRequest.get_full_url\n_basic_auth_str"
+  },
+  {
+    "case": "js-semver-isx-users",
+    "arm": "delegate-forced",
+    "rep": 1,
+    "ok": true,
+    "check": "answer matched",
+    "costUsd": 0.13019957999999998,
+    "turns": 3,
+    "durationMs": 32949,
+    "tokens": {
+      "input": 6,
+      "output": 1008,
+      "cacheCreation": 12008,
+      "cacheRead": 63148
+    },
+    "hooks": {
+      "emitted": 4,
+      "contextChars": 1102,
+      "deduped": 0,
+      "byScript": {
+        "verify.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "context-docs.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "context-maps.mjs · SessionStart": {
+          "emitted": 1,
+          "contextChars": 0
+        },
+        "grep-context.mjs · PostToolUse": {
+          "emitted": 1,
+          "contextChars": 508
+        }
+      }
+    },
+    "injected": {
+      "emitted": 2,
+      "contextChars": 1102,
+      "byHook": {
+        "SessionStart:startup": {
+          "emitted": 1,
+          "contextChars": 594
+        },
+        "PostToolUse:Grep": {
+          "emitted": 1,
+          "contextChars": 508
+        }
+      }
+    },
+    "filesChanged": 0,
+    "error": null,
+    "model": "claude-opus-5-5,claude-haiku-5-5",
+    "costByModel": {
+      "claude-opus-5-5": 0.12887759999999998,
+      "claude-haiku-5-5": 0.00132198
+    },
+    "tools": [
+      "Bash: node <plugin>/scripts/ct.mjs brief \"In classes/range.js, which functions call isX? List every function (including inner/arrow functions assigne",
+      "Agent",
+      "Grep: isX\\s*\\(",
+      "Bash: node \"<plugin>/scripts/ct.mjs\" refs isX"
+    ],
+    "answer": "invalidXRangeOrder\nreplaceTilde\nreplaceCaret\nreplaceXRange\nhyphenReplace"
+  }
+]

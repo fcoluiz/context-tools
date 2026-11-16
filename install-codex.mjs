@@ -66,6 +66,23 @@ say(`  → ${copied} script(s) + 1 skill\n`);
 }
 if (!dry) mkdirSync(codexDir, { recursive: true });
 
+// Agentes delegados (`ct-*`), gerados de `agents/*.md` — a mesma fonte do plugin Claude. Vão para o
+// projeto nos dois modos: o plugin Codex não traz agentes. Sem caminho de máquina dentro (o
+// `ct brief` entrega a linha de comando), então podem ser versionados.
+if (!args.includes('--no-agents')) {
+  const { agentSources, renderCodexAgent, cheapestCodexModel } = await import('./scripts/lib/delegation-agents.mjs');
+  const model = args.find((value) => value.startsWith('--agent-model='))?.slice('--agent-model='.length) || cheapestCodexModel();
+  const agentsDir = join(codexDir, 'agents');
+  for (const agent of agentSources(join(HERE, 'agents'))) {
+    const file = join(agentsDir, `${agent.meta.name}.toml`);
+    act(`.codex/agents/${agent.meta.name}.toml${model ? ` (model ${model})` : ''}`);
+    if (!dry) {
+      mkdirSync(agentsDir, { recursive: true });
+      writeFileSync(file, renderCodexAgent(agent, { model }), 'utf8');
+    }
+  }
+}
+
 // A primeira instalação leva a configuração já existente do Claude para o Codex, mas só uma
 // vez: depois disso, cada host pode evoluir sua configuração sem atravessar o outro.
 if (existsSync(claudeConfig) && !existsSync(codexConfig)) {

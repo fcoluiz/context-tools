@@ -975,6 +975,7 @@ registrado.
 | `Stop` | assim que o bloco volátil é preenchido, grava o prompt de retomada em disco e pede ao agente que ofereça ao usuário uma sessão nova | uma vez por sessão |
 | `UserPromptSubmit` (Claude) | se o aviso do `Stop` saiu e o bloco volátil segue em branco, repete o pedido de preenchê-lo; se a oferta de sessão nova saiu sem resposta, repete a oferta | **uma vez cada, por sessão**; no resto, lê um arquivo de estado pequeno e sai |
 | `UserPromptSubmit` / `PreToolUse` (edição) / `Stop` — dupla | registra que a sessão está viva (para escolhê-la numa dupla); quando a sessão está numa **dupla** ativa, diz ao agente o papel e o que fazer, recusa edição no projeto fora da vez dele e não deixa o turno acabar na vez do outro agente. No Codex roda dentro dos hooks de prompt, edição e `Stop` que já existiam — nenhum hook novo para aprovar | sem dupla: uma gravação pequena de JSON por prompt, uma leitura por edição |
+| `PreToolUse` (edição e Bash) — subagentes delegados | quando a chamada vem de um subagente `ct-*`: recusa edição de papel só-leitura, edição fora do escopo declarado e comando de shell que muda o git, chama `gh` ou escreve arquivo. A sessão principal nunca é tocada. No Codex roda dentro dos hooks de edição e de Bash que já existiam — nenhum hook novo para aprovar | fora de um subagente `ct-*` (Claude): uma partida de Node que sai após conferir um trecho de texto, antes de qualquer import — mediana de 195 ms contra 181 ms de um `node -e 0` vazio, medido no Windows |
 | `SessionStart` (Claude) | carrega o handoff que o usuário escolheu retomar (em `startup`/`clear`, até 2 h depois) e o apaga; apaga handoffs gerados e não usados com mais de 7 dias | só depois de um **sim** à oferta de sessão nova |
 | `SessionStart` | lista mapas de contexto e marca os defasados; mostra aviso visível quando há ação necessária | ~175 tokens |
 | `SessionStart` | garante a estrutura padrão do `ai-context`, aponta o índice e avisa a primeira configuração; enquanto o índice for o único documento, diz que ainda não há o que ler em vez de mandar lê-lo | só quando a documentação está habilitada |
@@ -1131,6 +1132,89 @@ A dupla acaba quando o planejador aprova, quando as rodadas acabam, com `stop`, 
 Limites: uma sessão fechada para de responder (a dupla então expira por inatividade); edição feita
 por comando de shell não é interceptada. `CONTEXT_TOOLS_PAIR=0` desliga tudo, inclusive o registro de
 sessões.
+
+## Subagentes baratos: `delegate`
+
+Medido nas sessões deste próprio plugin, a maior parte do custo é contexto carregado adiante: o que
+a sessão principal lê é relido por toda mensagem seguinte. Um subagente é uma sessão pequena. Ele lê
+o volume e devolve só a resposta, e nada do que leu fica no contexto principal. Isso compensa no
+trabalho volumoso e de pouca decisão; decisão de desenho, revisão e commit ficam com a sessão
+principal.
+
+| agente | para | escreve | esforço |
+|---|---|---|---|
+| `ct-explorer` | onde está, quem usa, o que uma mudança toca | nada | low |
+| `ct-verifier` | rodar os testes e trazer o exit code e as linhas de falha literais | nada | low |
+| `ct-map-keeper` | atualizar um mapa de contexto ou documento `ai-context/` | mapas e `ai-context/` | low |
+| `ct-translator` | espelhar documentação já decidida, pt-BR ↔ inglês | só o `--allow` | low |
+| `ct-executor` | edição mecânica já decidida (renomear, a mesma troca em N lugares) | só o `--allow` | medium |
+
+Os cinco usam `model: haiku`, apelido que sempre aponta para o Haiku mais novo. No Claude eles vêm
+da pasta `agents/` do plugin (`context-tools:ct-explorer`, …); o instalador standalone copia para
+`.claude/agents/`. No Codex, o `install-codex.mjs` grava os mesmos agentes em
+`.codex/agents/ct-*.toml`, gerados dos mesmos `agents/*.md`. O Codex não tem apelido estável para um
+modelo barato, então o instalador escolhe o `*-luna` de versão mais alta (a linha rápida e barata) do
+`models_cache.json` do Codex — ou, sem nenhum, o primeiro que se diz barato —, ou deixa `model` de fora (o agente herda o da sessão) quando essa lista
+não é legível. `--agent-model=<slug>` ou `CONTEXT_TOOLS_CODEX_AGENT_MODEL` escolhem; `--no-agents`
+pula. Nenhum arquivo de agente leva caminho de máquina, então todos podem ser versionados.
+
+**O briefing.** `ct brief "<tarefa>" --role=<papel>` imprime o texto que vai como prompt do
+subagente: a tarefa e quando ela está pronta (`--done=`), as regras do papel, a linha de comando
+absoluta do `ct`, a seção "Por onde começar" de todo mapa **atualizado** que cobre os arquivos
+citados na tarefa ou em `--files=`, um outline filtrado dos grandes e o que costuma mudar junto. Mapa
+defasado é contado, não citado. `--handoff=<arquivo>` junta o bloco de um handoff que só a sessão
+sabia; `--test=` dá o comando ao verificador (padrão: o que o `ct verify` detecta); `--budget=` limita
+as seções de apoio (a tarefa e as regras entram sempre). Nada chama modelo.
+
+**A trava.** Um hook `PreToolUse` confere toda edição e todo comando de shell de um agente `ct-*`
+(Claude: entrada própria, reconhecida pelo `agent_type` do evento; Codex: dentro dos hooks de edição e
+de Bash que já existiam, porque o Codex Desktop ignora em silêncio hook novo até ele ser aprovado em
+`/hooks`). Papel só-leitura não edita. Papel que escreve só edita o escopo declarado pela sessão
+principal — `ct brief --allow=src/a.ts,docs/` ou `ct delegate scope --role=executor --allow=…` —, que
+fica como ticket em `~/.context-tools/delegation/` por quatro horas (`--ttl-minutes=`); o
+mantenedor de mapas também pode editar `.claude/context/`, `.codex/context/` e `ai-context/` sem
+ticket. Nenhum papel muda o git (commit, push, reset, checkout…), chama `gh`, publica pacote ou
+escreve arquivo pelo shell (redirecionamento, `tee`, `sed -i`, `rm`, `mv`…). É trava contra engano,
+não sandbox. A sessão principal nunca é afetada. `ct delegate status` lista os escopos vivos e
+`ct delegate clear [--role=]` apaga; `CONTEXT_TOOLS_DELEGATION_GUARD=0` desliga a trava.
+
+No Codex, o subagente herda o sandbox da sessão que o chamou, então esta trava é a única diferença
+por papel. Visto com subagentes `ct-*` reais (Codex CLI 0.162): o `PreToolUse` de um subagente chega
+com o `session_id` e o transcript da sessão principal, mas com o `turn_id` do próprio subagente.
+Quando esse turno não é o último aberto no rollout principal, a trava procura entre os rollouts
+recentes o filho daquela sessão que o abriu e lê o `agent_role` do `session_meta` dele. Quando não
+consegue saber, não bloqueia. Hook do Codex só roda depois de aprovado, então a trava funciona pelos
+hooks que você já aprovou: atualize o plugin (o manifesto de hooks dele não mudou) ou aprove os hooks
+standalone em `/hooks`.
+
+**O custo.** `ct delegate report [--session=<id>] [--json]` lê o transcript de cada subagente
+(`<transcripts>/<sessão>/subagents/agent-*.jsonl`, com o `.meta.json`), conta cada requisição uma vez
+pelo id da mensagem e aplica o preço de lista da API (com a faixa de prompt longo do Haiku; gravação
+de cache a 1,25× a entrada para 5 minutos, 2× para 1 hora; `delegation.prices` no
+`context-tools.json` acrescenta ou troca um modelo). Ao lado do custo medido, imprime uma
+**estimativa** do mesmo trabalho no contexto principal: cada requisição do subagente relendo o
+contexto principal da hora, mais o que o subagente acumulou ficando lá para toda requisição principal
+seguinte. A estimativa vem marcada como tal. No Codex, o relatório lista os rollouts filhos da sessão
+(`parent_thread_id`), só com tokens.
+
+**Medido** (A/B, 2026-11-16, sessão principal no Opus 5.5, [relatório](benchmarks/delegation-ab-2026-11-16.pt-BR.md)):
+delegar compensa quando uma chamada substitui várias rodadas de busca numa sessão de contexto grande —
+−13% no custo marginal de perguntas de busca larga agrupadas, −53% num caso. Na correção de bug,
+delegar só a investigação empatou, porque quem edita precisa ler o arquivo antes; com o executor
+fazendo também a edição (escopo declarado com `ct delegate scope` na mesma mensagem), a principal não
+leu o código e custou 13% menos em bug localizado e 44% menos quando a causa estava num módulo interno
+longe do sintoma relatado, todas as correções certas. Cada turno a
+mais da principal relê o contexto inteiro dela, então no Claude o explorador e o verificador são
+chamados direto: o hook `SubagentStart` entrega a linha do `ct` a todo agente `ct-*`, e o briefing só é
+preciso para declarar escopo de escrita ou levar um handoff. Só com a sugestão de delegar, o Opus não
+delegou tarefas de 2 a 11 turnos, o que os números confirmam.
+
+```bash
+node scripts/ct.mjs brief "onde o desconto é calculado?" --role=explorer --files=src/pedido.ts
+node scripts/ct.mjs brief "renomeie calcTotal para computeTotal" --role=executor --allow=src/pedido.ts,src/carrinho.ts
+node scripts/ct.mjs brief "rode os testes" --role=verifier --test="npm test"
+node scripts/ct.mjs delegate report
+```
 
 ## Configuração
 

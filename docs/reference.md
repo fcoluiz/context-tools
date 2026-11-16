@@ -988,6 +988,7 @@ shows whether it is registered.
 | `Stop` | once the volatile block is filled in, writes the resume prompt to disk and asks the agent to offer the user a fresh session | once per session |
 | `UserPromptSubmit` (Claude) | if the `Stop` warning went out and the volatile block is still empty, repeats the request to fill it in; if the fresh-session offer went out with no answer, repeats the offer | **once each per session**; otherwise reads one small state file and exits |
 | `UserPromptSubmit` / `PreToolUse` (edit) / `Stop` — pair | records that the session is alive (for choosing it in a pair); when the session is in an active **pair**, tells the agent its role and what to do, refuses project edits outside its turn, and keeps the turn from ending while it is the other agent's turn. In Codex it runs inside the existing prompt, edit and `Stop` hooks — no new hook to approve | without a pair: one small JSON write per prompt, one read per edit |
+| `PreToolUse` (edit and Bash) — delegated subagents | when the tool call comes from a `ct-*` subagent: refuses edits by read-only roles, edits outside the declared write scope, and shell commands that change git state, call `gh` or write files. The main session is never touched. In Codex it runs inside the existing edit and Bash hooks — no new hook to approve | outside a `ct-*` subagent (Claude): one Node start that exits after a substring check, before any import — median 195 ms against 181 ms for an empty `node -e 0`, measured on Windows |
 | `SessionStart` (Claude) | loads the handoff the user chose to resume (on `startup`/`clear`, within 2 h) and deletes it; deletes unused generated handoffs older than 7 days | only after a **yes** to the fresh-session offer |
 | `SessionStart` | lists context maps and flags the stale ones; shows a visible notice when action is needed | ~175 tokens |
 | `SessionStart` | ensures the standard `ai-context` structure, points to its index, and announces first setup; while the index is the only document, says there is nothing to read yet instead of asking for it to be read | only when documentation is enabled |
@@ -1152,6 +1153,88 @@ deleted, or after `idleMinutes` (default 60) without progress; both sessions go 
 Limits: a session that is closed stops answering (the pair then expires by idleness); edits made
 through shell commands are not intercepted. `CONTEXT_TOOLS_PAIR=0` turns all of it off, including the
 session registry.
+
+## Cheap subagents: `delegate`
+
+Measured on this plugin's own sessions, most of the cost is context carried forward: whatever the
+main session reads is re-read by every later message. A subagent is a small session of its own. It
+reads the bulk and hands back only the answer, and nothing it read stays in the main context. That
+pays for work that is bulky and needs little judgment; design decisions, review and commits stay
+with the main session.
+
+| agent | for | writes | effort |
+|---|---|---|---|
+| `ct-explorer` | where is it, who uses it, what a change touches | nothing | low |
+| `ct-verifier` | run the tests, bring back the exit code and the literal failing lines | nothing | low |
+| `ct-map-keeper` | bring a context map or `ai-context/` document up to date | maps and `ai-context/` | low |
+| `ct-translator` | mirror documentation already decided, pt-BR ↔ English | only `--allow` | low |
+| `ct-executor` | mechanical edits already decided (a rename, the same change in N places) | only `--allow` | medium |
+
+All five use `model: haiku`, an alias that always points at the newest Haiku. On Claude they come
+from the plugin's `agents/` folder (`context-tools:ct-explorer`, …); the standalone installer copies
+them to `.claude/agents/`. On Codex, `install-codex.mjs` writes the same agents as
+`.codex/agents/ct-*.toml`, generated from the same `agents/*.md`. Codex has no stable alias for a cheap
+model, so the installer picks the highest-versioned `*-luna` model (the fast, cheap line) listed in Codex's
+`models_cache.json` — or, without one, the first that describes itself as affordable —, or leaves `model` out (the agent inherits the session's) when that list is not
+readable. `--agent-model=<slug>` or `CONTEXT_TOOLS_CODEX_AGENT_MODEL` choose it; `--no-agents` skips
+them. No agent file carries a machine path, so all of them can be committed.
+
+**The briefing.** `ct brief "<task>" --role=<role>` prints the text to pass as the subagent's
+prompt: the task and when it is done (`--done=`), the role's rules, the absolute `ct` command line,
+the "Where to start" section of every **up-to-date** map that covers the files named in the task or
+in `--files=`, a filtered outline of the large ones, and what usually changes with them. A stale map
+is counted, not quoted. `--handoff=<file>` adds the block of a handoff that only the session knew;
+`--test=` gives the verifier its command (default: the one `ct verify` detects); `--budget=` caps
+the supporting sections (the task and the rules always go in). Nothing calls a model.
+
+**The guard.** A `PreToolUse` hook checks every edit and every shell command of a `ct-*` agent
+(Claude: its own hook entry, matched by the event's `agent_type`; Codex: inside the edit and Bash
+hooks that already existed, because Codex Desktop silently ignores a new hook until it is approved
+in `/hooks`). Read-only roles cannot edit. Write roles edit only the scope declared by the main
+session — `ct brief --allow=src/a.ts,docs/` or `ct delegate scope --role=executor --allow=…` — which
+lives as a ticket in `~/.context-tools/delegation/` for four hours (`--ttl-minutes=`); the map keeper
+may also edit `.claude/context/`, `.codex/context/` and `ai-context/` without one. No role may change
+git state (commit, push, reset, checkout…), call `gh`, publish a package, or write files from the
+shell (redirection, `tee`, `sed -i`, `rm`, `mv`…). It guards against mistakes; it is not a sandbox.
+The main session is never affected. `ct delegate status` lists the live scopes and
+`ct delegate clear [--role=]` removes them; `CONTEXT_TOOLS_DELEGATION_GUARD=0` turns the guard off.
+
+On Codex, a subagent inherits the sandbox of the session that started it, so this guard is the only
+per-role difference. Seen with real `ct-*` subagents (Codex CLI 0.162): the `PreToolUse` of a subagent
+arrives with the main session's `session_id` and transcript but with the subagent's own `turn_id`.
+When that turn is not the latest one opened in the main rollout, the guard looks among the recent
+rollouts for the child of that session that opened it, and reads `agent_role` from its
+`session_meta`. When it cannot tell, it does not block. A Codex hook only runs once it is approved,
+so the guard works through hooks you have already approved: update the plugin (its hook manifest did
+not change) or approve the standalone hooks in `/hooks`.
+
+**The cost.** `ct delegate report [--session=<id>] [--json]` reads each subagent transcript
+(`<transcripts>/<session>/subagents/agent-*.jsonl`, with its `.meta.json`), counts every request
+once by message id, and prices it with the API list prices (Haiku's long-prompt tier included; cache
+writes at 1.25× input for 5 minutes, 2× for 1 hour; `delegation.prices` in `context-tools.json` adds
+or replaces a model). Next to the measured cost it prints an **estimate** of the same work in the
+main context: each subagent request re-reading the main context of the time, plus what the subagent
+accumulated staying there for every later main request. The estimate is labelled as such. On Codex
+the report lists the child rollouts of the session (`parent_thread_id`) with tokens only.
+
+**Measured** (A/B, 2026-11-16, Opus 5.5 main session, [report](benchmarks/delegation-ab-2026-11-16.pt-BR.md)):
+delegating pays when one call replaces several rounds of search in a session with a large context —
+−13% marginal cost on bundled wide-search questions, −53% in one case. On a bug fix, delegating only
+the investigation tied, because whoever edits must read the file first; with the executor making the
+edit too (scope declared with `ct delegate scope` in the same message), the main session never read
+the code and it cost 13% less on localized bugs and 44% less where the cause sat in an internal module
+far from the reported symptom, all fixes correct. Every extra main-session turn
+re-reads the whole main context, so on Claude the explorer and the verifier are called directly: the
+`SubagentStart` hook hands every `ct-*` agent the `ct` command line, and a briefing is needed only for
+a write scope or to carry a handoff. Asked only to consider delegating, Opus did not delegate tasks of
+2 to 11 turns, which the numbers support.
+
+```bash
+node scripts/ct.mjs brief "where is the discount computed?" --role=explorer --files=src/pedido.ts
+node scripts/ct.mjs brief "rename calcTotal to computeTotal" --role=executor --allow=src/pedido.ts,src/carrinho.ts
+node scripts/ct.mjs brief "run the tests" --role=verifier --test="npm test"
+node scripts/ct.mjs delegate report
+```
 
 ## Configuration
 

@@ -1,5 +1,7 @@
 {
-  "modules": ["./band/register.tsx"],
+  "modules": [
+    "./band/register.tsx"
+  ],
   "hooks": {
     "SessionStart": [
       {
@@ -30,7 +32,7 @@
     ],
     "SubagentStart": [
       {
-        "matcher": "Explore|Plan|general-purpose",
+        "matcher": "Explore|Plan|general-purpose|context-tools:ct-explorer|context-tools:ct-verifier|context-tools:ct-map-keeper|context-tools:ct-translator|context-tools:ct-executor|ct-explorer|ct-verifier|ct-map-keeper|ct-translator|ct-executor",
         "hooks": [
           {
             "type": "command",
@@ -86,6 +88,16 @@
       }
     ],
     "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/delegate.mjs\" --hook=pre-tool",
+            "timeout": 10
+          }
+        ]
+      },
       {
         "matcher": "Edit|Write|MultiEdit|NotebookEdit",
         "hooks": [

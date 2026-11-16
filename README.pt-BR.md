@@ -330,6 +330,17 @@ implementa, um esperando o outro — as sessões já abertas nos apps desktop, s
 edita, e só na vez dele. Alguém precisa montar a dupla (`pair.mjs create`); veja
 [a referência](docs/reference.pt-BR.md#dois-agentes-numa-tarefa-pair-dupla).
 
+## Subagentes baratos para o trabalho volumoso
+
+A maior parte do custo de uma sessão é contexto carregado adiante: o que a sessão principal lê é
+relido por toda mensagem seguinte. Um subagente é uma sessão pequena: lê o volume e devolve só a
+resposta. O plugin traz cinco agentes delegados no Haiku mais novo (`ct-explorer`, `ct-verifier`,
+`ct-map-keeper`, `ct-translator`, `ct-executor`), o `ct brief` para dar a cada um um briefing
+pequeno e exato, uma trava nos hooks que impede papel só-leitura de editar e mantém papel que escreve
+dentro do escopo declarado, e o `ct delegate report` para medir quanto cada subagente custou contra
+uma estimativa do mesmo trabalho no contexto principal. Mesmos agentes e mesma trava no Claude e no
+Codex; veja [a referência](docs/reference.pt-BR.md#subagentes-baratos-delegate).
+
 ## Em equipe: conhecimento deixado para trás num pull request
 
 Mapas e documentos `ai-context/` commitados no repositório são conhecimento compartilhado — e só

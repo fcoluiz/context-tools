@@ -27,9 +27,23 @@ const BUGS = {
     find: /this\.emit\(`option:\$\{option\.name\(\)\}`, arg\.slice\(index \+ 1\)\);/,
     replace: 'this.emit(`option:${option.name()}`, arg.slice(index));',
   },
+  // Casos "difíceis" (A/B da delegação): a causa fica longe do sintoma relatado.
+  // The dumper skips the first implicit type (null) when deciding whether a string needs quotes.
+  'yaml-dump-null-string': {
+    file: 'lib/dumper.js',
+    find: /for \(index = 0, length = state\.implicitTypes\.length;/,
+    replace: 'for (index = 1, length = state.implicitTypes.length;',
+  },
+  // Keys brought in by `<<` are no longer overridable: a later explicit key throws "duplicated".
+  'yaml-merge-override': {
+    file: 'lib/loader.js',
+    find: /\r?\n {6}overridableKeys\[key\] = true;/,
+    replace: '',
+  },
 };
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const throws = (fn) => { try { fn(); return false; } catch { return true; } };
 
 const CHECKS = {
   'yaml-merge-keys': (y) => [
@@ -60,6 +74,22 @@ const CHECKS = {
       [parse(['-p8080'], (p) => p.option('-p, --port <n>')), { port: '8080' }],
     ];
   },
+  'yaml-dump-null-string': (y) => [
+    [y.load(y.dump({ a: 'null' })).a, 'null'],
+    [y.load(y.dump({ a: '~' })).a, '~'],
+    [y.load(y.dump({ a: 'NULL' })).a, 'NULL'],
+    [y.load(y.dump({ a: 'true' })).a, 'true'],
+    [y.load(y.dump({ a: '123' })).a, '123'],
+    [y.dump({ a: 'hello' }), 'a: hello\n'],
+    [y.dump({ a: null }), 'a: null\n'],
+  ],
+  'yaml-merge-override': (y) => [
+    [y.load('base: &b {a: 1, b: 2}\nx:\n  <<: *b\n  b: 9\n').x, { a: 1, b: 9 }],
+    [y.load('base: &b {a: 1}\nx:\n  b: 2\n  <<: *b\n').x, { b: 2, a: 1 }],
+    [y.load('p: &p {a: 1}\nq: &q {a: 2, z: 0}\nx:\n  <<: [*p, *q]\n').x, { a: 1, z: 0 }],
+    [throws(() => y.load('a: 1\na: 2\n')), true],
+    [throws(() => y.load('x:\n  b: 1\n  b: 2\n')), true],
+  ],
 };
 
 const [mode, id] = process.argv.slice(2);

@@ -56,8 +56,12 @@ export function loadCases(file) {
   const subst = (v) => (typeof v === 'string' ? v.split('{casesDir}').join(base) : v);
   return cases.map((c) => {
     if (!c.id || !(c.repo || c.git) || !c.prompt || !c.check) throw new Error(`case needs id, repo or git, prompt and check: ${JSON.stringify(c).slice(0, 120)}`);
+    // `prelude`: arquivos (relativos ao arquivo de casos) colados antes do pedido, como notas já lidas
+    // nesta sessão. Simula uma sessão longa, com o contexto principal grande, sem rodar horas de agente.
+    const prelude = (c.prelude || []).map((p) => readFileSync(resolve(base, p), 'utf8')).join('\n\n');
     return {
       ...c,
+      prompt: prelude ? `Notes read earlier in this work session (context only; nothing to do about them):\n\n${prelude}\n\n---\n\n${c.prompt}` : c.prompt,
       repo: c.repo ? resolve(base, c.repo) : null,
       setup: (c.setup || []).map((cmd) => cmd.map(subst)),
       check: c.check.command ? { command: c.check.command.map(subst) } : c.check,
@@ -86,9 +90,19 @@ export const DELEGATE_PROMPT = [
   '(add --files=a,b for the files in focus and --allow=FILES for the files an executor may edit),',
   'and pass its output as the prompt. Keep the decisions and the final answer here, and check what a subagent returns before relying on it.',
 ].join(' ');
+// `delegate-forced`: a investigação TEM de ir para o explorador. Com o `delegate`, o Opus não delegou
+// nenhuma vez em tarefas de 2 a 11 turnos (rodada de 2026-11-16): este braço mede o custo de delegar
+// mesmo assim.
+export const DELEGATE_FORCED_PROMPT = [
+  'Do not search or read the repository code yourself.',
+  'Hand every investigation (where something is defined, who calls it, where a bug comes from) to the context-tools:ct-explorer agent,',
+  `with its prompt built by running ${CT} brief followed by the question in quotes and --role=explorer.`,
+  'Decide from what it returns; you may then edit a file yourself once you know the exact change. Keep the final answer here.',
+].join(' ');
 const BRACOS_EMBUTIDOS = {
   without: {}, with: { pluginDir: PLUGIN_DIR }, 'context-tools': { pluginDir: PLUGIN_DIR },
   delegate: { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_PROMPT },
+  'delegate-forced': { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_FORCED_PROMPT },
 };
 
 /**

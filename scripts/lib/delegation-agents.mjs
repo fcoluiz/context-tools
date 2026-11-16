@@ -52,17 +52,29 @@ export function renderCodexAgent(agent, { model = null } = {}) {
   return `${lines.join('\n')}\n`;
 }
 
+/** Versão no nome do modelo (`gpt-6.1-luna` → [6, 1]); sem número, a mais baixa. */
+const versionOf = (slug) => (String(slug).match(/(\d+(?:\.\d+)*)/)?.[1] || '0').split('.').map(Number);
+const newer = (a, b) => {
+  const va = versionOf(a), vb = versionOf(b);
+  for (let i = 0; i < Math.max(va.length, vb.length); i++) if ((va[i] || 0) !== (vb[i] || 0)) return (va[i] || 0) > (vb[i] || 0);
+  return false;
+};
+
 /**
- * O modelo barato mais novo que o Codex desta máquina oferece, lido do `models_cache.json`.
- * O Codex não tem um apelido estável como o `haiku` do Claude; ler a lista na instalação é o que
- * mantém "sempre o mais novo" sem gravar um nome que envelhece. A lista vem do mais novo para o
- * mais antigo; descarta o que se diz geração anterior. Sem cache legível, `null` (herda).
+ * O modelo barato do Codex desta máquina, lido do `models_cache.json`. O Codex não tem um apelido
+ * estável como o `haiku` do Claude; ler a lista na instalação é o que mantém "sempre o mais novo"
+ * sem gravar um nome que envelhece. Preferido: o `*-luna` de versão mais alta (a linha rápida e
+ * barata); sem nenhum, o primeiro que se descreve como barato e não como geração anterior. Sem
+ * cache legível, `null` (o agente herda o modelo da sessão).
  */
 export function cheapestCodexModel(env = process.env) {
   if (env.CONTEXT_TOOLS_CODEX_AGENT_MODEL) return env.CONTEXT_TOOLS_CODEX_AGENT_MODEL;
   try {
     const cache = JSON.parse(readFileSync(join(env.CODEX_HOME || join(homedir(), '.codex'), 'models_cache.json'), 'utf8'));
     const models = Array.isArray(cache) ? cache : Array.isArray(cache?.models) ? cache.models : [];
+    const luna = models.map((m) => m?.slug).filter((slug) => typeof slug === 'string' && /-luna$/i.test(slug))
+      .reduce((best, slug) => (!best || newer(slug, best) ? slug : best), null);
+    if (luna) return luna;
     const pick = models.find((m) => {
       const text = `${m?.description || ''} ${m?.display_name || ''}`;
       return /affordable|efficient|mini|fast\b/i.test(text) && !/\b(older|previous|legacy|deprecated)\b/i.test(text)

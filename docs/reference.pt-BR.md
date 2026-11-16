@@ -1153,8 +1153,8 @@ Os cinco usam `model: haiku`, apelido que sempre aponta para o Haiku mais novo. 
 da pasta `agents/` do plugin (`context-tools:ct-explorer`, …); o instalador standalone copia para
 `.claude/agents/`. No Codex, o `install-codex.mjs` grava os mesmos agentes em
 `.codex/agents/ct-*.toml`, gerados dos mesmos `agents/*.md`. O Codex não tem apelido estável para um
-modelo barato, então o instalador escolhe o modelo "fast and affordable" mais novo do
-`models_cache.json` do Codex, ou deixa `model` de fora (o agente herda o da sessão) quando essa lista
+modelo barato, então o instalador escolhe o `*-luna` de versão mais alta (a linha rápida e barata) do
+`models_cache.json` do Codex — ou, sem nenhum, o primeiro que se diz barato —, ou deixa `model` de fora (o agente herda o da sessão) quando essa lista
 não é legível. `--agent-model=<slug>` ou `CONTEXT_TOOLS_CODEX_AGENT_MODEL` escolhem; `--no-agents`
 pula. Nenhum arquivo de agente leva caminho de máquina, então todos podem ser versionados.
 

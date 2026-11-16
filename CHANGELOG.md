@@ -16,8 +16,8 @@ reconstructed from git history.
   (maps and `ai-context/`), `ct-translator` (pt-BR ↔ English docs) and `ct-executor` (mechanical
   edits already decided) write only inside a declared scope. On Claude they ship in the plugin's
   `agents/` folder (the standalone installer copies them to `.claude/agents/`); on Codex,
-  `install-codex.mjs` generates `.codex/agents/ct-*.toml` from the same source, picking the newest
-  "fast and affordable" model Codex lists (`--agent-model=` overrides, `--no-agents` skips).
+  `install-codex.mjs` generates `.codex/agents/ct-*.toml` from the same source, picking the highest-versioned
+  `*-luna` model Codex lists (the fast, cheap line; `--agent-model=` overrides, `--no-agents` skips).
 - **`ct brief "<task>" --role=<role>`** prints the subagent's briefing: the task and when it is
   done, the role's rules, the absolute `ct` command line, the "Where to start" section of the
   up-to-date maps that cover the files named, a filtered outline of the large ones and what usually

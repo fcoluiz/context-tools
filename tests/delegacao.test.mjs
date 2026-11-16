@@ -248,6 +248,14 @@ test('delegação: um agente por papel, mesmos papéis nos dois hosts, Codex ger
     { slug: 'barato-novo', description: 'Fast and affordable model for easier tasks.' },
   ] }));
   assert.equal(cheapestCodexModel({ CODEX_HOME: codexHome }), 'barato-novo');
+  // Com a linha luna disponível, ela vence, pela versão mais alta e não pela ordem da lista.
+  writeFileSync(join(codexHome, 'models_cache.json'), JSON.stringify({ models: [
+    { slug: 'gpt-9-reserve', description: 'Fast and affordable agentic coding model.' },
+    { slug: 'gpt-5.6-luna', description: 'Older fast and efficient model.' },
+    { slug: 'gpt-6-luna', description: 'Fast and affordable model for easier tasks.' },
+    { slug: 'gpt-6.1-luna', description: 'Fast model.' },
+  ] }));
+  assert.equal(cheapestCodexModel({ CODEX_HOME: codexHome }), 'gpt-6.1-luna');
   assert.equal(cheapestCodexModel({ CODEX_HOME: codexHome, CONTEXT_TOOLS_CODEX_AGENT_MODEL: 'fixo' }), 'fixo');
   assert.equal(cheapestCodexModel({ CODEX_HOME: join(home, 'nada') }), null);
   // Instaladores: Codex grava .codex/agents/*.toml; Claude standalone copia .claude/agents/.

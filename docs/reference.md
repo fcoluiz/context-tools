@@ -1174,8 +1174,8 @@ All five use `model: haiku`, an alias that always points at the newest Haiku. On
 from the plugin's `agents/` folder (`context-tools:ct-explorer`, …); the standalone installer copies
 them to `.claude/agents/`. On Codex, `install-codex.mjs` writes the same agents as
 `.codex/agents/ct-*.toml`, generated from the same `agents/*.md`. Codex has no stable alias for a cheap
-model, so the installer picks the newest "fast and affordable" model listed in Codex's
-`models_cache.json`, or leaves `model` out (the agent inherits the session's) when that list is not
+model, so the installer picks the highest-versioned `*-luna` model (the fast, cheap line) listed in Codex's
+`models_cache.json` — or, without one, the first that describes itself as affordable —, or leaves `model` out (the agent inherits the session's) when that list is not
 readable. `--agent-model=<slug>` or `CONTEXT_TOOLS_CODEX_AGENT_MODEL` choose it; `--no-agents` skips
 them. No agent file carries a machine path, so all of them can be committed.
 

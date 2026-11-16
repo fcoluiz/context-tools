@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.12.0] — 2026-11-16
+
 ### Added
 
 - **Cheap subagents for bulky, low-judgment work, on Claude and Codex.** Five delegated agents on

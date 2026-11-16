@@ -14,7 +14,7 @@
 // Este arquivo roda em todo PreToolUse de edição e de Bash: só `node:` e nada que leia índice.
 
 import { createHash } from 'node:crypto';
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
@@ -70,13 +70,79 @@ function roleInside(value, depth = 0) {
   return null;
 }
 
+/** O papel descrito num `session_meta` de rollout do Codex, ou `null` se não é subagente nosso. */
+function roleFromMeta(payload) {
+  if (!payload?.source?.subagent) return null;
+  for (const field of ['agent_role', 'agent_type', 'agent_name', 'agent_nickname']) {
+    if (typeof payload[field] === 'string' && ROLE_RE.test(payload[field].trim())) return normalizeRole(payload[field]);
+  }
+  return roleInside(payload.source.subagent);
+}
+const metaOf = (path) => { try { const o = JSON.parse(firstLine(path)); return o?.type === 'session_meta' ? o.payload : null; } catch { return null; } };
+
+/** O `turn_id` do último `task_started` de um rollout, lido de trás para frente (até 8 MB). */
+function lastTurnStarted(path) {
+  let fd;
+  try {
+    fd = openSync(path, 'r');
+    const size = statSync(path).size;
+    let tail = '';
+    for (let end = size; end > 0 && size - end < 8 * 1024 * 1024;) {
+      const start = Math.max(0, end - 256 * 1024);
+      const buf = Buffer.alloc(end - start);
+      readSync(fd, buf, 0, buf.length, start);
+      tail = buf.toString('utf8') + tail;
+      const hits = [...tail.matchAll(/"type":"task_started"[^\n]*?"turn_id":"([^"]+)"|"turn_id":"([^"]+)"[^\n]*?"type":"task_started"/g)];
+      if (hits.length) { const last = hits[hits.length - 1]; return last[1] || last[2]; }
+      end = start;
+    }
+    return null;
+  } catch { return null; } finally { if (fd !== undefined) try { closeSync(fd); } catch { /* nada */ } }
+}
+
+/**
+ * Codex: o `PreToolUse` de um subagente chega com o `session_id` e o `transcript_path` da sessão
+ * PRINCIPAL, mas com o `turn_id` do próprio subagente (verificado em 2026-11-15 com o Codex CLI
+ * 0.162 e subagentes `ct-*` reais). Se o turno do evento não é o último aberto no rollout do pai,
+ * procura, entre os rollouts recentes, o filho daquela sessão que abriu esse turno.
+ */
+function roleFromCodexTurn(event, transcript, now = Date.now()) {
+  const turn = typeof event?.turn_id === 'string' ? event.turn_id : '';
+  const session = String(event?.session_id || '');
+  if (!turn || !session || lastTurnStarted(transcript) === turn) return null;
+  const root = dirname(dirname(dirname(dirname(transcript))));   // <sessions>/AAAA/MM/DD/rollout-…
+  const recent = [];
+  const walk = (dir, depth) => {
+    let entries = [];
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const p = join(dir, e.name);
+      if (e.isDirectory() && depth < 3) walk(p, depth + 1);
+      else if (e.isFile() && /^rollout-.*\.jsonl$/.test(e.name)) {
+        try { const m = statSync(p).mtimeMs; if (now - m < 6 * 3600000) recent.push({ p, m }); } catch { /* nada */ }
+      }
+    }
+  };
+  walk(root, 0);
+  const marker = `"turn_id":"${turn}"`;
+  for (const { p } of recent.sort((a, b) => b.m - a.m).slice(0, 200)) {
+    const meta = metaOf(p);
+    const parent = meta?.parent_thread_id || meta?.source?.subagent?.thread_spawn?.parent_thread_id;
+    if (String(parent || '') !== session) continue;
+    try { if (!readFileSync(p, 'utf8').includes(marker)) continue; } catch { continue; }
+    return roleFromMeta(meta);
+  }
+  return null;
+}
+
 /**
  * O papel do agente que disparou o hook, ou `null` (sessão principal, ou agente que não é nosso).
  *
  * Claude: o hook de um subagente recebe `agent_type` (`context-tools:ct-explorer` no plugin,
  * `ct-explorer` numa instalação em `.claude/agents/`). Codex: o evento pode trazer o nome do
- * agente; senão, o `session_meta` do rollout do subagente o descreve em `source.subagent`. Esse
- * segundo caminho não foi verificado num subagente real do Codex — se não achar nada, não trava.
+ * agente; senão, o rollout do transcript pode ser o do próprio subagente (`session_meta` com
+ * `agent_role`); senão, o turno do evento leva ao rollout filho (ver `roleFromCodexTurn`). Sem
+ * nada disso, não trava.
  */
 export function roleFromEvent(event = {}) {
   for (const field of ['agent_type', 'agent_role', 'agent_name', 'agent_nickname']) {
@@ -86,13 +152,9 @@ export function roleFromEvent(event = {}) {
   const transcript = typeof event?.transcript_path === 'string' ? event.transcript_path : '';
   if (event?.agent_type || !transcript || !/rollout-.*\.jsonl$/i.test(transcript)) return null;
   try {
-    const meta = JSON.parse(firstLine(transcript));
-    const payload = meta?.type === 'session_meta' ? meta.payload : null;
-    if (!payload?.source?.subagent) return null;
-    for (const field of ['agent_role', 'agent_type', 'agent_name', 'agent_nickname']) {
-      if (typeof payload[field] === 'string' && ROLE_RE.test(payload[field].trim())) return normalizeRole(payload[field]);
-    }
-    return roleInside(payload.source.subagent);
+    const meta = metaOf(transcript);
+    if (meta?.source?.subagent) return roleFromMeta(meta);
+    return roleFromCodexTurn(event, transcript);
   } catch { return null; }
 }
 

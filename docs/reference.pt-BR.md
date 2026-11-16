@@ -1179,9 +1179,13 @@ não sandbox. A sessão principal nunca é afetada. `ct delegate status` lista o
 `ct delegate clear [--role=]` apaga; `CONTEXT_TOOLS_DELEGATION_GUARD=0` desliga a trava.
 
 No Codex, o subagente herda o sandbox da sessão que o chamou, então esta trava é a única diferença
-por papel. Se o Codex manda `agent_type` ao `PreToolUse` de um subagente, ou se só o `session_meta`
-do rollout o identifica, não foi verificado com um subagente `ct-*` real do Codex: a trava tenta os
-dois, e quando não consegue saber, não bloqueia.
+por papel. Visto com subagentes `ct-*` reais (Codex CLI 0.162): o `PreToolUse` de um subagente chega
+com o `session_id` e o transcript da sessão principal, mas com o `turn_id` do próprio subagente.
+Quando esse turno não é o último aberto no rollout principal, a trava procura entre os rollouts
+recentes o filho daquela sessão que o abriu e lê o `agent_role` do `session_meta` dele. Quando não
+consegue saber, não bloqueia. Hook do Codex só roda depois de aprovado, então a trava funciona pelos
+hooks que você já aprovou: atualize o plugin (o manifesto de hooks dele não mudou) ou aprove os hooks
+standalone em `/hooks`.
 
 **O custo.** `ct delegate report [--session=<id>] [--json]` lê o transcript de cada subagente
 (`<transcripts>/<sessão>/subagents/agent-*.jsonl`, com o `.meta.json`), conta cada requisição uma vez

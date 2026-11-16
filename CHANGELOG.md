@@ -26,8 +26,9 @@ reconstructed from git history.
   outside the declared scope, and shell commands that change git state, call `gh`, publish a
   package or write files. On Claude it is a hook entry matched by the event's `agent_type`; on Codex
   it runs inside the edit and Bash hooks that already existed, because a new Codex hook stays silent
-  until approved in `/hooks`. The main session is never affected. Not verified yet with a real Codex
-  `ct-*` subagent: when the guard cannot tell the role, it does not block.
+  until approved in `/hooks`. The main session is never affected. A Codex subagent's hook event carries
+  the main session's id and the subagent's own turn id, so the guard finds the child rollout that
+  opened that turn and reads its `agent_role`; when it cannot tell the role, it does not block.
 - **`ct delegate report`** measures each subagent of a session from its transcript (requests
   counted once by message id, API list prices, Haiku's long-prompt tier) and prints next to it an
   estimate, labelled as such, of the same work done in the main context. `ct delegate

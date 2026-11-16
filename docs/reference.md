@@ -1200,9 +1200,13 @@ The main session is never affected. `ct delegate status` lists the live scopes a
 `ct delegate clear [--role=]` removes them; `CONTEXT_TOOLS_DELEGATION_GUARD=0` turns the guard off.
 
 On Codex, a subagent inherits the sandbox of the session that started it, so this guard is the only
-per-role difference. Whether Codex sends `agent_type` to a subagent's `PreToolUse`, or only the
-rollout's `session_meta` identifies it, has not been verified with a real Codex `ct-*` subagent: the
-guard tries both, and when it cannot tell, it does not block.
+per-role difference. Seen with real `ct-*` subagents (Codex CLI 0.162): the `PreToolUse` of a subagent
+arrives with the main session's `session_id` and transcript but with the subagent's own `turn_id`.
+When that turn is not the latest one opened in the main rollout, the guard looks among the recent
+rollouts for the child of that session that opened it, and reads `agent_role` from its
+`session_meta`. When it cannot tell, it does not block. A Codex hook only runs once it is approved,
+so the guard works through hooks you have already approved: update the plugin (its hook manifest did
+not change) or approve the standalone hooks in `/hooks`.
 
 **The cost.** `ct delegate report [--session=<id>] [--json]` reads each subagent transcript
 (`<transcripts>/<session>/subagents/agent-*.jsonl`, with its `.meta.json`), counts every request

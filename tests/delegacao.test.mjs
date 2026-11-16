@@ -61,6 +61,29 @@ test('delegação: no Codex, o papel também sai do session_meta do rollout do s
   assert.equal(roleFromEvent({ transcript_path: rollout }), null);
 }));
 
+// Formato visto num subagente `ct-*` real do Codex (CLI 0.162): o PreToolUse chega com o session_id
+// e o transcript do PAI, e o turn_id do subagente. O rollout filho repete o histórico do pai e
+// depois abre o próprio turno.
+test('delegação: no Codex, o turno do evento leva ao rollout filho que o abriu', () => fixture(({ project }) => {
+  const day = join(project, 'sessions', '2026', '11', '15');
+  mkdirSync(day, { recursive: true });
+  const started = (turn) => JSON.stringify({ type: 'event_msg', payload: { type: 'task_started', turn_id: turn } });
+  const parent = join(day, 'rollout-2026-11-15T10-00-00-pai.jsonl');
+  writeFileSync(parent, [JSON.stringify({ type: 'session_meta', payload: { id: 'pai', source: 'exec' } }), started('turno-pai'), '{"type":"x"}'].join('\n'));
+  writeFileSync(join(day, 'rollout-2026-11-15T10-01-00-filho.jsonl'), [
+    JSON.stringify({ type: 'session_meta', payload: { id: 'filho', parent_thread_id: 'pai', agent_role: 'ct-executor', source: { subagent: { thread_spawn: { parent_thread_id: 'pai', agent_role: 'ct-executor' } } } } }),
+    started('turno-pai'), started('turno-filho'),
+  ].join('\n'));
+  writeFileSync(join(day, 'rollout-2026-11-15T10-02-00-outro.jsonl'), [
+    JSON.stringify({ type: 'session_meta', payload: { id: 'outro', parent_thread_id: 'outra-sessao', agent_role: 'ct-explorer', source: { subagent: {} } } }),
+    started('turno-x'),
+  ].join('\n'));
+  assert.equal(roleFromEvent({ session_id: 'pai', turn_id: 'turno-filho', transcript_path: parent }), 'ct-executor');
+  assert.equal(roleFromEvent({ session_id: 'pai', turn_id: 'turno-pai', transcript_path: parent }), null, 'turno da própria principal');
+  assert.equal(roleFromEvent({ session_id: 'pai', turn_id: 'turno-x', transcript_path: parent }), null, 'filho de outra sessão');
+  assert.equal(roleFromEvent({ session_id: 'pai', transcript_path: parent }), null, 'sem turn_id, não adivinha');
+}));
+
 test('delegação: shell que muda o git, chama gh ou escreve arquivo é recusado; leitura e teste passam', () => {
   for (const ok of ['npm test 2>&1 | tail -5', 'node -e "a.map(x=>x>1)"', 'ls > /dev/null', 'npm test 2>$null', 'git -C . log --oneline',
     'git diff --stat', 'rg foo src', 'node "C:/x/ct.mjs" find X', 'npm install']) assert.equal(bashViolation(ok), null, ok);

@@ -323,6 +323,17 @@ implements, each waiting for the other — the sessions already open in the desk
 the builder edits, and only in its turn. Something has to set the pair up (`pair.mjs create`); see
 [the reference](docs/reference.md#two-agents-on-one-task-pair).
 
+## Cheap subagents for the bulky work
+
+Most of a session's cost is context carried forward: whatever the main session reads is re-read by
+every later message. A subagent is a small session of its own — it reads the bulk and hands back
+only the answer. The plugin ships five delegated agents on the newest Haiku (`ct-explorer`,
+`ct-verifier`, `ct-map-keeper`, `ct-translator`, `ct-executor`), `ct brief` to give each one a
+small, exact briefing, a hook guard that keeps read-only roles from editing and write roles inside a
+declared scope, and `ct delegate report` to measure what each subagent cost against an estimate of
+doing the same work in the main context. Same agents and guard on Claude and Codex; see
+[the reference](docs/reference.md#cheap-subagents-delegate).
+
 ## In a team: knowledge left behind in a pull request
 
 Maps and `ai-context/` documents committed to the repository are shared knowledge — and they only

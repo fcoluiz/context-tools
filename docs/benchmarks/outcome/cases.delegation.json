@@ -1,0 +1,118 @@
+{
+  "description": "A/B of delegation: arm with (plugin) vs arm delegate (plugin + instruction to delegate to the ct-* subagents). Four wide searches and two bug fixes, all from earlier rounds.",
+  "cases": [
+    {
+      "id": "qa-newtonsoft-ensuredatetime-callers",
+      "git": "https://github.com/JamesNK/Newtonsoft.Json.git",
+      "ref": "52fa3aef1f2cadcd3a3f874251eddc98d3efbbaa",
+      "prompt": "Answer from the code in this repository, without modifying any file. List every method outside the test project that calls DateTimeUtils.EnsureDateTime. Write each one as Class.Method, one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "DateTimeUtils\\.TryParseDateTimeIso\\b",
+          "DateTimeUtils\\.TryParseDateTime\\b",
+          "DateTimeUtils\\.TryParseDateTimeMicrosoft\\b",
+          "DateTimeUtils\\.TryParseDateTimeExact\\b",
+          "JsonReader\\.ReadDateTimeString\\b",
+          "BsonWriter\\.WriteValue\\b",
+          "JsonConvert\\.ToString\\b",
+          "JsonTextWriter\\.DoWriteValueAsync\\b",
+          "JsonTextWriter\\.WriteValue\\b",
+          "JTokenReader\\.SetToken\\b",
+          "JTokenWriter\\.WriteValue\\b",
+          "JsonSerializerInternalReader\\.EnsureType\\b",
+          "JsonSerializerInternalWriter\\.GetPropertyName\\b"
+        ]
+      }
+    },
+    {
+      "id": "qa-commons-lang-strings-null",
+      "git": "https://github.com/apache/commons-lang.git",
+      "ref": "32dc4c501e3acba29d53a466eebd611bb2f093a5",
+      "prompt": "Answer from the code in this repository, without modifying any file. Which methods of StringUtils throw IllegalArgumentException(\"Strings must not be null\")? Treat overloads as separate methods: write each one with its parameter list, one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "getFuzzyDistance",
+          "getJaroWinklerDistance",
+          "getLevenshteinDistance\\s*\\([^)\\n]*\\)[\\s\\S]*getLevenshteinDistance\\s*\\([^)\\n]*\\)",
+          "threshold"
+        ]
+      }
+    },
+    {
+      "id": "py-requests-to-native-string-callers",
+      "git": "https://github.com/psf/requests.git",
+      "ref": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+      "prompt": "Answer from the code in this repository, without modifying any file. Which functions or methods under src/requests call to_native_string? Write each one as Class.method (or just the function name when it is not in a class), one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "\\b_basic_auth_str\\b",
+          "\\bget_full_url\\b",
+          "\\bprepare_method\\b",
+          "\\bprepare_url\\b",
+          "\\bprepare_headers\\b",
+          "\\bget_redirect_target\\b",
+          "\\bresolve_redirects\\b"
+        ]
+      }
+    },
+    {
+      "id": "js-semver-isx-users",
+      "git": "https://github.com/npm/node-semver.git",
+      "ref": "6e05b7637396ac66522cff8731f07cfe0ef49a29",
+      "prompt": "Answer from the code in this repository, without modifying any file. In classes/range.js, which functions call isX? Write each function name, one per line, and nothing else.",
+      "check": {
+        "answer": [
+          "\\binvalidXRangeOrder\\b",
+          "\\breplaceTilde\\b",
+          "\\breplaceCaret\\b",
+          "\\breplaceXRange\\b",
+          "\\bhyphenReplace\\b"
+        ]
+      }
+    },
+    {
+      "id": "fix-semver-max-satisfying",
+      "git": "https://github.com/npm/node-semver.git",
+      "ref": "6e05b7637396ac66522cff8731f07cfe0ef49a29",
+      "setup": [
+        [
+          "node",
+          "{casesDir}/semver-bugs.mjs",
+          "inject",
+          "max-satisfying"
+        ]
+      ],
+      "prompt": "A user reports: semver.maxSatisfying(['1.2.3', '1.2.4', '1.3.0'], '^1.2.0') returns '1.2.3' instead of '1.3.0'. Find the cause in this repository and fix it with a minimal change. Do not change the tests.",
+      "check": {
+        "command": [
+          "node",
+          "{casesDir}/semver-bugs.mjs",
+          "check",
+          "max-satisfying"
+        ]
+      }
+    },
+    {
+      "id": "fix-yaml-merge-keys",
+      "git": "https://github.com/nodeca/js-yaml.git",
+      "ref": "2cef47bebf60da141b78b085f3dea3b5733dcc12",
+      "setup": [
+        [
+          "node",
+          "{casesDir}/held-out-bugs.mjs",
+          "inject",
+          "yaml-merge-keys"
+        ]
+      ],
+      "prompt": "A user reports: merge keys stopped working. yaml.load('base: &b {a: 1, b: 2}\\nx:\\n  <<: *b\\n  c: 3\\n').x returns { c: 3 } instead of { a: 1, b: 2, c: 3 }. Find the cause in this repository and fix it with a minimal change. Do not change the tests.",
+      "check": {
+        "command": [
+          "node",
+          "{casesDir}/held-out-bugs.mjs",
+          "check",
+          "yaml-merge-keys"
+        ]
+      }
+    }
+  ]
+}

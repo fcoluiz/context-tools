@@ -72,7 +72,21 @@ export function plan(cases, arms = ['without', 'with'], reps = 1) {
   return out;
 }
 
-const BRACOS_EMBUTIDOS = { without: {}, with: { pluginDir: PLUGIN_DIR }, 'context-tools': { pluginDir: PLUGIN_DIR } };
+// `delegate`: o braço `with` mais uma instrução de sistema para entregar o trabalho volumoso aos
+// subagentes `ct-*` do plugin. Comparado com `with`, isola o efeito da delegação: mesmo plugin,
+// mesma skill, mesmos agentes disponíveis; só muda a instrução.
+const CT = `node "${join(PLUGIN_DIR, 'scripts', 'ct.mjs').replace(/\\/g, '/')}"`;
+export const DELEGATE_PROMPT = [
+  'Delegate bulky, low-judgment work to the cheap context-tools subagents instead of doing it in this context:',
+  'wide searches (where something is defined or used, who calls it) go to the context-tools:ct-explorer agent;',
+  'running the tests goes to context-tools:ct-verifier; mechanical edits you have already decided go to context-tools:ct-executor.',
+  `Build each subagent prompt with \`${CT} brief "<task>" --role=explorer|verifier|executor [--files=a,b] [--allow=<files to edit>]\``,
+  'and pass its output as the prompt. Keep the decisions and the final answer here, and check what a subagent returns before relying on it.',
+].join(' ');
+const BRACOS_EMBUTIDOS = {
+  without: {}, with: { pluginDir: PLUGIN_DIR }, 'context-tools': { pluginDir: PLUGIN_DIR },
+  delegate: { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_PROMPT },
+};
 
 /**
  * Braços de outras ferramentas: `{ "vars": { nome: valor }, "arms": { nome: espec } }`. A espec
@@ -113,6 +127,7 @@ export function claudeArgs(arm, { perRunCost, model } = {}, files = {}) {
   for (const p of [spec.pluginDir || []].flat()) args.push('--plugin-dir', p);
   if (files.settings) args.push('--settings', files.settings);
   if (files.mcp) args.push('--mcp-config', files.mcp);
+  if (spec.appendSystemPrompt) args.push('--append-system-prompt', spec.appendSystemPrompt);
   return args;
 }
 
@@ -327,6 +342,8 @@ async function executar(item, opts) {
     filesChanged: changed.filter((f) => !/^(ai-context|\.claude|\.codex)\//.test(f)).length,
     error: runError(json, r),
     model: json?.modelUsage ? Object.keys(json.modelUsage).join(',') : (opts.model || null),
+    // Custo por modelo, como o CLI informa: separa a sessão principal dos subagentes (braço `delegate`).
+    costByModel: json?.modelUsage ? Object.fromEntries(Object.entries(json.modelUsage).map(([m, u]) => [m, Number(u?.costUSD) || 0])) : null,
     tools: tools.map((t) => anonimizar(t, dir)),
     answer: anonimizar(resposta.slice(0, 2000), dir),
   };

@@ -75,12 +75,15 @@ export function plan(cases, arms = ['without', 'with'], reps = 1) {
 // `delegate`: o braço `with` mais uma instrução de sistema para entregar o trabalho volumoso aos
 // subagentes `ct-*` do plugin. Comparado com `with`, isola o efeito da delegação: mesmo plugin,
 // mesma skill, mesmos agentes disponíveis; só muda a instrução.
-const CT = `node "${join(PLUGIN_DIR, 'scripts', 'ct.mjs').replace(/\\/g, '/')}"`;
+// Sem `|`, `<`, `>`, `&`, `^` nem aspas: no Windows o `claude` do npm é um `.cmd`, e o `cmd.exe`
+// interpreta esses caracteres no meio do argumento (um `|` virou pipe e o braço nem começou).
+const CT = `node ${join(PLUGIN_DIR, 'scripts', 'ct.mjs').replace(/\\/g, '/')}`;
 export const DELEGATE_PROMPT = [
   'Delegate bulky, low-judgment work to the cheap context-tools subagents instead of doing it in this context:',
   'wide searches (where something is defined or used, who calls it) go to the context-tools:ct-explorer agent;',
   'running the tests goes to context-tools:ct-verifier; mechanical edits you have already decided go to context-tools:ct-executor.',
-  `Build each subagent prompt with \`${CT} brief "<task>" --role=explorer|verifier|executor [--files=a,b] [--allow=<files to edit>]\``,
+  `Build each subagent prompt by running ${CT} brief followed by the task in quotes and --role=explorer, --role=verifier or --role=executor`,
+  '(add --files=a,b for the files in focus and --allow=FILES for the files an executor may edit),',
   'and pass its output as the prompt. Keep the decisions and the final answer here, and check what a subagent returns before relying on it.',
 ].join(' ');
 const BRACOS_EMBUTIDOS = {

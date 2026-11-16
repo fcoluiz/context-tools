@@ -32,7 +32,7 @@
     ],
     "SubagentStart": [
       {
-        "matcher": "Explore|Plan|general-purpose",
+        "matcher": "Explore|Plan|general-purpose|context-tools:ct-explorer|context-tools:ct-verifier|context-tools:ct-map-keeper|context-tools:ct-translator|context-tools:ct-executor|ct-explorer|ct-verifier|ct-map-keeper|ct-translator|ct-executor",
         "hooks": [
           {
             "type": "command",

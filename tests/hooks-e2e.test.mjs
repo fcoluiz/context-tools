@@ -2048,6 +2048,11 @@ test('E2E: SubagentStart dá o atalho e as áreas a cada subagente, inclusive em
     const semMapas = rodar('context-maps.mjs', ['--subagent-start'], raiz, {}, evento('a4'));
     assert.equal(semMapas.status, 0);
     assert.equal(semMapas.stdout, '');
+    // Agente delegado (`ct-*`) recebe a linha do `ct` mesmo sem mapas: delega-se num turno só, sem briefing.
+    const delegado = rodar('context-maps.mjs', ['--subagent-start'], raiz, {}, JSON.stringify({ session_id: 's1', agent_id: 'a5', agent_type: 'context-tools:ct-explorer' }));
+    const ctx = JSON.parse(delegado.stdout).hookSpecificOutput.additionalContext;
+    assert.match(ctx, /ct\.mjs"?` find <name>/);
+    assert.doesNotMatch(ctx, /Context maps in/);
   } finally { rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
 });
 

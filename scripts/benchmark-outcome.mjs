@@ -99,10 +99,22 @@ export const DELEGATE_FORCED_PROMPT = [
   `with its prompt built by running ${CT} brief followed by the question in quotes and --role=explorer.`,
   'Decide from what it returns; you may then edit a file yourself once you know the exact change. Keep the final answer here.',
 ].join(' ');
+// `delegate-direct`: como o forçado, mas sem o turno do `ct brief`. No A/B de 2026-11-16 o braço forçado
+// gastou o mesmo que o `with` na sessão longa: cada delegação custava dois turnos da principal
+// (montar o briefing, chamar o agente), e cada turno relia ~140k tokens. O agente recebe o `ct` pelo
+// SubagentStart.
+export const DELEGATE_DIRECT_PROMPT = [
+  'Do not search or read the repository code yourself.',
+  'Hand every investigation (where something is defined, who calls it, where a bug comes from) to the context-tools:ct-explorer agent:',
+  'call it directly with the full question, and ask it to return the exact file, line and current text of each place that matters.',
+  'Put independent questions in one call. Decide from what it returns; you may then edit a file yourself once you know the exact change.',
+  'Keep the final answer here.',
+].join(' ');
 const BRACOS_EMBUTIDOS = {
   without: {}, with: { pluginDir: PLUGIN_DIR }, 'context-tools': { pluginDir: PLUGIN_DIR },
   delegate: { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_PROMPT },
   'delegate-forced': { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_FORCED_PROMPT },
+  'delegate-direct': { pluginDir: PLUGIN_DIR, appendSystemPrompt: DELEGATE_DIRECT_PROMPT },
 };
 
 /**

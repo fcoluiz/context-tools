@@ -1446,19 +1446,23 @@ function runStopReport() {
 async function runSubagentStart() {
   const root = workspaceRoot();
   if (safe(() => loadConfig(root).subagentContext, undefined) === false) return;
-  // Sem mapas, calado: medido com controle (24 execuções, subagentes Explore), o atalho sozinho não
-  // foi usado por nenhum subagente e só somou custo. A lista de áreas é o que pode orientá-lo.
   const areas = [...new Set(loadMaps(root).map((m) => m.area))];
-  if (!areas.length) return;
   const input = await readHookEvent();
+  // Os agentes delegados (`ct-*`) dependem do `ct`: recebem a linha de comando mesmo sem mapas. Assim
+  // a sessão principal delega num turno só, sem montar o briefing antes — e cada turno a mais da
+  // principal relê o contexto inteiro dela (medido no A/B de 2026-11-16).
+  const delegated = /(?:^|:)ct-(?:explorer|verifier|map-keeper|translator|executor)$/.test(String(input.agent_type || ''));
+  // Sem mapas, calado para os outros: medido com controle (24 execuções, subagentes Explore), o
+  // atalho sozinho não foi usado por nenhum subagente e só somou custo.
+  if (!areas.length && !delegated) return;
   // Caminho absoluto, não `$CLAUDE_PLUGIN_ROOT`: o shell do subagente pode ser PowerShell.
   const full = join(scriptDir(), 'ct.mjs').replace(/\\/g, '/');
   const rel = relative(root, full).replace(/\\/g, '/');
   const cmd = `node ${rel && !rel.startsWith('..') && !isAbsolute(rel) ? rel : `"${full}"`}`;
   const text = [
     t('map.subagent', { cmd: `\`${cmd}\`` }),
-    t('map.subagentMaps', { areas: listaSegura(areas, 12) }),
-  ].join('\n');
+    areas.length ? t('map.subagentMaps', { areas: listaSegura(areas, 12) }) : '',
+  ].filter(Boolean).join('\n');
   // Cada subagente é um destinatário: sem o agent_id na chave, a deduplicação de 90 s calaria
   // todos os subagentes paralelos depois do primeiro.
   const sessionId = `${input.session_id || ''}:${input.agent_id || Math.random()}`;

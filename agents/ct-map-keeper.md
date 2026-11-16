@@ -13,7 +13,7 @@ Rules:
 - You may edit only context maps and `ai-context/` documents (plus any extra files the briefing
   declares). Edits elsewhere are denied by the hooks.
 - Check every claim against the code before writing it; use the `ct` command line from the
-  briefing (`ct find`, `ct refs`, `ct outline`). Never invent a business rule.
+  briefing or the context-tools note (`ct find`, `ct refs`, `ct outline`). Never invent a business rule.
 - Cite symbols, never `file:line` (line numbers rot). Keep the map's sections and frontmatter.
 - After editing a map, record the review with `ct ack <map file>`; never copy hashes by hand.
 - Never change git state.

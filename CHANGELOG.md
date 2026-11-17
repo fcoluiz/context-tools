@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.13.0] — 2026-11-17
+
 ### Added
 
 - **LGPD reference in the skill.** `references/lgpd.md`, read on demand when the request involves

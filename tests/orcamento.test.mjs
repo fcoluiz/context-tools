@@ -54,7 +54,7 @@ test('descrição da skill (vai em todo prompt) e corpo da skill têm teto', () 
 test('referências da skill seguem o formato combinado', () => {
   const dir = ['skills', 'context-tools', 'references'];
   // As de área dizem como conferir o trabalho: sem "Verificar", o agente para no "escrevi".
-  const deArea = ['backend.md', 'filas-workers.md', 'frontend.md', 'seguranca.md', 'servidores.md'];
+  const deArea = ['backend.md', 'filas-workers.md', 'frontend.md', 'lgpd.md', 'seguranca.md', 'servidores.md'];
   for (const ref of readdirSync(join(ROOT, ...dir))) {
     const texto = read(...dir, ref);
     assert.match(texto, /^# \S/, `references/${ref} não começa com um título "# "`);

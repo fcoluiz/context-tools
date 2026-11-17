@@ -1,6 +1,6 @@
 ---
 name: context-tools
-description: Navegação de código e conhecimento do projeto sem re-explorar. Use antes de criar ou mudar código — onde um símbolo está definido, quem o usa, o impacto, arquivo grande (>1.500 linhas), o que muda junto. Também ao criar ou mudar rota, migração, consulta, tela, componente, worker, cron, Dockerfile ou CI; para panorama, revisar diff, auditar, segurança; antes de commitar doc; mapa defasado; "registre no contexto".
+description: Navegação de código e conhecimento do projeto sem re-explorar. Use antes de criar ou mudar código — onde um símbolo está definido, quem o usa, impacto, arquivo grande (>1.500 linhas), o que muda junto. Também ao criar ou mudar rota, migração, consulta, tela, componente, worker, cron, Dockerfile ou CI; para panorama, revisar diff, auditar, segurança, LGPD; antes de commitar doc; mapa defasado; "registre no contexto".
 ---
 
 # Ferramentas de contexto
@@ -82,7 +82,10 @@ o que ele imprimir. Quem digita `/compact` é o usuário; no Codex, o texto vai 
 ## Por área (leia só a do pedido)
 
 - revisar diff, auditar: `references/revisao-codigo.md` (parte de `ct.mjs changes`, fixa o relatório)
+- revisão completa ou profissional, banca, "tente reprovar": `references/banca.md`. Pedido de
+  revisão sem dizer qual: pergunte uma vez se é a comum ou a completa (custa ~3×)
 - segurança: `references/seguranca.md`
+- LGPD, privacidade, dado pessoal: `references/lgpd.md`
 - tela, componente: `references/frontend.md`
 - rota, serviço, consulta, migração: `references/backend.md`
 - fila, worker, cron, job: `references/filas-workers.md`

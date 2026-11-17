@@ -8,6 +8,18 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **LGPD reference in the skill.** `references/lgpd.md`, read on demand when the request involves
+  LGPD, privacy or personal data in code: inventory of personal fields with `ct find`/`ct refs`
+  (and a `banco` document bound to the schema, so it goes stale when the schema changes), then
+  minimization, exposure in logs and responses, retention and erasure (backups, replicas, caches,
+  third parties), data subject rights endpoints, consent history and an access trail for incidents.
+  Legal artifacts (ROPA, DPIA, privacy policy, DPAs, international transfer, ANPD deadlines) stay
+  out on purpose — they follow regulations that change — and the reference points to
+  [lgpd-skills](https://github.com/goul4rt/lgpd-skills) (MIT, by goul4rt), whose code-level part it
+  condenses. The skill description names LGPD within the same 420-character ceiling.
+
 ## [2.12.0] — 2026-11-16
 
 ### Added

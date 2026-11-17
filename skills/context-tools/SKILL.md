@@ -82,6 +82,8 @@ o que ele imprimir. Quem digita `/compact` é o usuário; no Codex, o texto vai 
 ## Por área (leia só a do pedido)
 
 - revisar diff, auditar: `references/revisao-codigo.md` (parte de `ct.mjs changes`, fixa o relatório)
+- revisão completa ou profissional, banca, "tente reprovar": `references/banca.md`. Pedido de
+  revisão sem dizer qual: pergunte uma vez se é a comum ou a completa (custa ~3×)
 - segurança: `references/seguranca.md`
 - LGPD, privacidade, dado pessoal: `references/lgpd.md`
 - tela, componente: `references/frontend.md`

@@ -19,6 +19,16 @@ reconstructed from git history.
   out on purpose — they follow regulations that change — and the reference points to
   [lgpd-skills](https://github.com/goul4rt/lgpd-skills) (MIT, by goul4rt), whose code-level part it
   condenses. The skill description names LGPD within the same 420-character ceiling.
+- **Review panel ("banca") for a full review.** `references/banca.md`, read when the user asks for a
+  full or professional review, a "banca" or to try to fail the change: starting from `ct changes`,
+  four independent reviewers, each a separate subagent on the session's model that never sees the
+  others' reports — the attacker (`seguranca.md`, `lgpd.md`), the confused user (double click,
+  empty field, text where a number goes, back or reload mid-flow, two tabs, expired session), the
+  senior engineer (duplication, unclear names, long functions, coupling) and the tester (`ct
+  verify`, `ct-verifier`; missing tests become items, not files). The main session checks every
+  finding against the code and gives one verdict, APPROVED or REJECTED, with a single list ordered
+  by severity. It only reviews; nothing is changed. When a review request does not say which kind,
+  the skill asks once whether it is the regular review or the full one, which costs about 3×.
 
 ## [2.12.0] — 2026-11-16
 

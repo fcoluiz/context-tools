@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Relatório local de sinais de uso e saúde documental. Não envia dados nem lê prompts.
 
-import { resolveRoot, isMain, loadConfig, sanitizeModelText, runtimeHost } from './lib/roots.mjs';
+import { resolveRoot, isMain, loadConfig, safe, sanitizeModelText, runtimeHost } from './lib/roots.mjs';
 import { MAX_EVENTS, readMetrics } from './lib/telemetry.mjs';
 import { detectLang } from './lib/i18n.mjs';
 import { contextMapsStopReport, sessionBaselineDiagnostics, currentSessionId } from './context-maps.mjs';
@@ -469,11 +469,45 @@ export function buildSessionReport(events, sessionId) {
   };
 }
 
+/**
+ * Subagentes desta sessão (Claude): quantos, de que tipo e modelo, e quanto custaram contra o agente
+ * principal. Sem a descrição de cada um, que é texto livre: o `--json` daqui vai em relato de
+ * problema. `null` no Codex ou sem sessão.
+ */
+async function sessionSubagents(root, sid, cfg) {
+  if (!sid || runtimeHost() === 'codex') return null;
+  const { claudeReport, agentTypeId, agentOrigin } = await import('./lib/delegation-report.mjs');
+  const r = safe(() => claudeReport(root, { session: sid, prices: cfg.delegation?.prices }), null);
+  if (!r || r.status !== 'ok') return { session: sid, count: 0, usd: null, mainUsd: r?.main?.usd ?? null, agents: [] };
+  const priced = r.agents.every((a) => a.usdWithResult !== null);
+  return {
+    session: sid,
+    count: r.agents.length,
+    usd: priced ? r.agents.reduce((acc, a) => acc + a.usdWithResult, 0) : null,
+    mainUsd: r.main?.usd ?? null,
+    agents: r.agents.map((a) => {
+      const agentType = agentTypeId(a.agentType);
+      return { agentType, origin: agentOrigin(agentType), model: a.model, requests: a.tokens.requests, usd: a.usdWithResult };
+    }),
+  };
+}
+
 function printSession(r, pt) {
   const say = (a, b) => (pt ? a : b);
+  const sub = r.subagents;
+  const subLine = () => {
+    if (!sub?.count) return;
+    const money = (v) => (v === null || v === undefined ? '—' : `$${v.toFixed(2)}`);
+    const share = sub.usd !== null && sub.mainUsd !== null && sub.usd + sub.mainUsd > 0 ? ` (${Math.round(sub.usd / (sub.usd + sub.mainUsd) * 100)}%)` : '';
+    const tipos = {};
+    for (const a of sub.agents) tipos[`${a.agentType || '?'} ${a.model || '?'}`] = (tipos[`${a.agentType || '?'} ${a.model || '?'}`] || 0) + 1;
+    console.log(say(`Subagentes: ${sub.count}, ${money(sub.usd)}${share} contra ${money(sub.mainUsd)} do agente principal — ${Object.entries(tipos).map(([k, n]) => `${k} ${n}×`).join(' · ')}. Detalhe: ct delegate report --session=${sub.session}`,
+      `Subagents: ${sub.count}, ${money(sub.usd)}${share} against ${money(sub.mainUsd)} for the main agent — ${Object.entries(tipos).map(([k, n]) => `${k} ${n}×`).join(' · ')}. Details: ct delegate report --session=${sub.session}`));
+  };
   if (!r.session || !r.events) {
     console.log(say('Nenhum evento registrado para esta sessão. As métricas passaram a guardar a sessão na 2.11.0; rode de novo depois de alguns turnos.',
       'No events recorded for this session. Metrics started keeping the session in 2.11.0; run again after a few turns.'));
+    subLine();
     return;
   }
   const hora = (at) => new Date(at).toTimeString().slice(0, 8);
@@ -485,6 +519,7 @@ function printSession(r, pt) {
   for (const [k, s] of Object.entries(o.byScript).sort((a, b) => b[1].chars - a[1].chars)) {
     console.log(`  ${k}: ${s.emitted}× · ${s.chars} ${say('caracteres', 'chars')}${s.deduped ? ` · ${s.deduped} ${say('calado(s)', 'silenced')}` : ''}`);
   }
+  subLine();
   console.log(say('Hooks que rodaram:', 'Hooks that ran:'));
   for (const [k, h] of Object.entries(r.hooks)) {
     const tempo = h.p50Ms != null ? ` · p50 ${h.p50Ms} ms${h.p95Ms !== h.p50Ms ? ` / p95 ${h.p95Ms} ms` : ''}` : '';
@@ -503,7 +538,7 @@ function printSession(r, pt) {
     `Limits: only what a hook records shows up; metrics keep the last ${MAX_EVENTS} events. \`--json\` has no path, prompt or command, and can go in a bug report.`));
 }
 
-function main() {
+async function main() {
   const root = resolveRoot();
   const args = process.argv.slice(2);
   const unsupported = args.filter((value) => !/^--days=/.test(value) && !/^--session(=.+)?$/.test(value) && !['--audit', '--json'].includes(value));
@@ -512,7 +547,9 @@ function main() {
   if (sessionArg) {
     const asked = sessionArg.includes('=') ? sessionArg.slice('--session='.length) : currentSessionId();
     const report = buildSessionReport(readMetrics(root).events, asked);
-    const pt = detectLang(loadConfig(root)) === 'pt';
+    const cfg = loadConfig(root);
+    const pt = detectLang(cfg) === 'pt';
+    report.subagents = await sessionSubagents(root, report.session || asked, cfg);
     if (args.includes('--json')) console.log(JSON.stringify(report, null, 2));
     else printSession(report, pt);
     return;
@@ -526,7 +563,7 @@ function main() {
 }
 
 if (isMain(import.meta.url)) {
-  try { main(); } catch (error) {
+  try { await main(); } catch (error) {
     console.error(`context-tools health: ${sanitizeModelText(error?.message || error, 300)}`);
     process.exitCode = 1;
   }

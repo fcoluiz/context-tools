@@ -86,7 +86,11 @@ its content; a map git does not version exists only on that machine), the reposi
 removed), the numbers of recent Claude Code and Codex sessions (messages, peak context, prefix
 rewrites, duration, token totals per billing category — input, output, cache read, cache write — and
 the id of the model used most; never the transcript text — Codex sessions are matched by the folder
-they were opened in, under `$CODEX_HOME/sessions`) and an anonymous machine id: a random UUID stored once in
+they were opened in, under `$CODEX_HOME/sessions`), the subagents of each Claude session in
+`sessions[].subagents` (grouped by agent type and model, with count, requests and the same token
+categories — `tokens` above is the main agent only, so a session's cost is both; the agent type
+passes only when it is id-shaped, otherwise `custom`, and the description written for the subagent
+never does; `null` on Codex) and an anonymous machine id: a random UUID stored once in
 `~/.context-tools/machine-id`, not derived from user name, hostname or hardware. Nothing is sent
 anywhere; it only prints. A test seeds markers in code, maps, prompts and answers and checks that none
 reaches the output.
@@ -1216,6 +1220,14 @@ or replaces a model). Next to the measured cost it prints an **estimate** of the
 main context: each subagent request re-reading the main context of the time, plus what the subagent
 accumulated staying there for every later main request. The estimate is labelled as such. On Codex
 the report lists the child rollouts of the session (`parent_thread_id`) with tokens only.
+`ct delegate report --days=30` sums the Claude sessions whose subagents ran in the period by agent
+type and model — count, requests, tokens, measured cost, estimate — split between the plugin's
+`ct-*` roles and the host's own agents, and the share of those sessions' cost that went to
+subagents (Claude only). `ct health --session` prints the same for one session in one line.
+Messages the Claude Code writes itself (`<synthetic>`) are not requests and are skipped; before,
+one of them left the main session without a price. Each `ct <verb>` call and each guard refusal
+(`delegation-guard`, with the role) are counted in the local metrics — the verb only, never its
+arguments.
 
 **Measured** (A/B, 2026-11-16, Opus 5.5 main session, [report](benchmarks/delegation-ab-2026-11-16.pt-BR.md)):
 delegating pays when one call replaces several rounds of search in a session with a large context —

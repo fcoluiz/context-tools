@@ -79,7 +79,9 @@ export function requestsOf(path) {
       }
     }
     const u = msg?.usage;
-    if (!u) continue;
+    // `<synthetic>` é mensagem que o próprio Claude Code escreve (interrupção, erro de API), com
+    // uso zerado e sem preço: não é requisição, e contá-la anulava o custo da sessão inteira.
+    if (!u || msg.model === '<synthetic>') continue;
     const id = msg.id || `line-${byId.size}`;
     const split = u.cache_creation && typeof u.cache_creation === 'object';
     const next = {
@@ -200,6 +202,118 @@ export function claudeReport(root, { session = null, prices = {}, dir = pastaDeT
     main: { model: mainModel, tokens: totals(main), usd: mainCosts.every((c) => c !== null) ? sum(mainCosts, (c) => c) : null },
     agents,
   };
+}
+
+/**
+ * Tipo do subagente como dado, não como texto: só passa o que tem formato de id (`Explore`,
+ * `context-tools:ct-explorer`); o resto vira `custom`. A `description` nunca sai daqui: é texto
+ * livre escrito para o subagente, e pode carregar nome de arquivo, de cliente ou trecho de prompt.
+ */
+export function agentTypeId(type) {
+  if (type === null || type === undefined || type === '') return null;
+  return /^[\w.:@/-]{1,80}$/.test(String(type)) ? String(type) : 'custom';
+}
+
+/** `plugin` para os papéis `ct-*` deste plugin; `host` para os agentes do host e os do usuário. */
+export function agentOrigin(type) {
+  return /(^|:)ct-[a-z-]+$/.test(String(type || '')) ? 'plugin' : 'host';
+}
+
+/**
+ * Subagentes de uma sessão do Claude agrupados por tipo e modelo: só contagens e tokens, para o
+ * snapshot. Sem custo (quem consome aplica a própria tabela de preço, como já faz com `tokens` da
+ * sessão) e sem descrição. Lista vazia quando a sessão não teve subagente.
+ */
+export function subagentsOf(dir, sid) {
+  const subDir = dir && sid ? join(dir, sid, 'subagents') : null;
+  if (!subDir || !existsSync(subDir)) return [];
+  const groups = new Map();
+  for (const file of (safe(() => readdirSync(subDir), []) || []).filter((f) => /^agent-.*\.jsonl$/.test(f)).sort()) {
+    const meta = safe(() => JSON.parse(readFileSync(join(subDir, file.replace(/\.jsonl$/, '.meta.json')), 'utf8')), {}) || {};
+    const { requests } = requestsOf(join(subDir, file));
+    if (!requests.length) continue;
+    const agentType = agentTypeId(meta.agentType);
+    const model = mostUsed(requests);
+    const key = `${agentType}\u0000${model}`;
+    const g = groups.get(key) || { agentType, origin: agentOrigin(agentType), model, count: 0, requests: 0, tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } };
+    const t = totals(requests);
+    g.count++;
+    g.requests += t.requests;
+    for (const f of ['input', 'output', 'cacheRead', 'cacheWrite']) g.tokens[f] += t[f];
+    groups.set(key, g);
+  }
+  return [...groups.values()].sort((a, b) => b.requests - a.requests);
+}
+
+/**
+ * Agregado do Claude num período: as sessões com subagente cuja pasta `subagents/` mudou nos
+ * últimos `days` dias, somadas por tipo e modelo. A fração do custo é sobre essas sessões (principal
+ * + subagentes), não sobre todas as sessões do período: ler todos os transcripts custaria caro e
+ * diria pouco a mais.
+ */
+export function periodReport(root, { days = 30, prices = {}, dir = pastaDeTranscripts(root), now = Date.now() } = {}) {
+  const since = now - days * 864e5;
+  const sessions = sessionsWithSubagents(dir).filter((s) => s.mtime >= since);
+  const groups = new Map();
+  let mainUsd = 0, subUsd = 0, priced = 0, unpriced = 0, agents = 0;
+  for (const { sid } of sessions) {
+    const r = claudeReport(root, { session: sid, prices, dir });
+    if (r.status !== 'ok') continue;
+    const allPriced = r.main?.usd !== null && r.agents.every((a) => a.usd !== null);
+    if (allPriced) { priced++; mainUsd += r.main.usd; subUsd += sum(r.agents, (a) => a.usdWithResult); } else unpriced++;
+    for (const a of r.agents) {
+      agents++;
+      const agentType = agentTypeId(a.agentType);
+      const key = `${agentType}\u0000${a.model}`;
+      const g = groups.get(key) || { agentType, origin: agentOrigin(agentType), model: a.model, count: 0, requests: 0,
+        tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, usd: 0, usdWithResult: 0, priced: 0, estimateUsd: 0, estimated: 0, measuredVsEstimate: 0 };
+      g.count++;
+      g.requests += a.tokens.requests;
+      for (const f of ['input', 'output', 'cacheRead', 'cacheWrite']) g.tokens[f] += a.tokens[f];
+      if (a.usd !== null) { g.priced++; g.usd += a.usd; g.usdWithResult += a.usdWithResult; }
+      if (a.estimate && a.usdWithResult !== null) { g.estimated++; g.estimateUsd += a.estimate.usd; g.measuredVsEstimate += a.usdWithResult; }
+      groups.set(key, g);
+    }
+  }
+  const byType = [...groups.values()].sort((a, b) => b.usd - a.usd || b.requests - a.requests);
+  return {
+    host: 'claude', status: agents ? 'ok' : 'no-subagents', days, sessions: sessions.length, agents,
+    cost: { sessionsPriced: priced, sessionsUnpriced: unpriced, mainUsd, subagentsUsd: subUsd, subagentShare: mainUsd + subUsd > 0 ? subUsd / (mainUsd + subUsd) : null },
+    byOrigin: ['plugin', 'host'].map((origin) => {
+      const list = byType.filter((g) => g.origin === origin);
+      return { origin, count: sum(list, (g) => g.count), usd: sum(list, (g) => g.usdWithResult) };
+    }),
+    byType,
+  };
+}
+
+export function formatPeriod(report, lang = 'en') {
+  const pt = lang === 'pt';
+  if (report.status !== 'ok') {
+    return pt ? `🧾 delegação: nenhum subagente nos últimos ${report.days} dias.` : `🧾 delegation: no subagents in the last ${report.days} days.`;
+  }
+  const c = report.cost;
+  const lines = [pt
+    ? `🧾 Subagentes, últimos ${report.days} dias: ${report.agents} em ${report.sessions} sessão(ões)`
+    : `🧾 Subagents, last ${report.days} days: ${report.agents} in ${report.sessions} session(s)`];
+  if (c.subagentShare !== null) {
+    lines.push(pt
+      ? `   nessas sessões: principal ${usd(c.mainUsd)} · subagentes ${usd(c.subagentsUsd)} (${Math.round(c.subagentShare * 100)}% do custo)`
+      : `   in those sessions: main ${usd(c.mainUsd)} · subagents ${usd(c.subagentsUsd)} (${Math.round(c.subagentShare * 100)}% of the cost)`);
+  }
+  if (c.sessionsUnpriced) lines.push(pt ? `   ${c.sessionsUnpriced} sessão(ões) com modelo sem preço ficaram fora dos totais.` : `   ${c.sessionsUnpriced} session(s) with an unpriced model left out of the totals.`);
+  const origin = Object.fromEntries(report.byOrigin.map((o) => [o.origin, o]));
+  lines.push(pt
+    ? `   do plugin (ct-*): ${origin.plugin.count} · ${usd(origin.plugin.usd)}   do host: ${origin.host.count} · ${usd(origin.host.usd)}`
+    : `   plugin (ct-*): ${origin.plugin.count} · ${usd(origin.plugin.usd)}   host: ${origin.host.count} · ${usd(origin.host.usd)}`);
+  for (const g of report.byType) {
+    const est = g.estimated ? (pt ? ` · estimado sem delegar ${usd(g.estimateUsd)}` : ` · estimated without delegating ${usd(g.estimateUsd)}`) : '';
+    lines.push(`- ${g.agentType || '?'} · ${g.model || '?'} · ${g.count}× · ${g.requests} req · ${pt ? 'saída' : 'output'} ${k(g.tokens.output)} · ${usd(g.priced ? g.usdWithResult : null)}${est}`);
+  }
+  lines.push(pt
+    ? 'Custo medido com a tabela de preço de lista, inclui a resposta relida pela principal. A estimativa sem delegar não é medida.'
+    : 'Cost measured with list prices, including the answer re-read by the main session. The estimate without delegating is not measured.');
+  return lines.join('\n');
 }
 
 /** Primeira linha (`session_meta`) de um rollout do Codex. */

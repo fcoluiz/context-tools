@@ -338,7 +338,8 @@ resposta. O plugin traz cinco agentes delegados no Haiku mais novo (`ct-explorer
 `ct-map-keeper`, `ct-translator`, `ct-executor`), o `ct brief` para dar a cada um um briefing
 pequeno e exato, uma trava nos hooks que impede papel só-leitura de editar e mantém papel que escreve
 dentro do escopo declarado, e o `ct delegate report` para medir quanto cada subagente custou contra
-uma estimativa do mesmo trabalho no contexto principal. Mesmos agentes e mesma trava no Claude e no
+uma estimativa do mesmo trabalho no contexto principal (`--days=30` soma o período por tipo de agente
+e modelo). Mesmos agentes e mesma trava no Claude e no
 Codex; veja [a referência](docs/reference.pt-BR.md#subagentes-baratos-delegate).
 
 ## Em equipe: conhecimento deixado para trás num pull request

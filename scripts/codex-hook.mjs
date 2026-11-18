@@ -90,8 +90,10 @@ async function pairHook(kind) {
 // subagente o sandbox da sessão que o chamou; esta trava é a única diferença por papel.
 async function delegationHook() {
   try {
-    const { delegationDenial } = await import('./lib/delegation.mjs');
-    return delegationDenial({ event: evento, cwd });
+    const { delegationDenial, recordDenial } = await import('./lib/delegation.mjs');
+    const reason = delegationDenial({ event: evento, cwd });
+    if (reason) await recordDenial(cwd, evento);
+    return reason;
   } catch {
     return null; // M4: a trava nunca derruba um hook que já funcionava.
   }

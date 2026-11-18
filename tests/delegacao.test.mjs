@@ -10,7 +10,8 @@ import {
   roleFromEvent, writeScope,
 } from '../scripts/lib/delegation.mjs';
 import { agentSources, cheapestCodexModel, parseAgent, renderCodexAgent } from '../scripts/lib/delegation-agents.mjs';
-import { claudeReport, counterfactual, formatReport, priceFor, requestCost } from '../scripts/lib/delegation-report.mjs';
+import { agentOrigin, agentTypeId, claudeReport, counterfactual, formatPeriod, formatReport, periodReport, priceFor, requestCost } from '../scripts/lib/delegation-report.mjs';
+import { readMetrics } from '../scripts/lib/telemetry.mjs';
 import { buildBrief } from '../scripts/brief.mjs';
 import { VERBS } from '../scripts/ct.mjs';
 
@@ -242,6 +243,56 @@ test('delegação: relatório lê subagents/, deduplica por id e compara com a e
   assert.match(text, /custo medido/);
   assert.match(text, /ESTIMATIVA/);
   assert.equal(claudeReport(project, { dir: join(project, 'nada') }).status, 'no-subagents');
+}));
+
+test('delegação: agregado por período soma por tipo e modelo; <synthetic> não anula o custo', () => fixture(({ project }) => {
+  const dir = join(project, 'transcripts');
+  const line = (id, model, at, usage) => JSON.stringify({ type: 'assistant', timestamp: at, message: { id, model, usage, content: [] } });
+  const u = (cr, out) => ({ input_tokens: 2, output_tokens: out, cache_read_input_tokens: cr, cache_creation_input_tokens: 0 });
+  const synthetic = JSON.stringify({ type: 'assistant', message: { id: 'x', model: '<synthetic>', usage: { input_tokens: 0, output_tokens: 0 }, content: [] } });
+  for (const [sid, agents] of [['s1', [['a', 'context-tools:ct-explorer', 'claude-haiku-5-5'], ['b', 'Explore', 'claude-sonnet-5-5']]], ['s2', [['c', 'context-tools:ct-explorer', 'claude-haiku-5-5']]]]) {
+    mkdirSync(join(dir, sid, 'subagents'), { recursive: true });
+    writeFileSync(join(dir, `${sid}.jsonl`), [line(`${sid}m1`, 'claude-opus-5-5', '2026-11-15T10:00:00Z', u(50000, 100)), synthetic,
+      line(`${sid}m2`, 'claude-opus-5-5', '2026-11-15T10:10:00Z', u(51000, 100))].join('\n'));
+    for (const [id, type, model] of agents) {
+      writeFileSync(join(dir, sid, 'subagents', `agent-${id}.jsonl`), [line(`${id}1`, model, '2026-11-15T10:01:00Z', u(5000, 40)), synthetic].join('\n'));
+      writeFileSync(join(dir, sid, 'subagents', `agent-${id}.meta.json`), JSON.stringify({ agentType: type, description: 'livre' }));
+    }
+  }
+  const one = claudeReport(project, { dir, session: 's1' });
+  assert.equal(one.main.tokens.requests, 2, '<synthetic> não é requisição');
+  assert.ok(one.main.usd > 0, 'e não deixa o custo da principal sem preço');
+  const p = periodReport(project, { dir, days: 30 });
+  assert.equal(p.status, 'ok');
+  assert.equal(p.sessions, 2);
+  assert.equal(p.agents, 3);
+  const explorer = p.byType.find((g) => g.agentType === 'context-tools:ct-explorer');
+  assert.deepEqual([explorer.origin, explorer.model, explorer.count, explorer.requests], ['plugin', 'claude-haiku-5-5', 2, 2]);
+  assert.equal(p.byType.find((g) => g.agentType === 'Explore').origin, 'host');
+  assert.equal(p.byOrigin.find((o) => o.origin === 'plugin').count, 2);
+  assert.ok(p.cost.subagentShare > 0 && p.cost.subagentShare < 1);
+  assert.ok(!JSON.stringify(p).includes('livre'), 'a descrição não entra no agregado');
+  assert.match(formatPeriod(p, 'pt'), /últimos 30 dias: 3 em 2 sessão/);
+  assert.equal(periodReport(project, { dir, days: 1, now: Date.now() + 5 * 864e5 }).status, 'no-subagents', 'fora da janela');
+  const health = spawnSync(process.execPath, [script('health.mjs'), '--session=s1', '--json'], {
+    encoding: 'utf8', env: { ...process.env, CONTEXT_TOOLS_TRANSCRIPTS: dir, CONTEXT_TOOLS_PROJECT_DIR: project, CONTEXT_TOOLS_HOST: 'claude' },
+  });
+  const sub = JSON.parse(health.stdout).subagents;
+  assert.deepEqual([sub.count, sub.agents.map((a) => a.origin).sort()], [2, ['host', 'plugin']], 'health --session mostra os subagentes');
+  assert.ok(!health.stdout.includes('livre'), 'sem a descrição no --json do health');
+  assert.equal(agentTypeId('tipo com espaço'), 'custom');
+  assert.equal(agentOrigin('ct-verifier'), 'plugin');
+}));
+
+test('delegação: recusa da trava e verbo do ct ficam nas métricas, sem argumento', () => fixture(({ project, env }) => {
+  const out = json(run('delegate.mjs', ['--hook=pre-tool'], env, edit(project, 'src/a.ts', 'context-tools:ct-explorer')).stdout);
+  assert.equal(out.hookSpecificOutput.permissionDecision, 'deny');
+  const guard = readMetrics(project).events.filter((e) => e.type === 'delegation-guard');
+  assert.deepEqual(guard.map((e) => [e.outcome, e.role]), [['deny', 'ct-explorer']]);
+  spawnSync(process.execPath, [script('ct.mjs'), 'debt', `--root=${project}`, 'SEGREDO_ARG'], { encoding: 'utf8', env });
+  const cli = readMetrics(project).events.filter((e) => e.type.startsWith('cli:'));
+  assert.deepEqual(cli.map((e) => e.type), ['cli:debt']);
+  assert.ok(!JSON.stringify(cli).includes('SEGREDO_ARG'), 'só o verbo, nunca os argumentos');
 }));
 
 test('delegação: um agente por papel, mesmos papéis nos dois hosts, Codex gerado da mesma fonte', () => fixture(({ home, project, env }) => {

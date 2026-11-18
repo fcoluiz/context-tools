@@ -322,6 +322,18 @@ const WHY = {
  * PreToolUse: texto da recusa, ou `null` quando a ferramenta pode seguir.
  * Fora de um subagente `ct-*`, sempre `null` — a sessão principal nunca é tocada.
  */
+/**
+ * Conta uma recusa da trava nas métricas locais (`delegation-guard`), com o papel e nada mais.
+ * Import tardio: só quem recusa paga o carregamento. Nunca lança.
+ */
+export async function recordDenial(cwd, event = {}) {
+  try {
+    if (!cwd) return;
+    const { recordMetric } = await import('./telemetry.mjs');
+    recordMetric(cwd, 'delegation-guard', { outcome: 'deny', role: roleFromEvent(event) || 'unknown' });
+  } catch { /* métrica nunca derruba a trava */ }
+}
+
 export function delegationDenial({ event = {}, cwd = null, role = roleFromEvent(event), now = Date.now(), env = process.env } = {}) {
   if (!role || env.CONTEXT_TOOLS_DELEGATION_GUARD === '0') return null;
   const where = cwd || (typeof event.cwd === 'string' && event.cwd) || process.cwd();

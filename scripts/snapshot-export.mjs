@@ -22,6 +22,7 @@ import { basename, dirname, join, relative, resolve } from 'node:path';
 import { resolveRoot, findRepos, isMain, safe, sanitizeModelText, runtimeHost } from './lib/roots.mjs';
 import { buildReport } from './health.mjs';
 import { metricasDaSessao, transcriptsRecentes, transcriptsCodexRecentes } from './lib/sessao.mjs';
+import { subagentsOf } from './lib/delegation-report.mjs';
 
 export const SNAPSHOT_SCHEMA = 'context-tools/snapshot@1';
 
@@ -147,6 +148,11 @@ function sessoes(root, limite, env) {
         cacheRead: num(m.tokens.cacheRead), cacheWrite: num(m.tokens.cacheWrite),
       } : null,
       model: modeloPrincipal(m.modelos),
+      // Subagentes da sessão por tipo e modelo, com os próprios tokens: `tokens` acima é só o agente
+      // principal, e quem soma o custo da sessão precisa dos dois (cada grupo com o preço do seu
+      // modelo). Sem a descrição do subagente, que é texto livre. `null` no Codex: os filhos de uma
+      // sessão estão espalhados pela pasta de rollouts, e varrê-la por sessão custaria caro.
+      subagents: m.host === 'codex' ? null : (safe(() => subagentsOf(dirname(caminho), sid), []) || []),
     };
   }).filter(Boolean);
 }

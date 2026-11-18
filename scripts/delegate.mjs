@@ -6,6 +6,8 @@
 //   delegate.mjs clear [--role=R]                                   apaga escopo(s)
 //   delegate.mjs report [--session=ID] [--host=claude|codex] [--json]
 //                                    custo medido de cada subagente, e a estimativa sem delegar
+//   delegate.mjs report --days=N [--json]
+//                                    agregado por tipo e modelo nos últimos N dias (só Claude)
 //
 // Hook do Claude: delegate.mjs --hook=pre-tool (evento no stdin). Roda em toda edição e em todo
 // Bash, então o caminho comum (sessão principal, ou agente que não é `ct-*`) sai antes de importar
@@ -37,9 +39,14 @@ async function hook() {
   if (!/ct-(?:explorer|verifier|map-keeper|translator|executor)/i.test(raw)) return 0;
   let event = {};
   try { event = JSON.parse(raw) || {}; } catch { return 0; }
-  const { delegationDenial } = await import('./lib/delegation.mjs');
-  const reason = delegationDenial({ event, cwd: typeof event.cwd === 'string' && event.cwd ? event.cwd : process.env.CLAUDE_PROJECT_DIR });
-  if (reason) process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } }));
+  const { delegationDenial, recordDenial } = await import('./lib/delegation.mjs');
+  const cwd = typeof event.cwd === 'string' && event.cwd ? event.cwd : process.env.CLAUDE_PROJECT_DIR;
+  const reason = delegationDenial({ event, cwd });
+  if (reason) {
+    // Só a recusa é registrada: o caminho comum já saiu acima, sem importar nada.
+    await recordDenial(cwd, event);
+    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } }));
+  }
   return 0;
 }
 
@@ -61,6 +68,8 @@ async function main() {
   if (verb === 'scope') {
     const r = lib.writeScope({ root, role: flag(args, 'role'), allow: flag(args, 'allow'), ttlMinutes: flag(args, 'ttl-minutes') });
     if (!r.ok) { process.stderr.write(`delegate: --role must be one of: ${lib.ROLE_NAMES.join(', ')}\n`); return 1; }
+    const { recordMetric } = await import('./lib/telemetry.mjs');
+    recordMetric(root, 'delegation-scope', { role: r.ticket.role, globs: r.ticket.allow.length });
     console.log(json ? JSON.stringify(r.ticket, null, 2)
       : `🧩 ${r.ticket.role}: ${r.ticket.allow.join(', ') || (pt ? '(nada)' : '(nothing)')} — ${pt ? 'vale até' : 'valid until'} ${new Date(r.ticket.expiresAt).toLocaleTimeString()}`);
     return 0;
@@ -81,6 +90,18 @@ async function main() {
     const rep = await import('./lib/delegation-report.mjs');
     const host = flag(args, 'host') || runtimeHost();
     const session = typeof flag(args, 'session') === 'string' ? flag(args, 'session') : null;
+    const daysArg = flag(args, 'days');
+    if (daysArg !== undefined && daysArg !== null && !session) {
+      const days = daysArg === true ? 30 : Number(daysArg);
+      if (!Number.isInteger(days) || days < 1 || days > 365) { process.stderr.write('delegate: --days must be an integer from 1 to 365\n'); return 1; }
+      if (host === 'codex') {
+        console.log(pt ? '🧾 delegação: o agregado por período ainda é só do Claude; no Codex use --session.' : '🧾 delegation: the period summary is Claude-only for now; on Codex use --session.');
+        return 0;
+      }
+      const period = rep.periodReport(root, { days, prices: cfg.delegation?.prices });
+      console.log(json ? JSON.stringify(period, null, 2) : rep.formatPeriod(period, pt ? 'pt' : 'en'));
+      return 0;
+    }
     const report = host === 'codex'
       ? rep.codexReport(root, { session })
       : rep.claudeReport(root, { session, prices: cfg.delegation?.prices });

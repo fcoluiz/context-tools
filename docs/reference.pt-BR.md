@@ -87,7 +87,11 @@ mapa que o git não versiona só existe naquela máquina), os repositórios (`do
 números das sessões recentes do Claude Code e do Codex (mensagens, pico de contexto, reescritas de
 prefixo, duração, totais de tokens por categoria de cobrança — entrada, saída, cache lido, cache
 gravado — e o id do modelo mais usado; nunca o texto do transcript — as do Codex são reconhecidas pela pasta em
-que foram abertas, em `$CODEX_HOME/sessions`) e um id anônimo da máquina: um UUID aleatório gravado uma vez
+que foram abertas, em `$CODEX_HOME/sessions`), os subagentes de cada sessão do Claude em
+`sessions[].subagents` (agrupados por tipo de agente e modelo, com quantidade, requisições e as
+mesmas categorias de tokens — o `tokens` acima é só o agente principal, então o custo da sessão é a
+soma dos dois; o tipo só passa se tiver formato de id, senão vira `custom`, e a descrição escrita
+para o subagente nunca sai; `null` no Codex) e um id anônimo da máquina: um UUID aleatório gravado uma vez
 em `~/.context-tools/machine-id`, que não deriva de nome de usuário, hostname nem hardware. Não envia
 nada para lugar nenhum; só imprime. Um teste semeia marcadores no código, nos mapas, nos prompts e nas
 respostas e confere que nenhum chega à saída.
@@ -1196,6 +1200,13 @@ de cache a 1,25× a entrada para 5 minutos, 2× para 1 hora; `delegation.prices`
 contexto principal da hora, mais o que o subagente acumulou ficando lá para toda requisição principal
 seguinte. A estimativa vem marcada como tal. No Codex, o relatório lista os rollouts filhos da sessão
 (`parent_thread_id`), só com tokens.
+`ct delegate report --days=30` soma as sessões do Claude cujos subagentes rodaram no período, por
+tipo de agente e modelo — quantidade, requisições, tokens, custo medido, estimativa —, separando os
+papéis `ct-*` do plugin dos agentes do próprio host, e a fração do custo dessas sessões que foi para
+subagentes (só Claude). O `ct health --session` mostra o mesmo de uma sessão, numa linha. Mensagens
+que o próprio Claude Code escreve (`<synthetic>`) não são requisição e ficam de fora; antes, uma
+delas deixava a sessão principal sem preço. Cada chamada de `ct <verbo>` e cada recusa da trava
+(`delegation-guard`, com o papel) entram nas métricas locais — só o verbo, nunca os argumentos.
 
 **Medido** (A/B, 2026-11-16, sessão principal no Opus 5.5, [relatório](benchmarks/delegation-ab-2026-11-16.pt-BR.md)):
 delegar compensa quando uma chamada substitui várias rodadas de busca numa sessão de contexto grande —

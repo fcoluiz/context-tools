@@ -71,6 +71,20 @@ test('snapshot: schema versionado, repositório sem credencial, inventário e se
   const transcritos = mkdtempSync(join(tmpdir(), 'ctx-snapshot-transc-'));
   try {
     transcript(transcritos, 'sessao-1');
+    // Dois subagentes do mesmo tipo e modelo viram um grupo; a descrição (texto livre, escrito para o
+    // subagente) e um tipo que não tem formato de id não podem sair.
+    const sub = join(transcritos, 'sessao-1', 'subagents');
+    mkdirSync(sub, { recursive: true });
+    const linhaSub = (id, usage) => JSON.stringify({ type: 'assistant', timestamp: '2026-10-01T10:02:00.000Z',
+      message: { id, model: 'claude-haiku-5-5', content: [{ type: 'text', text: SEGREDO_RESPOSTA }], usage } });
+    for (const [nome, tipo] of [['a1', 'Explore'], ['a2', 'Explore'], ['a3', `tipo com ${SEGREDO_PROMPT} e espaço`]]) {
+      writeFileSync(join(sub, `agent-${nome}.jsonl`), [
+        linhaSub(`${nome}-1`, { input_tokens: 1, output_tokens: 10, cache_read_input_tokens: 100, cache_creation_input_tokens: 50 }),
+        // `<synthetic>` é escrito pelo próprio Claude Code e não é requisição.
+        JSON.stringify({ type: 'assistant', message: { id: `${nome}-s`, model: '<synthetic>', content: [], usage: { input_tokens: 0, output_tokens: 0 } } }),
+      ].join('\n'));
+      writeFileSync(join(sub, `agent-${nome}.meta.json`), JSON.stringify({ agentType: tipo, description: `ache ${SEGREDO_PROMPT}` }));
+    }
     const { texto, json } = snapshot(raiz, { CONTEXT_TOOLS_HOME: casa, CONTEXT_TOOLS_TRANSCRIPTS: transcritos });
     assert.equal(json.schema, SNAPSHOT_SCHEMA);
     assert.match(json.machineId, /^[0-9a-f-]{36}$/);
@@ -88,6 +102,10 @@ test('snapshot: schema versionado, repositório sem credencial, inventário e se
     assert.deepEqual(s.tokens, { input: 50, output: 500, cacheRead: 150000, cacheWrite: 2500 }, 'uma vez por mensagem');
     assert.equal(s.model, 'claude-test-1');
     assert.ok(s.messages > 0 && s.startedAt && s.endedAt);
+    assert.deepEqual(s.subagents, [
+      { agentType: 'Explore', origin: 'host', model: 'claude-haiku-5-5', count: 2, requests: 2, tokens: { input: 2, output: 20, cacheRead: 200, cacheWrite: 100 } },
+      { agentType: 'custom', origin: 'host', model: 'claude-haiku-5-5', count: 1, requests: 1, tokens: { input: 1, output: 10, cacheRead: 100, cacheWrite: 50 } },
+    ], 'subagentes por tipo e modelo, só números');
     for (const marcador of [SEGREDO_CODIGO, SEGREDO_MAPA, SEGREDO_PROMPT, SEGREDO_RESPOSTA, 'ghp_TOKENSECRETO']) {
       assert.ok(!texto.includes(marcador), `${marcador} vazou para o snapshot`);
     }
@@ -135,6 +153,8 @@ test('snapshot: sessões do Codex desta pasta entram junto com as do Claude, as 
     assert.equal(c.model, 'gpt-test-1');
     assert.deepEqual(c.tokens, { input: 200, output: 50, cacheRead: 800, cacheWrite: 0 }, 'entrada sem o que veio do cache');
     assert.ok(!texto.includes(SEGREDO_PROMPT), 'o prompt do Codex não vaza');
+    assert.equal(c.subagents, null, 'no Codex os subagentes não são lidos por sessão');
+    assert.deepEqual(json.sessions[1].subagents, [], 'Claude sem subagente: lista vazia');
   } finally {
     for (const d of [raiz, casa, transcritos, codex]) rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }

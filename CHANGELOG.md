@@ -8,6 +8,29 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Subagent usage over a period.** `ct delegate report --days=N` sums the Claude sessions whose
+  subagents ran in the last N days by agent type and model — count, requests, tokens, measured cost
+  and the estimate without delegating — split between the plugin's `ct-*` roles and the host's own
+  agents, with the share of those sessions' cost that went to subagents. `ct health --session` shows
+  the same for one session in one line.
+- **Subagents in `ct snapshot`.** Each Claude session carries `subagents`: groups by agent type and
+  model with count, requests and tokens per billing category. `tokens` of the session was and stays
+  the main agent only, so a dashboard summing session cost was missing every subagent. The
+  description written for a subagent never leaves (it is free text); an agent type that is not
+  id-shaped becomes `custom`. `null` on Codex.
+- **Usage of every `ct` verb and of the delegation guard in the local metrics.** One `cli:<verb>`
+  event per call (the verb only, never the arguments), so verbs that recorded nothing — `review`,
+  `changes`, `debt`, `status`… — now show up in `ct health` and in the snapshot; `delegation-scope`
+  when a write scope is declared and `delegation-guard` with the role when the guard refuses a call.
+
+### Fixed
+
+- **A session's cost no longer turns unknown because of `<synthetic>` messages.** The Claude Code
+  writes them itself (interruptions, API errors) with zero usage and no model price; the delegation
+  report counted them as requests, and a single one left the main session's cost blank.
+
 ## [2.13.0] — 2026-11-17
 
 ### Added

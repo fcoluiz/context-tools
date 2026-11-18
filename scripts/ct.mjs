@@ -80,6 +80,14 @@ async function main() {
     process.exitCode = 1;
     return;
   }
+  // Um evento por verbo chamado, inclusive os que não registram nada por conta própria (review,
+  // changes, debt…): é o que responde "quais funções do plugin o agente usa". Só o verbo, nunca os
+  // argumentos. Métrica nunca impede o comando de rodar.
+  try {
+    const { resolveRoot } = await import('./lib/roots.mjs');
+    const { recordMetric } = await import('./lib/telemetry.mjs');
+    recordMetric(resolveRoot(resto), `cli:${verbo}`);
+  } catch { /* segue sem métrica */ }
   process.argv = [process.argv[0], script, ...resto];
   await import(pathToFileURL(script).href);
 }

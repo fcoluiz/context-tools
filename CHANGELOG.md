@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.14.0] — 2026-11-18
+
 ### Added
 
 - **Subagent usage over a period.** `ct delegate report --days=N` sums the Claude sessions whose

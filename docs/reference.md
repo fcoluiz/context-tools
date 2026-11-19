@@ -1275,7 +1275,9 @@ project's throwaway folders are declared here.
 
 `verify.command` overrides the detected test command; `verify.testPatterns` adds commands that count
 as a test run; `verify.enabled: false` turns the `Stop` note off. `leanRule: false` drops the one-line
-lean rule from `SessionStart` (on by default, ~355 characters). `debt.markers` replaces the markers
+lean rule from `SessionStart` (on by default, ~355 characters); its sentence asking for a small test
+in the existing suite only appears when a test command is detected, and `leanRule: "no-tests"` drops
+just that sentence. `debt.markers` replaces the markers
 `ct debt` looks for.
 
 ### Operational documentation

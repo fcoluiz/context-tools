@@ -8,6 +8,14 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The lean rule no longer asks for tests where there is no suite.** Its sentence about a small test
+  in the existing suite only appears when a test command is detected, so projects without tests —
+  often the ones whose instructions forbid adding tests unasked — stop getting a contradicting line
+  every session. `"leanRule": "no-tests"` drops just that sentence in projects that have a suite;
+  `false` still turns the whole rule off.
+
 ## [2.14.0] — 2026-11-18
 
 ### Added

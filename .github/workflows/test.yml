@@ -31,7 +31,7 @@ jobs:
       # A versão das actions (atualizada pelo Dependabot) é o RUNTIME DA ACTION, não a do projeto —
       # a matriz 18/22 abaixo é premissa de compatibilidade. Se um bump de `setup-node` deixar de
       # instalar Node 18, ele volta atrás: a matriz vale mais que o aviso de depreciação.
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
 

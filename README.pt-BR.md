@@ -67,7 +67,7 @@ que ele implica (e quando dividir compensa), se os testes rodaram depois da últ
 e, passada a metade de uma janela do limite de uso, quando ela acaba no ritmo atual se isso vier
 antes de renovar; o Codex vê o mesmo com `ct status`. Uma **regra mínima** curta no início da sessão pede o mínimo de
 código que resolve, nunca à custa de validação, tratamento de erro ou segurança (`"leanRule": false`
-desliga).
+desliga, `"no-tests"` tira só a sugestão de teste).
 
 O agente não precisa lembrar de nada disso. **Hooks** trazem as ferramentas sozinhos: antes de um
 `grep` por símbolo o índice responde primeiro, a sessão começa com uma lista curta dos mapas de

@@ -65,7 +65,7 @@ last turn's cost, turns, the context with the per-message cost multiplier it imp
 splitting pays off), whether tests ran after the last code edit, and, once half of a usage-limit
 window is gone, when it runs out at the current pace if that comes before it resets; Codex gets the
 same from `ct status`. A short **lean rule** at session start asks for the least code that solves the task,
-never at the cost of validation, error handling or security (`"leanRule": false` turns it off).
+never at the cost of validation, error handling or security (`"leanRule": false` turns it off, `"no-tests"` drops only the test suggestion).
 
 The agent does not need to remember any of this. **Hooks** bring the tools in on their own: before a
 `grep` for a symbol the index answers first, a session starts with a short list of the context maps

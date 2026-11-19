@@ -39,13 +39,23 @@ test('verbos novos estão no ct', () => {
 
 test('regra mínima: ligada por padrão, curta, e "leanRule": false desliga', () => {
   const t = makeT('pt');
-  const linha = leanRuleLine({}, t);
+  const linha = leanRuleLine({}, t, true);
   assert.match(linha, /^🪶/);
   assert.match(linha, /nunca cortando validação/);
   assert.match(linha, /suíte existente/, 'o teste vai na suíte, não em arquivo avulso (a linha de testes proíbe)');
   assert.ok(linha.length <= 360, `regra com ${linha.length} chars (teto 360): entra em toda sessão`);
-  assert.ok(makeT('en')('ver.lean').length <= 360);
-  assert.equal(leanRuleLine({ leanRule: false }, t), '');
+  assert.ok(makeT('en')('ver.lean', { tests: true }).length <= 360);
+  assert.equal(leanRuleLine({ leanRule: false }, t, true), '');
+});
+
+test('regra mínima: a frase do teste só sai com suíte detectada, e "no-tests" a tira', () => {
+  const t = makeT('pt');
+  const semSuite = leanRuleLine({}, t, false);
+  assert.match(semSuite, /nunca cortando validação/);
+  assert.match(semSuite, /Diga o que não verificou\.$/);
+  assert.doesNotMatch(semSuite, /teste/, 'sem suíte, não há "suíte existente" para apontar');
+  assert.equal(leanRuleLine({ leanRule: 'no-tests' }, t, true), semSuite);
+  assert.doesNotMatch(makeT('en')('ver.lean', {}), /test/);
 });
 
 test('regra mínima sai no SessionStart do verify e some com a chave', () => {
@@ -57,12 +67,19 @@ test('regra mínima sai no SessionStart do verify e some com a chave', () => {
     });
     return r.stdout;
   };
+  const semSuite = repo({ 'src/a.mjs': 'export const a = 1;\n' });
   try {
-    assert.match(rodar(), /🪶/);
+    assert.match(rodar(), /suíte existente/);
     mkdirSync(join(root, '.claude'), { recursive: true });
     writeFileSync(join(root, '.claude', 'context-tools.json'), '{"leanRule": false}');
     assert.doesNotMatch(rodar(), /🪶/);
-  } finally { rm(root); }
+    const r = spawnSync(process.execPath, [join(SCRIPTS, 'verify.mjs'), '--session-start'], {
+      encoding: 'utf8', input: '',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: semSuite, CONTEXT_TOOLS_HOST: 'claude', CONTEXT_TOOLS_HOOK_DEDUPE: '0', CONTEXT_TOOLS_LANG: 'pt' },
+    });
+    assert.match(r.stdout, /🪶/);
+    assert.doesNotMatch(r.stdout, /suíte existente/, 'projeto sem suíte detectada não recebe a frase do teste');
+  } finally { rm(root); rm(semSuite); }
 });
 
 test('changes: faixas do patch e nomes removidos', () => {

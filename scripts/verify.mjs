@@ -127,10 +127,13 @@ export function sessionTestLine(root, cfg, t) {
  * Regra de trabalho curta para quem vai escrever código: reaproveitar antes de criar, o mínimo que
  * resolve, um teste pequeno onde há lógica arriscada e dizer o que não foi verificado. Ideia vinda de
  * plugins de "solução mínima", que injetam 3–5 mil caracteres por sessão; aqui são ~340.
- * `"leanRule": false` desliga.
+ * A frase do teste só sai quando há suíte detectada (`hasSuite`): sem suíte, "na suíte existente"
+ * não aponta para nada, e projeto sem testes costuma proibir criá-los sem pedido. `"leanRule":
+ * "no-tests"` tira só essa frase (projeto com suíte que não quer teste sem pedido); `false` desliga.
  */
-export function leanRuleLine(cfg, t) {
-  return cfg?.leanRule === false ? '' : t('ver.lean');
+export function leanRuleLine(cfg, t, hasSuite = false) {
+  if (cfg?.leanRule === false) return '';
+  return t('ver.lean', { tests: hasSuite && cfg?.leanRule !== 'no-tests' });
 }
 
 const INSTALL = { npm: 'npm install', pnpm: 'pnpm install', yarn: 'yarn install', bun: 'bun install' };
@@ -187,7 +190,7 @@ function main() {
   const t = makeT(detectLang(cfg));
   if (args.includes('--stop-report')) return { mode: 'stop-report', warned: stopReport(root, cfg, t) || 0 };
   if (args.includes('--session-start')) {
-    const line = [sessionTestLine(root, cfg, t), leanRuleLine(cfg, t)].filter(Boolean).join('\n');
+    const line = [sessionTestLine(root, cfg, t), leanRuleLine(cfg, t, Boolean(detectTestCommand(root, cfg)))].filter(Boolean).join('\n');
     if (line) writeHookOutput(root, { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: line } });
     return { mode: 'session-start', emitted: line ? 1 : 0 };
   }

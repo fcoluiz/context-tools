@@ -1254,7 +1254,9 @@ caminho são ignoradas. Nada é adivinhado: as pastas descartáveis do projeto s
 
 `verify.command` substitui o comando de teste detectado; `verify.testPatterns` acrescenta comandos que
 contam como teste; `verify.enabled: false` desliga o aviso do `Stop`. `leanRule: false` tira do
-`SessionStart` a linha da regra mínima (ligada por padrão, ~355 caracteres). `debt.markers` troca os
+`SessionStart` a linha da regra mínima (ligada por padrão, ~355 caracteres); a frase que pede um teste
+pequeno na suíte existente só sai quando há comando de teste detectado, e `leanRule: "no-tests"` tira
+só essa frase. `debt.markers` troca os
 marcadores que o `ct debt` procura.
 
 ### Documentação operacional

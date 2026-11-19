@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.14.1] — 2026-11-19
+
 ### Fixed
 
 - **The lean rule no longer asks for tests where there is no suite.** Its sentence about a small test

@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.16.0] — 2026-11-20
+
 ### Added
 
 - **Unattended sessions in Codex.** With `CONTEXT_TOOLS_HANDOFF_AUTO=1`, the Codex `Stop` hook now

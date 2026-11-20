@@ -2165,3 +2165,76 @@ test('E2E: sessão sem usuário — limiar configurável, bloqueia UMA vez para 
     rmSync(transcritos, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
+
+test('E2E: sessão sem usuário no Codex — mesmo bloqueio; sem poder gravar, a mensagem final vira a resposta', () => {
+  // No Codex o aviso de contexto continua desligado para quem está no teclado, mas a sessão sem
+  // usuário segue o limite de quem orquestra. Um agente em sandbox só de leitura não grava o
+  // handoff: ele responde na mensagem final (`last_assistant_message`), que entra no bloco volátil.
+  const raiz = repo({ comMapa: false, comMudanca: true });
+  const dir = mkdtempSync(join(tmpdir(), 'ctx-codex-auto-'));
+  const sid = '019a0000-1111-7222-8333-944445555666';
+  const rollout = join(dir, 'rollout.jsonl');
+  const sinal = join(dir, 'sinal.json');
+  const env = {
+    CONTEXT_TOOLS_HOST: 'codex', CONTEXT_TOOLS_SESSION_ID: sid, CONTEXT_TOOLS_TRANSCRIPT_PATH: rollout,
+    CONTEXT_TOOLS_HANDOFF_AUTO: '1', CONTEXT_TOOLS_HANDOFF_THRESHOLD: '100000', CONTEXT_TOOLS_HANDOFF_SIGNAL: sinal,
+  };
+  const stop = (e, evento = {}) => rodar('handoff.mjs', ['--stop-report', `--root=${raiz}`], raiz, e,
+    JSON.stringify({ hook_event_name: 'Stop', session_id: sid, cwd: raiz, ...evento }));
+  const doc = join(raiz, '.codex', 'context-tools', `handoff-${sid.slice(0, 8)}.md`);
+  try {
+    writeFileSync(rollout, [
+      JSON.stringify({ timestamp: '2026-08-06T00:00:00.000Z', type: 'session_meta' }),
+      JSON.stringify({ timestamp: '2026-08-06T00:00:01.000Z', type: 'event_msg', payload: { type: 'token_count', info: {
+        total_token_usage: { input_tokens: 150000, output_tokens: 900, total_tokens: 150900 },
+        last_token_usage: { input_tokens: 150000, output_tokens: 900, total_tokens: 150900 },
+        model_context_window: 258400,
+      } } }),
+    ].join('\n') + '\n');
+
+    assert.equal(stop({ ...env, CONTEXT_TOOLS_HANDOFF_AUTO: '' }).stdout.trim(), '', 'com usuário, o Codex continua sem aviso de contexto');
+    const f1 = stop(env);
+    assert.equal(f1.status, 0, f1.stderr);
+    const bloqueio = JSON.parse(f1.stdout);
+    assert.equal(bloqueio.decision, 'block');
+    assert.match(bloqueio.reason, /If you cannot edit that file, answer the four questions in your final message/);
+    assert.ok(existsSync(doc), 'o handoff do Codex mora no estado do Codex');
+
+    // Continuação: o arquivo segue em branco (sandbox), a resposta veio na mensagem final.
+    const f2 = stop(env, { stop_hook_active: true, last_assistant_message: 'Parei no parser:\nfalta o caso vazio.' });
+    assert.equal(f2.status, 0, f2.stderr);
+    assert.doesNotMatch(f2.stdout, /"decision"/, 'bloqueia no máximo uma vez');
+    const s = JSON.parse(readFileSync(sinal, 'utf8'));
+    assert.equal(s.filled, true, 'a mensagem final conta como preenchimento');
+    assert.equal(s.context, 150000);
+    assert.match(readFileSync(doc, 'utf8'), /\*\* Parei no parser: falta o caso vazio\.$/m, 'numa linha só, na primeira pergunta');
+    assert.match(readFileSync(s.prompt, 'utf8'), /Parei no parser: falta o caso vazio\./, 'e chega ao prompt de retomada');
+  } finally {
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});
+
+test('ultimaResposta e comRespostaFinal: evento primeiro, depois o transcript; só a primeira pergunta em branco', async () => {
+  const { ultimaResposta, comRespostaFinal } = await import('../scripts/handoff.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'ctx-ultima-'));
+  try {
+    const claude = join(dir, 'c.jsonl');
+    writeFileSync(claude, [
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'antiga' }] } }),
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read' }, { type: 'text', text: 'final' }] } }),
+      JSON.stringify({ type: 'user', message: { content: 'x' } }),
+    ].join('\n'));
+    const codex = join(dir, 'x.jsonl');
+    writeFileSync(codex, JSON.stringify({ type: 'event_msg', payload: { type: 'agent_message', message: 'do codex' } }) + '\n');
+    assert.equal(ultimaResposta({ last_assistant_message: ' do evento ' }, claude), 'do evento');
+    assert.equal(ultimaResposta({}, claude), 'final');
+    assert.equal(ultimaResposta({}, codex), 'do codex');
+    assert.equal(ultimaResposta({}, null), '');
+    const doc = ['# t', '## a', '- **x:** feito', '## b', '- **P1:**', '- **P2:** já', '- **P3:**'].join('\n');
+    assert.equal(comRespostaFinal(doc, 'r1\nr2').split('\n')[4], '- **P1:** r1 r2');
+    assert.equal(comRespostaFinal(doc, '   '), null);
+    assert.equal(comRespostaFinal('# sem bloco', 'r'), null);
+    assert.equal(comRespostaFinal(['## b', '- **P1:** a'].join('\n'), 'r'), null, 'nada em branco: não sobrescreve');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

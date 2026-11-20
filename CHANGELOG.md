@@ -8,6 +8,20 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Unattended sessions in Codex.** With `CONTEXT_TOOLS_HANDOFF_AUTO=1`, the Codex `Stop` hook now
+  follows the same threshold, block-once and resume signal as Claude Code. Interactive Codex sessions
+  still get no context warning.
+
+### Fixed
+
+- **Unattended agents that cannot write the handoff no longer hand over a blank one.** A read-only
+  Codex sandbox, or a `claude -p` session (which cannot edit its `.claude/` folder with
+  `acceptEdits` or an explicit `Edit` allow rule), left the four questions empty, so the next
+  session started without knowing what was done. The request now says to answer in the final message when the file cannot be edited, and
+  that message (`last_assistant_message`, or the transcript's last reply) fills the handoff.
+
 ## [2.15.0] — 2026-11-20
 
 ### Added

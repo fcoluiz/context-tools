@@ -53,7 +53,7 @@ import { recordMetric } from './lib/telemetry.mjs';
 import { updateNotice } from './update-check.mjs';
 import { localCopyNotice } from './lib/local-migration.mjs';
 import { fingerprintSourcesInRoot, parseSourceFingerprints, sameDigest, sameSource } from './lib/source-fingerprints.mjs';
-import { readClaudeStopContinuation, readHookEvent } from './lib/hook-input.mjs';
+import { isClaudeStopContinuation, readHookEvent } from './lib/hook-input.mjs';
 
 const git = (repo, args) => safe(() => execFileSync('git', args, {
   cwd: repo, encoding: 'utf8', timeout: 20000, maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'],
@@ -302,16 +302,17 @@ function comVolatilDe(fresco, salvo) {
   return [...lf.slice(0, iF), ...ls.slice(iS)].join('\n');
 }
 
-function stopReport(root, t) {
+function stopReport(root, t, evento = {}) {
   const sid = sessionId();
   const m = metricasDaSessao(transcriptDaSessao(root, sid));
   const codex = runtimeHost() === 'codex';
   // Codex mantém as métricas no handoff, mas não recebe aviso operacional de contexto/tempo:
-  // a política de janela e custo depende do modelo ativo e não compensa uma regra fixa.
-  if (codex) return;
+  // a política de janela e custo depende do modelo ativo e não compensa uma regra fixa. A exceção
+  // é a sessão sem usuário: ali quem escolheu o limite foi o orquestrador, e ninguém lê aviso.
+  if (codex && !modoSemUsuario()) return;
   const elegivel = m && m.contexto >= limiarDeContexto();
   if (!elegivel) return;
-  if (modoSemUsuario()) { stopSemUsuario(root, sid, m, t); return; }
+  if (modoSemUsuario()) { stopSemUsuario(root, sid, m, t, evento); return; }
 
   const { estado, salvar } = estadoDoAviso(root, sid);
   const emitir = (texto, opts = {}) => writeHookOutput(root, {
@@ -371,7 +372,7 @@ function stopReport(root, t) {
  *   próxima sessão nesta pasta carrega sozinha no `SessionStart`.
  * Bloquear no máximo uma vez é a trava contra laço: o `Stop` seguinte é continuação.
  */
-function stopSemUsuario(root, sid, m, t) {
+function stopSemUsuario(root, sid, m, t, evento = {}) {
   const { estado, salvar } = estadoDoAviso(root, sid);
   const destino = caminhoDoHandoff(root, sid);
   const bloquear = (linhas) => writeHookOutput(root, { decision: 'block', reason: linhas.join('\n') }, { cap: false });
@@ -382,12 +383,21 @@ function stopSemUsuario(root, sid, m, t) {
     return;
   }
   if (estado.prompt || estado.resposta) return;
-  const doc = safe(() => readFileSync(destino, 'utf8'), null);
-  const preenchido = blocoVolatilPreenchido(doc);
+  let doc = safe(() => readFileSync(destino, 'utf8'), null);
+  let preenchido = blocoVolatilPreenchido(doc);
   if (!preenchido && !estado.pedido && doc) {
     salvar({ ...estado, pedido: Date.now() });
     bloquear([t('ses.semUsuario', { arq: relPath(root, destino) })]);
     return;
+  }
+  // Agente que não pôde gravar o arquivo (sandbox só de leitura, pasta de estado protegida) foi
+  // instruído a responder na mensagem final: ela vira a resposta, para a retomada não sair vazia.
+  if (!preenchido && doc) {
+    const enxertado = comRespostaFinal(doc, ultimaResposta(evento, transcriptDaSessao(root, sid)));
+    if (enxertado && safe(() => { writeFileSync(destino, enxertado); return true; }, false)) {
+      doc = enxertado;
+      preenchido = blocoVolatilPreenchido(doc);
+    }
   }
   const pArq = destino.replace(/\.md$/, '.prompt.md');
   const prompt = safe(() => montarPrompt(root, sid, t), null);
@@ -395,6 +405,53 @@ function stopSemUsuario(root, sid, m, t) {
   salvar({ ...estado, prompt: Date.now(), resposta: 'auto' });
   const sinal = gravarSinal({ session: sid, root, handoff: destino, prompt: salvo ? pArq : null, context: m.contexto, filled: preenchido });
   if (!sinal && salvo) gravarPendente(root, { origem: sid, em: Date.now() });
+}
+
+/** Teto do texto que a mensagem final leva para o handoff. */
+const MAX_RESPOSTA_FINAL = 4000;
+
+/**
+ * A última mensagem do agente neste turno: a do evento do `Stop` (`last_assistant_message`, Claude
+ * e Codex) ou, sem ela, a última do transcript (Claude: bloco de texto do assistente; Codex:
+ * `agent_message`). Lê só a cauda. Vazio quando não acha.
+ */
+export function ultimaResposta(evento, transcript) {
+  const doEvento = typeof evento?.last_assistant_message === 'string' ? evento.last_assistant_message.trim() : '';
+  if (doEvento) return doEvento;
+  const bruto = transcript ? safe(() => readFileSync(transcript, 'utf8').slice(-512 * 1024), '') : '';
+  const linhas = bruto.split('\n');
+  for (let i = linhas.length - 1; i >= 0; i--) {
+    const o = safe(() => JSON.parse(linhas[i]), null);
+    if (!o) continue;
+    if (o.type === 'event_msg' && o.payload?.type === 'agent_message' && typeof o.payload.message === 'string' && o.payload.message.trim()) return o.payload.message.trim();
+    if (o.type === 'assistant' && Array.isArray(o.message?.content)) {
+      const texto = o.message.content.filter((b) => b?.type === 'text' && typeof b.text === 'string').map((b) => b.text).join('\n').trim();
+      if (texto) return texto;
+    }
+  }
+  return '';
+}
+
+/**
+ * O documento com a mensagem final como resposta da PRIMEIRA pergunta do bloco volátil (as outras
+ * ficam em branco: a mensagem já responde as quatro, e repartir texto livre seria inventar).
+ * Estrutural, como o resto: a pergunta é a primeira `- **…**` sem resposta depois do último `##`.
+ * Nada a enxertar (sem texto, sem bloco): `null`.
+ */
+export function comRespostaFinal(doc, resposta) {
+  const texto = sanitizeModelText(resposta, MAX_RESPOSTA_FINAL);
+  if (!doc || !texto) return null;
+  const linhas = doc.split('\n');
+  const ini = inicioDoVolatil(linhas);
+  if (ini < 0) return null;
+  for (let i = ini + 1; i < linhas.length; i++) {
+    const m = linhas[i].match(/^(-\s+\*\*.+?\*\*)(.*)$/);
+    if (m && !m[2].trim()) {
+      linhas[i] = `${m[1]} ${texto}`;
+      return linhas.join('\n');
+    }
+  }
+  return null;
 }
 
 /**
@@ -842,7 +899,9 @@ async function main() {
   if (args.includes('--stop-report')) {
     // Continuação de um `Stop` bloqueado: com usuário, cala (anti-laço). Sem usuário, é justamente
     // o `Stop` em que o handoff já preenchido vira retomada — e ali nunca se bloqueia de novo.
-    if (!(await readClaudeStopContinuation(runtimeHost())) || modoSemUsuario()) stopReport(root, t);
+    // O evento também é lido no Codex: a sessão sem usuário usa a última mensagem do agente.
+    const evento = await readHookEvent();
+    if (!isClaudeStopContinuation(evento, runtimeHost()) || modoSemUsuario()) stopReport(root, t, evento);
     return;
   }
   if (args.includes('--session-start')) { await sessionStart(root, cfg, t); return; }

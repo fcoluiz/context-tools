@@ -99,6 +99,27 @@ async function delegationHook() {
   }
 }
 
+// Worktrees em paralelo (work.mjs): resumo no SessionStart e o que ficou sujo no Stop. Vai junto
+// da saída do handoff.mjs, que já é hook aprovado, pelo mesmo motivo da dupla. Sem `work.repos` na
+// config, `workHookText` devolve '' sem rodar git.
+async function withWorkHook(saida, kind) {
+  try {
+    const { workHookText } = await import('./work.mjs');
+    const text = await workHookText(cwd, kind);
+    if (!text) return saida;
+    const json = (saida.trim() && JSON.parse(saida)) || {};
+    if (kind === 'stop') json.systemMessage = [json.systemMessage, text].filter(Boolean).join('\n\n');
+    else {
+      const h = json.hookSpecificOutput || { hookEventName: 'SessionStart' };
+      h.additionalContext = [h.additionalContext, text].filter(Boolean).join('\n');
+      json.hookSpecificOutput = h;
+    }
+    return JSON.stringify(json);
+  } catch {
+    return saida; // M4: o painel nunca derruba o hook que já funcionava.
+  }
+}
+
 const deny = (reason) => {
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } }));
   process.stderr.write(`${reason}\n`);
@@ -236,6 +257,9 @@ async function main() {
         saida = JSON.stringify({ systemMessage: texto });
       }
     } catch { /* Preserve the original hook output on unexpected formats. */ }
+  }
+  if (script === 'handoff.mjs' && (args.includes('--session-start') || args.includes('--stop-report'))) {
+    saida = await withWorkHook(saida, args.includes('--session-start') ? 'session-start' : 'stop');
   }
   if (saida) process.stdout.write(saida);
   return child.status ?? 1;

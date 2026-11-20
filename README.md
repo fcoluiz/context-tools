@@ -323,6 +323,20 @@ implements, each waiting for the other — the sessions already open in the desk
 the builder edits, and only in its turn. Something has to set the pair up (`pair.mjs create`); see
 [the reference](docs/reference.md#two-agents-on-one-task-pair).
 
+## Many agent sessions, many worktrees
+
+With several sessions open, each with its own branch and worktree, nobody sees the whole: work stays
+uncommitted in a forgotten worktree, two PRs touch the same file without knowing it, and "already in
+production" is a guess. `ct work board` lists every worktree of the configured repositories (dirty
+files, commits ahead and behind production, whether the tip is already in production — squash-merges
+included — and by which method), the open PRs, and the files touched by two or more open fronts.
+`ct work new <slug>` warns about similar branches, worktrees and PRs before creating one from
+production; `ct work close` refuses while anything is dirty, the PR is not merged or its checklist is
+open; `ct work tidy` proposes a triage of what already exists and removes only clean worktrees already
+in production, and only with `--apply`. It never discards anything. The hooks add one summary line at
+session start and a note at `Stop` when the session's checkout was left dirty; see
+[the reference](docs/reference.md#many-sessions-many-worktrees-work).
+
 ## Cheap subagents for the bulky work
 
 Most of a session's cost is context carried forward: whatever the main session reads is re-read by

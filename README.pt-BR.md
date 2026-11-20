@@ -330,6 +330,20 @@ implementa, um esperando o outro — as sessões já abertas nos apps desktop, s
 edita, e só na vez dele. Alguém precisa montar a dupla (`pair.mjs create`); veja
 [a referência](docs/reference.pt-BR.md#dois-agentes-numa-tarefa-pair-dupla).
 
+## Muitas sessões de agente, muitos worktrees
+
+Com várias sessões abertas, cada uma com sua branch e seu worktree, ninguém vê o conjunto: trabalho
+fica sem commit num worktree esquecido, duas PRs mexem no mesmo arquivo sem saber uma da outra, e "já
+está na produção" vira palpite. `ct work board` lista todo worktree dos repositórios configurados
+(arquivos sujos, commits à frente e atrás da produção, se o tip já está na produção — squash-merge
+incluído — e por qual método), as PRs abertas e os arquivos tocados por duas ou mais frentes abertas.
+`ct work new <slug>` avisa de branch, worktree ou PR parecida antes de criar um a partir da produção;
+`ct work close` recusa enquanto houver arquivo sujo, PR não mergeada ou checklist aberto; `ct work
+tidy` propõe uma triagem do que já existe e remove só worktrees limpos já na produção, e só com
+`--apply`. Nunca descarta nada. Os hooks somam uma linha de resumo no início da sessão e um aviso no
+`Stop` quando o checkout da sessão ficou sujo; veja
+[a referência](docs/reference.pt-BR.md#muitas-sessões-muitos-worktrees-work).
+
 ## Subagentes baratos para o trabalho volumoso
 
 A maior parte do custo de uma sessão é contexto carregado adiante: o que a sessão principal lê é

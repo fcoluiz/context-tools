@@ -26,6 +26,11 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/verify.mjs\" --session-start"
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/work.mjs\" --session-start",
+            "timeout": 15
           }
         ]
       }
@@ -69,6 +74,11 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pair.mjs\" --hook=stop"
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/work.mjs\" --stop-report",
+            "timeout": 20
           }
         ]
       }

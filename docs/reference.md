@@ -1020,6 +1020,7 @@ shows whether it is registered.
 | `Stop` | reviews changed code without related `ai-context` under the same rule; stale existing documents remain immediate | only for relevant changes |
 | `Stop` | warns if you edited A and did not touch B, which historically changes with it | only when it happens |
 | `Stop` (Claude) | notes code edited after the last test run, with related tests and the test command | **once per session**; silent without a test setup |
+| `SessionStart` / `Stop` — worktrees | with `work.repos` in the config: one summary line from the cached board (open PRs, files in 2+ fronts, dirty worktrees already in production, main checkout off production), refreshed in the background when stale; at `Stop`, uncommitted files in the session's checkout and a main checkout off production or dirty. In Codex it runs inside the existing handoff hooks | silent without `work.repos`; each `Stop` note once per session in 6 h |
 | `Stop` | a session that only **read** code (no code edits) across at least 3 files in 2+ folders that no map or `ai-context` document covers gets one line suggesting the user ask for the flow to be recorded; offline, from the host's local transcript, never writes anything | **once per session**; reads only the transcript bytes added since the last `Stop` |
 
 Every hook message goes through one deduplication point: the same (event, session, text) is
@@ -1171,6 +1172,72 @@ deleted, or after `idleMinutes` (default 60) without progress; both sessions go 
 Limits: a session that is closed stops answering (the pair then expires by idleness); edits made
 through shell commands are not intercepted. `CONTEXT_TOOLS_PAIR=0` turns all of it off, including the
 session registry.
+
+## Many sessions, many worktrees: `work`
+
+Several agent sessions in parallel means several branches and worktrees, and the failures are of
+visibility, not of git: uncommitted work forgotten in a worktree and found much later, two PRs that
+touch the same file and only meet at merge time, and "is this already in production?" answered from a
+note that went stale. `ct work` keeps that picture in one command, read from git and `gh` every time.
+
+| subcommand (pt alias) | what it does | writes |
+|---|---|---|
+| `board` (`painel`) `[--all] [--json]` | per configured repository: every worktree (`git worktree list --porcelain`) with path, branch, dirty files (tracked × untracked), commits ahead/behind `<remote>/<production>`, and whether the tip is already in production and **by which method**; open PRs; and the **intersection** — files touched by 2+ open fronts (branch diff `<production>...<tip>` plus tracked dirty files of each worktree, plus the files of each open PR), with the fronts that collide | only the hook cache |
+| `new` (`nova`) `<slug> [--both] [--repo=<name>] [--files=a,b] [--anyway]` | before creating, looks for a branch, worktree or open PR with a similar name (and, with `--files`, open PRs and known collisions on those files) and stops with what it found; an existing branch or folder is always refused. Then `git fetch <remote> <production>` and `git worktree add --no-track -b <prefix><slug> -- <worktreeRoot>/<repo>-<slug> <remote>/<production>`. `--both` creates the pair in every configured repository with the same slug | worktree + branch |
+| `pr <slug> [--both] [--title=<t>]` | the first push and a **draft** PR whose body comes from the config (`prTemplate`, `checklist` as `- [ ]` items, "depends on" pointing at the PRs opened earlier in the same call). Refuses without a commit ahead of production | push + PR |
+| `close` (`encerrar`) `[<slug>] [--both] [--no-pr-check] [--dry-run]` | without a slug, the worktree that contains the current folder. Refuses while any file is dirty (and lists them), when the tip is not in production, when the PR is not merged or its checklist has an unchecked item, and when `gh` could not be read (unless `--no-pr-check`). Only then `git worktree remove` and `git branch -d` — never `--force`, never `-D`: after a squash git does not see the branch as merged, and keeping it is the honest outcome | removes worktree |
+| `tidy` (`limpar`) `[--apply] [--json]` | a triage **plan** in three groups: (a) clean and already in production → removable; (b) dirty → a summary of the diff (tracked changes first, then worktrees with only untracked files — often tool state missing from `.gitignore`) for a human to decide; (c) commits outside production → keep. `--apply` removes group (a) only, re-checking that each one is still clean right before | only with `--apply` |
+| `rescue` (`resgatar`) `<slug\|path>` | saves a dirty worktree in a local commit on a new `rescue/<name>-<date>` branch; the original branch is untouched, nothing is pushed | branch + commit |
+
+**"Already in production"** cannot rely on ancestry alone: after a squash-merge or a rebase the
+branch's commits never enter production, only an equivalent does. The methods run from the strongest
+to the weakest, and the board names the one that confirmed it: `ancestry` (the tip is an ancestor of
+production), `pr` (a merged PR from this branch with this **same** tip — a local commit after the merge
+does not count; needs `gh`), `cherry` (every commit has a patch-equivalent in production), `squash`
+(the branch's whole diff has the patch-id of one of the last 300 production commits), `content` (every
+file the branch changed is identical in production). The board never fetches: it compares with the
+local `<remote>/<production>`. Every read runs with `GIT_OPTIONAL_LOCKS=0`, so `git status` does not
+rewrite the index, and up to 8 git processes in parallel.
+
+**PRs that could not be read are not zero PRs.** Without `gh`, with a non-GitHub remote, or when `gh`
+fails (no access to the organization, for example), the board says it could not read them and why.
+
+**Configuration**, in `.claude/context-tools.json` (Claude) or `.codex/context-tools.json` (Codex) of
+the workspace — also looked up in the parent folders, so a session opened inside a worktree finds the
+workspace's:
+
+```json
+{
+  "work": {
+    "worktreeRoot": ".worktrees",
+    "cacheMinutes": 30,
+    "repos": [
+      { "path": "api", "remote": "origin", "production": "main", "branchPrefix": "feat/",
+        "prTemplate": "Task: {slug}", "checklist": ["Migration: none / <name>", "Rebuild: <targets>", "Validated: <how>", "Depends on: {depends}"] },
+      { "path": "web", "production": "main" }
+    ]
+  }
+}
+```
+
+`path` and `worktreeRoot` are relative to the workspace; `name` defaults to the folder name; `github`
+(`owner/name`) overrides the slug read from the remote. Values that would reach the git command line
+(`remote`, `production`, `branchPrefix`) are refused when they could be read as an option. Without the
+`work` key the commands use the repository of the current folder, with production from
+`origin/HEAD`, and the hooks stay silent.
+
+**Hooks.** `SessionStart` adds one line from a cached board ("3 open PRs; 2 files in 2+ fronts
+(`a.js` in 2); 4 dirty worktrees already in production; main checkout of api on feat/x, not main"). A
+full board costs about a second of `git status` per worktree, so the hook never builds it: when the
+cache is older than `cacheMinutes` it starts a detached refresh and shows the previous one with its
+age. `Stop` checks the session's own checkout and the main checkouts (these at most every 10 minutes)
+and notes uncommitted files, a main checkout off production, or a dirty one — each note once per
+session within 6 hours. In Codex both run inside the existing handoff hooks; nothing new to approve.
+`"work": { "hooks": false }` turns them off.
+
+On Windows (NTFS), `git status` takes close to a second per worktree in a medium-sized repository, so a
+board over a hundred worktrees takes tens of seconds; the `SessionStart` line, read from the cache,
+takes well under a second.
 
 ## Cheap subagents: `delegate`
 

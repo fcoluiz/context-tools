@@ -1,6 +1,6 @@
 {
   "name": "context-tools",
-  "version": "2.14.1",
+  "version": "2.15.0",
   "description": "Project knowledge that does not rot, for coding agents.",
   "author": {
     "name": "Luiz Nogueira"

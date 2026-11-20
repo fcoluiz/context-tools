@@ -208,6 +208,16 @@ contexto e tempo; as métricas normalizadas continuam registradas no handoff par
 O arquivo não é regravado sozinho depois (mudaria embaixo de quem está lendo) — `--salvar` atualiza
 sob demanda.
 
+**Sessões sem usuário.** Um app que abre e conduz agentes sem ninguém no teclado ajusta isso
+pelo ambiente das sessões que abre: `CONTEXT_TOOLS_HANDOFF_THRESHOLD=<tokens>` muda o limiar (de 50k
+a 2M; fora disso vale 200k), e `CONTEXT_TOOLS_HANDOFF_AUTO=1` troca a pergunta por um pedido de
+terminar o passo atual, preencher o bloco e encerrar o turno. O hook de `Stop` então bloqueia o fim
+do turno **uma vez** para o agente preencher (sem bloquear, o turno de `claude -p` simplesmente
+acaba) e, no `Stop` seguinte, preenchido ou não, grava o prompt de retomada. Com
+`CONTEXT_TOOLS_HANDOFF_SIGNAL=<arquivo>` ele grava ali um JSON para o orquestrador (`session`,
+`root`, `handoff`, `prompt`, `context`, `filled`: caminhos e números, não o conteúdo); sem ele, a
+retomada fica pendente e a próxima sessão aberta naquela pasta a carrega sozinha.
+
 **O aviso também chega no meio do turno.** O hook de `Stop` só roda quando o turno acaba, e o
 agente costuma trabalhar uma lista de tarefas inteira num turno só, sem parar para perguntar. Medido
 em 2026-10-24 nos transcripts locais, em 116 sessões dos 30 dias anteriores que cruzaram 200k: entre

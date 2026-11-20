@@ -219,6 +219,17 @@ model context window, rate-limit data, and compactions) for future analysis, but
 reuse Claude's measured cost curve or emit a context/time warning at `Stop`, so it does not offer a
 fresh session either. The handoff and the resume prompt can still be requested manually.
 
+**Unattended sessions.** An app that starts and drives agents with nobody at the keyboard can
+tune this through the environment of the sessions it starts:
+`CONTEXT_TOOLS_HANDOFF_THRESHOLD=<tokens>` sets the threshold (50k to 2M; anything else keeps 200k),
+and `CONTEXT_TOOLS_HANDOFF_AUTO=1` replaces the question with a request to finish the current step,
+fill in the block and end the turn. The `Stop` hook then blocks the end of the turn **once** so the
+agent can fill it in (without blocking, a `claude -p` turn simply ends), and on the next `Stop`,
+filled or not, writes the resume prompt. With `CONTEXT_TOOLS_HANDOFF_SIGNAL=<file>` it writes a JSON
+there for the orchestrator (`session`, `root`, `handoff`, `prompt`, `context`, `filled`: paths
+and numbers, not the content); without it, the resume is left pending and the next session started
+in that folder loads it on its own.
+
 **The warning also arrives mid-turn.** The `Stop` hook only runs when a turn ends, and an agent
 often works through a whole task list in one turn without stopping to ask. Measured on 2026-10-24 in
 local transcripts, in 116 sessions from the previous 30 days that crossed 200k: between crossing the

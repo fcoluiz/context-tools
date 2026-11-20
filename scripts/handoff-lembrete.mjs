@@ -25,7 +25,7 @@
 
 import { readFileSync } from 'node:fs';
 import { resolveRoot, safe, isMain, relPath, runtimeHost, loadConfig } from './lib/roots.mjs';
-import { sessionId, caminhoDoHandoff, estadoDoAviso, blocoVolatilPreenchido, comandoDoHandoff } from './lib/handoff-estado.mjs';
+import { sessionId, caminhoDoHandoff, estadoDoAviso, blocoVolatilPreenchido, comandoDoHandoff, modoSemUsuario } from './lib/handoff-estado.mjs';
 
 /**
  * Qual lembrete cabe agora, se algum. Cada um sai UMA vez por sessão:
@@ -44,6 +44,7 @@ function lembreteDevido(root, sid, estado) {
 
 async function main() {
   if (runtimeHost() === 'codex') return;
+  if (modoSemUsuario()) return; // sem usuário não há oferta a lembrar: a retomada fica pronta sozinha
   const sid = sessionId();
   if (!sid) return;
   const root = resolveRoot(process.argv.slice(2));

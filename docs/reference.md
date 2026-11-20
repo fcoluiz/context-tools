@@ -228,7 +228,10 @@ agent can fill it in (without blocking, a `claude -p` turn simply ends), and on 
 filled or not, writes the resume prompt. With `CONTEXT_TOOLS_HANDOFF_SIGNAL=<file>` it writes a JSON
 there for the orchestrator (`session`, `root`, `handoff`, `prompt`, `context`, `filled`: paths
 and numbers, not the content); without it, the resume is left pending and the next session started
-in that folder loads it on its own.
+in that folder loads it on its own. This also works in Codex, where it is the only case with a
+context warning at `Stop`. An agent that cannot edit the handoff file (a read-only sandbox, or a
+state folder its permissions protect) is told to answer the four questions in its final message
+instead, and that message becomes the answer in the handoff.
 
 **The warning also arrives mid-turn.** The `Stop` hook only runs when a turn ends, and an agent
 often works through a whole task list in one turn without stopping to ask. Measured on 2026-10-24 in

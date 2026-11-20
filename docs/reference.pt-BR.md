@@ -216,7 +216,11 @@ do turno **uma vez** para o agente preencher (sem bloquear, o turno de `claude -
 acaba) e, no `Stop` seguinte, preenchido ou não, grava o prompt de retomada. Com
 `CONTEXT_TOOLS_HANDOFF_SIGNAL=<arquivo>` ele grava ali um JSON para o orquestrador (`session`,
 `root`, `handoff`, `prompt`, `context`, `filled`: caminhos e números, não o conteúdo); sem ele, a
-retomada fica pendente e a próxima sessão aberta naquela pasta a carrega sozinha.
+retomada fica pendente e a próxima sessão aberta naquela pasta a carrega sozinha. Vale também no
+Codex, onde é o único caso com aviso de contexto no `Stop`. Um agente que não consegue editar o
+arquivo do handoff (sandbox só de leitura, ou uma pasta de estado que as permissões dele protegem) é
+instruído a responder as quatro perguntas na mensagem final, e essa mensagem vira a resposta no
+handoff.
 
 **O aviso também chega no meio do turno.** O hook de `Stop` só roda quando o turno acaba, e o
 agente costuma trabalhar uma lista de tarefas inteira num turno só, sem parar para perguntar. Medido

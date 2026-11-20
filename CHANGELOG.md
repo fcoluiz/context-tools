@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.15.0] — 2026-11-20
+
 ### Added
 
 - **Unattended sessions can tune and automate the context handoff.** Three environment variables for

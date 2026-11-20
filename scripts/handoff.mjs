@@ -39,6 +39,7 @@ import { resolveRoot, findRepos, safe, loadConfig, isMain, relPath, stateDir, st
 import { writeHookOutput } from './lib/hook-output.mjs';
 import {
   sessionId, caminhoDoHandoff, estadoDoAviso, blocoVolatilPreenchido, lerPendente, gravarPendente,
+  LIMIAR_PADRAO, limiarDeContexto, modoSemUsuario, gravarSinal,
   consumirHandoff, jaConsumidoPor, origemPorPrefixo, limparHandoffsAntigos, comandoDoHandoff,
   DIAS_RETENCAO, JANELA_AUTO_MS,
 } from './lib/handoff-estado.mjs';
@@ -257,7 +258,7 @@ function mapasRelevantes(repoPath, arquivos) {
  * Uma vez só por sessão: quem decidiu seguir já decidiu, e repetir não traz informação nova.
  * Insistir só ensina a ignorar a categoria inteira.
  */
-const LIMIAR_CONTEXTO = 200000;
+const LIMIAR_CONTEXTO = LIMIAR_PADRAO; // em uso: limiarDeContexto() (CONTEXT_TOOLS_HANDOFF_THRESHOLD)
 // No Codex, tempo Ã© apenas um sinal operacional para sugerir uma nova sessÃ£o. NÃ£o Ã© um
 // multiplicador de cobranÃ§a: a mÃ©trica de crÃ©ditos depende dos tokens e do modelo ativo.
 
@@ -308,8 +309,9 @@ function stopReport(root, t) {
   // Codex mantém as métricas no handoff, mas não recebe aviso operacional de contexto/tempo:
   // a política de janela e custo depende do modelo ativo e não compensa uma regra fixa.
   if (codex) return;
-  const elegivel = m && m.contexto >= LIMIAR_CONTEXTO;
+  const elegivel = m && m.contexto >= limiarDeContexto();
   if (!elegivel) return;
+  if (modoSemUsuario()) { stopSemUsuario(root, sid, m, t); return; }
 
   const { estado, salvar } = estadoDoAviso(root, sid);
   const emitir = (texto, opts = {}) => writeHookOutput(root, {
@@ -358,6 +360,44 @@ function stopReport(root, t) {
 }
 
 /**
+ * O `Stop` de uma sessão sem usuário (`CONTEXT_TOOLS_HANDOFF_AUTO=1`), que quem orquestra conduz.
+ *
+ * Mesmo handoff e mesmo estado da sessão com usuário; muda o desfecho. Não há oferta nem pergunta:
+ * - aviso ainda não dado: gera o handoff e BLOQUEIA o fim do turno UMA vez, pedindo o
+ *   preenchimento (sem bloquear, o turno de `claude -p` acaba e ninguém lê o pedido);
+ * - aviso dado (aqui ou no meio do turno) e bloco em branco: bloqueia UMA vez para preencher;
+ * - depois disso, preenchido ou não: grava o prompt de retomada e deixa a retomada pronta — o
+ *   sinal de `CONTEXT_TOOLS_HANDOFF_SIGNAL` para o orquestrador ou, sem ele, o pendente que a
+ *   próxima sessão nesta pasta carrega sozinha no `SessionStart`.
+ * Bloquear no máximo uma vez é a trava contra laço: o `Stop` seguinte é continuação.
+ */
+function stopSemUsuario(root, sid, m, t) {
+  const { estado, salvar } = estadoDoAviso(root, sid);
+  const destino = caminhoDoHandoff(root, sid);
+  const bloquear = (linhas) => writeHookOutput(root, { decision: 'block', reason: linhas.join('\n') }, { cap: false });
+  if (!estado) {
+    const linhas = avisoDaFase1(root, sid, m, t, salvar);
+    salvar({ aviso: Date.now(), pedido: Date.now() });
+    bloquear(linhas);
+    return;
+  }
+  if (estado.prompt || estado.resposta) return;
+  const doc = safe(() => readFileSync(destino, 'utf8'), null);
+  const preenchido = blocoVolatilPreenchido(doc);
+  if (!preenchido && !estado.pedido && doc) {
+    salvar({ ...estado, pedido: Date.now() });
+    bloquear([t('ses.semUsuario', { arq: relPath(root, destino) })]);
+    return;
+  }
+  const pArq = destino.replace(/\.md$/, '.prompt.md');
+  const prompt = safe(() => montarPrompt(root, sid, t), null);
+  const salvo = Boolean(prompt) && safe(() => { writeFileSync(pArq, prompt); return true; }, false);
+  salvar({ ...estado, prompt: Date.now(), resposta: 'auto' });
+  const sinal = gravarSinal({ session: sid, root, handoff: destino, prompt: salvo ? pArq : null, context: m.contexto, filled: preenchido });
+  if (!sinal && salvo) gravarPendente(root, { origem: sid, em: Date.now() });
+}
+
+/**
  * FASE 1: o aviso, uma vez por sessão — grava o handoff e o estado, e devolve as linhas.
  *
  * Compartilhada entre o `Stop` e o `PostToolUse` (`handoff-meio-turno.mjs`). O `Stop` só dispara
@@ -392,7 +432,8 @@ function avisoDaFase1(root, sid, m, t, salvar) {
   // é o que mantém o recomeço abaixo do ponto de equilíbrio de 1,75x, e o único handoff
   // auto-gerado que existiu em disco estava com ele em branco. Depender de alguém lembrar era
   // apostar o ganho inteiro na memória de quem volta.
-  if (gerado) linhas.push(t('ses.preencha', { arq: relPath(root, destino) }));
+  if (modoSemUsuario()) linhas.push(t('ses.semUsuario', { arq: gerado ? relPath(root, destino) : null }));
+  else if (gerado) linhas.push(t('ses.preencha', { arq: relPath(root, destino) }));
   return linhas;
 }
 
@@ -799,7 +840,9 @@ async function main() {
   const cfg = loadConfig(root);
   const t = makeT(detectLang(cfg));
   if (args.includes('--stop-report')) {
-    if (!(await readClaudeStopContinuation(runtimeHost()))) stopReport(root, t);
+    // Continuação de um `Stop` bloqueado: com usuário, cala (anti-laço). Sem usuário, é justamente
+    // o `Stop` em que o handoff já preenchido vira retomada — e ali nunca se bloqueia de novo.
+    if (!(await readClaudeStopContinuation(runtimeHost())) || modoSemUsuario()) stopReport(root, t);
     return;
   }
   if (args.includes('--session-start')) { await sessionStart(root, cfg, t); return; }

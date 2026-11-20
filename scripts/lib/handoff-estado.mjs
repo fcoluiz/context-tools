@@ -23,6 +23,36 @@ const PENDENTE = '_pendente';
 /** Só os arquivos que o próprio hook gera: `handoff-<8 do id>.md` e o `.prompt.md` ao lado. */
 const GERADO = /^handoff-[^.]{1,8}(\.prompt)?\.md$/;
 
+/** Limiar padrão do aviso: onde o custo por mensagem já dobrou na curva medida (ver `handoff.mjs`). */
+export const LIMIAR_PADRAO = 200000;
+
+/**
+ * Limiar de contexto do aviso de sessão cara. Quem orquestra sessões (um app que abre e conduz
+ * agentes sem ninguém no teclado) escolhe o próprio por `CONTEXT_TOOLS_HANDOFF_THRESHOLD`, em
+ * tokens. Fora da faixa, ou sem a variável, vale o padrão.
+ */
+export function limiarDeContexto(env = process.env) {
+  const n = Number(env.CONTEXT_TOOLS_HANDOFF_THRESHOLD);
+  return Number.isInteger(n) && n >= 50000 && n <= 2000000 ? n : LIMIAR_PADRAO;
+}
+
+/**
+ * Sessão sem usuário (`CONTEXT_TOOLS_HANDOFF_AUTO=1`): ninguém responde a pergunta nenhuma. O
+ * aviso pede ao agente que preencha o handoff e encerre o turno, e a retomada fica pronta sozinha.
+ */
+export const modoSemUsuario = (env = process.env) => env.CONTEXT_TOOLS_HANDOFF_AUTO === '1';
+
+/**
+ * Sinal para quem orquestra: com `CONTEXT_TOOLS_HANDOFF_SIGNAL=<arquivo>`, o handoff pronto vira um
+ * JSON nesse arquivo (sessão, pasta, caminhos do handoff e do prompt, contexto). Só caminhos e
+ * números: o conteúdo fica no handoff. Devolve se gravou.
+ */
+export function gravarSinal(dados, env = process.env) {
+  const destino = env.CONTEXT_TOOLS_HANDOFF_SIGNAL;
+  if (!destino) return false;
+  return safe(() => { writeFileSync(destino, JSON.stringify({ version: 1, ...dados, at: Date.now() })); return true; }, false);
+}
+
 export function sessionId() {
   return process.env.CONTEXT_TOOLS_SESSION_ID
     || process.env.CLAUDE_CODE_SESSION_ID

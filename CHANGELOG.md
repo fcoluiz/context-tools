@@ -8,6 +8,16 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Unattended sessions can tune and automate the context handoff.** Three environment variables for
+  apps that start and drive agents with nobody at the keyboard: `CONTEXT_TOOLS_HANDOFF_THRESHOLD`
+  sets the context threshold of the warning (default 200k), `CONTEXT_TOOLS_HANDOFF_AUTO=1` asks the
+  agent to fill in the handoff and end the turn instead of asking the user (the `Stop` hook blocks
+  once so it can), and `CONTEXT_TOOLS_HANDOFF_SIGNAL` names a file that receives the paths of the
+  ready handoff and resume prompt. Without the signal file, the resume is left pending for the next
+  session in that folder. Interactive sessions are unchanged.
+
 ## [2.14.1] — 2026-11-19
 
 ### Fixed

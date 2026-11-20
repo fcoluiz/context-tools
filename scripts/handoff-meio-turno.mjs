@@ -20,11 +20,11 @@
 // O Codex fica de fora pelo mesmo motivo do `stopReport`: lá não há aviso operacional de contexto.
 
 import { resolveRoot, isMain, runtimeHost, loadConfig } from './lib/roots.mjs';
-import { sessionId, estadoDoAviso, comandoDoHandoff } from './lib/handoff-estado.mjs';
+import { sessionId, estadoDoAviso, comandoDoHandoff, LIMIAR_PADRAO, limiarDeContexto, modoSemUsuario } from './lib/handoff-estado.mjs';
 import { transcriptDaSessao, contextoAtual, metricasDaSessao } from './lib/sessao.mjs';
 
-/** Espelho de `LIMIAR_CONTEXTO` do `handoff.mjs`, que não é importado no caminho comum (um teste amarra os dois). */
-const LIMIAR = 200000;
+/** O padrão; em uso vale `limiarDeContexto()` (`CONTEXT_TOOLS_HANDOFF_THRESHOLD`), o mesmo do `Stop`. */
+const LIMIAR = LIMIAR_PADRAO;
 
 async function main() {
   if (runtimeHost() === 'codex') return;
@@ -35,7 +35,7 @@ async function main() {
   if (estado) return;                                       // já avisou (aqui ou no Stop)
   const caminho = transcriptDaSessao(root, sid);
   const agora = contextoAtual(caminho);
-  if (agora === null || agora < LIMIAR) return;
+  if (agora === null || agora < limiarDeContexto()) return;
 
   const [handoff, { writeHookOutput }, { makeT, detectLang }] = await Promise.all([
     import('./handoff.mjs'), import('./lib/hook-output.mjs'), import('./lib/i18n.mjs'),
@@ -44,7 +44,8 @@ async function main() {
   if (!m) return;
   const t = makeT(detectLang(loadConfig(root)));
   const linhas = handoff.avisoDaFase1(root, sid, m, t, salvar);
-  linhas.push(t('ses.meioTurno', { cmd: comandoDoHandoff(root, sid) }));
+  // Sem usuário, o pedido de preencher e encerrar já veio em `avisoDaFase1`: perguntar não tem a quem.
+  if (!modoSemUsuario()) linhas.push(t('ses.meioTurno', { cmd: comandoDoHandoff(root, sid) }));
   writeHookOutput(root, {
     hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: linhas.join('\n') },
   });

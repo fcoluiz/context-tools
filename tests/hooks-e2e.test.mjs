@@ -2096,3 +2096,72 @@ test('readHookInput: tira BOM, segue com o JSON completo e respeita o prazo sem 
   fechado.end('não é json');
   assert.equal(await texto, 'não é json', 'o texto bruto segue para quem o interpreta');
 });
+
+test('E2E: sessão sem usuário — limiar configurável, bloqueia UMA vez para preencher e deixa a retomada pronta', () => {
+  // Quem orquestra sessões sem ninguém no teclado (CONTEXT_TOOLS_HANDOFF_AUTO=1) não pode receber
+  // uma pergunta: o aviso pede para preencher e encerrar, o Stop bloqueia uma vez para isso, e o
+  // handoff pronto vira um sinal (CONTEXT_TOOLS_HANDOFF_SIGNAL) ou, sem ele, o pendente da pasta.
+  const raiz = repo({ comMapa: false, comMudanca: true });
+  const transcritos = mkdtempSync(join(tmpdir(), 'ctx-transc-'));
+  const sid = 'sessao-sem-usuario';
+  const sinal = join(transcritos, 'sinal.json');
+  const base = { CLAUDE_CODE_SESSION_ID: sid, CONTEXT_TOOLS_TRANSCRIPTS: transcritos, CONTEXT_TOOLS_HANDOFF_AUTO: '1', CONTEXT_TOOLS_HANDOFF_SIGNAL: sinal };
+  const stop = (env = base, continuacao = false) => rodar('handoff.mjs', ['--stop-report', `--root=${raiz}`], raiz, env,
+    JSON.stringify({ session_id: sid, stop_hook_active: continuacao }));
+  const doc = join(raiz, '.claude', `handoff-${sid.slice(0, 8)}.md`);
+  const uso = (n) => JSON.stringify({
+    type: 'assistant', timestamp: new Date(17e11 + n * 60000).toISOString(),
+    message: { usage: { cache_read_input_tokens: 260000, cache_creation_input_tokens: 100 } },
+  });
+  try {
+    writeFileSync(join(transcritos, `${sid}.jsonl`), Array.from({ length: 40 }, (_, i) => uso(i)).join('\n') + '\n');
+
+    // Limiar acima do contexto (300k > 260k): cala.
+    assert.equal(stop({ ...base, CONTEXT_TOOLS_HANDOFF_THRESHOLD: '300000' }).stdout.trim(), '', 'abaixo do limiar escolhido tem de calar');
+    // Fora da faixa vale o padrão (200k): avisa.
+    const f1 = stop({ ...base, CONTEXT_TOOLS_HANDOFF_THRESHOLD: '10' });
+    assert.equal(f1.status, 0, f1.stderr);
+    const bloqueio = JSON.parse(f1.stdout);
+    assert.equal(bloqueio.decision, 'block', 'sem bloquear, o turno acaba e ninguém lê o pedido');
+    assert.match(bloqueio.reason, /Unattended session/);
+    assert.doesNotMatch(bloqueio.reason, /AskUserQuestion/, 'sem usuário não há a quem perguntar');
+    assert.ok(existsSync(doc), 'o handoff tinha de ser gerado');
+
+    // Continuação do Stop bloqueado, com o bloco preenchido: não bloqueia de novo e sinaliza.
+    writeFileSync(doc, readFileSync(doc, 'utf8').replace(/^(- \*\*.+?\*\*)\s*$/m, '$1 faltava o teste do parser'));
+    const f2 = stop(base, true);
+    assert.equal(f2.status, 0, f2.stderr);
+    assert.doesNotMatch(f2.stdout, /"decision"/, 'bloqueia no máximo uma vez');
+    const s = JSON.parse(readFileSync(sinal, 'utf8'));
+    assert.equal(s.version, 1);
+    assert.equal(s.session, sid);
+    assert.equal(s.filled, true);
+    assert.ok(s.context >= 200000);
+    assert.match(readFileSync(s.prompt, 'utf8'), /faltava o teste do parser/, 'o prompt de retomada leva o bloco preenchido');
+    assert.doesNotMatch(readFileSync(sinal, 'utf8'), /faltava o teste/, 'o sinal leva caminhos e números, não o conteúdo');
+    const estado = JSON.parse(readFileSync(join(raiz, '.claude', '.handoff-aviso.json'), 'utf8'));
+    assert.equal(estado._pendente, undefined, 'com sinal, quem retoma é o orquestrador');
+    assert.equal(stop(base, true).stdout.trim(), '', 'depois de pronto, silêncio');
+
+    // Sem sinal: a retomada fica pendente para a próxima sessão desta pasta.
+    const outra = 'sessao-sem-sinal';
+    writeFileSync(join(transcritos, `${outra}.jsonl`), Array.from({ length: 40 }, (_, i) => uso(i)).join('\n') + '\n');
+    const env2 = { ...base, CLAUDE_CODE_SESSION_ID: outra, CONTEXT_TOOLS_HANDOFF_SIGNAL: '' };
+    assert.equal(JSON.parse(stop(env2).stdout).decision, 'block');
+    const r = stop(env2, true);
+    assert.equal(r.status, 0, r.stderr);
+    assert.doesNotMatch(r.stdout, /"decision"/, 'em branco, bloqueia só uma vez e segue sem o preenchimento');
+    assert.equal(JSON.parse(readFileSync(join(raiz, '.claude', '.handoff-aviso.json'), 'utf8'))._pendente.origem, outra);
+
+    // No meio do turno, sem usuário: pede para preencher e encerrar, sem pergunta.
+    const meio = 'sessao-meio-auto';
+    writeFileSync(join(transcritos, `${meio}.jsonl`), Array.from({ length: 40 }, (_, i) => uso(i)).join('\n') + '\n');
+    const t = rodar('handoff-meio-turno.mjs', [`--root=${raiz}`], raiz, { ...base, CLAUDE_CODE_SESSION_ID: meio });
+    const ctx = JSON.parse(t.stdout).hookSpecificOutput.additionalContext;
+    assert.match(ctx, /Unattended session/);
+    assert.doesNotMatch(ctx, /AskUserQuestion/);
+  } finally {
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(transcritos, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});

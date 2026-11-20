@@ -20,11 +20,11 @@ import {
   transcriptDaSessao, transcriptsRecentes, transcriptsCodexRecentes, metricasDaSessao, multiplicadorDeCusto,
 } from './lib/sessao.mjs';
 import { sessionActivity, unverifiedEdits, looksLikeTestRun } from './lib/verification.mjs';
-import { sessionId } from './lib/handoff-estado.mjs';
+import { sessionId, LIMIAR_PADRAO, limiarDeContexto } from './lib/handoff-estado.mjs';
 import { fromClaude, samplesFromCodexTranscript, recordAndForecast, kindLabel, when } from './lib/limits.mjs';
 
 /** Mesmo limiar do aviso de divisão do `Stop` (handoff.mjs): acima dele, dividir costuma compensar. */
-export const LIMIAR_DIVISAO = 200000;
+export const LIMIAR_DIVISAO = LIMIAR_PADRAO;
 const MAX_ARQUIVOS = 3;
 
 const flag = (args, nome) => {
@@ -123,7 +123,7 @@ export function buildStatus(root, opts = {}) {
     context: contexto,
     window: m.janela || null,
     costMultiplier: Number(multiplicadorDeCusto(contexto).toFixed(1)),
-    splitAdvised: contexto >= LIMIAR_DIVISAO,
+    splitAdvised: contexto >= limiarDeContexto(),
     tests: {
       // never: código editado e nenhum teste; stale: editado depois do último teste; none: nada a dizer.
       state: pendentes.length ? (rodouTeste ? 'stale' : 'never') : (ultimo || 'none'),

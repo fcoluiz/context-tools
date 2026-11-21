@@ -222,6 +222,14 @@ arquivo do handoff (sandbox só de leitura, ou uma pasta de estado que as permis
 instruído a responder as quatro perguntas na mensagem final, e essa mensagem vira a resposta no
 handoff.
 
+**Limiar da máquina.** As sessões que ninguém abriu com ambiente próprio (o terminal, o app) leem
+o limiar de `~/.context-tools/handoff.json` (`{ "threshold": <tokens> }`, mesma faixa de 50k a 2M;
+`CONTEXT_TOOLS_HOME` muda a pasta). A variável continua vencendo o arquivo, e um valor fora da faixa
+ou ilegível é ignorado. O arquivo só traz o limiar: nunca liga o `CONTEXT_TOOLS_HANDOFF_AUTO`, então
+quem está no teclado continua recebendo a pergunta. Vale para Claude e Codex (no Codex, o aviso de
+contexto no `Stop` segue só nas sessões sem usuário). Outras chaves do arquivo ficam para quem o
+grava.
+
 **O aviso também chega no meio do turno.** O hook de `Stop` só roda quando o turno acaba, e o
 agente costuma trabalhar uma lista de tarefas inteira num turno só, sem parar para perguntar. Medido
 em 2026-10-24 nos transcripts locais, em 116 sessões dos 30 dias anteriores que cruzaram 200k: entre

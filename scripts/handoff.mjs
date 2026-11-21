@@ -258,7 +258,7 @@ function mapasRelevantes(repoPath, arquivos) {
  * Uma vez só por sessão: quem decidiu seguir já decidiu, e repetir não traz informação nova.
  * Insistir só ensina a ignorar a categoria inteira.
  */
-const LIMIAR_CONTEXTO = LIMIAR_PADRAO; // em uso: limiarDeContexto() (CONTEXT_TOOLS_HANDOFF_THRESHOLD)
+const LIMIAR_CONTEXTO = LIMIAR_PADRAO; // em uso: limiarDeContexto() (variável ou ~/.context-tools/handoff.json)
 // No Codex, tempo Ã© apenas um sinal operacional para sugerir uma nova sessÃ£o. NÃ£o Ã© um
 // multiplicador de cobranÃ§a: a mÃ©trica de crÃ©ditos depende dos tokens e do modelo ativo.
 

@@ -5,6 +5,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { safe, statePath, stateDir } from './roots.mjs';
 
@@ -26,14 +27,30 @@ const GERADO = /^handoff-[^.]{1,8}(\.prompt)?\.md$/;
 /** Limiar padrão do aviso: onde o custo por mensagem já dobrou na curva medida (ver `handoff.mjs`). */
 export const LIMIAR_PADRAO = 200000;
 
+const limiarValido = (v) => {
+  const n = typeof v === 'string' && v.trim() !== '' ? Number(v) : v;
+  return Number.isInteger(n) && n >= 50000 && n <= 2000000 ? n : null;
+};
+
+/** O limiar desta máquina: `<CONTEXT_TOOLS_HOME ou ~/.context-tools>/handoff.json`. */
+export function arquivoDoLimiar(env = process.env) {
+  return join(env.CONTEXT_TOOLS_HOME || join(homedir(), '.context-tools'), 'handoff.json');
+}
+
 /**
- * Limiar de contexto do aviso de sessão cara. Quem orquestra sessões (um app que abre e conduz
- * agentes sem ninguém no teclado) escolhe o próprio por `CONTEXT_TOOLS_HANDOFF_THRESHOLD`, em
- * tokens. Fora da faixa, ou sem a variável, vale o padrão.
+ * Limiar de contexto do aviso de sessão cara, em tokens (de 50k a 2M). Em ordem:
+ * 1. `CONTEXT_TOOLS_HANDOFF_THRESHOLD`, que quem orquestra põe no ambiente das sessões que abre;
+ * 2. `{ "threshold": N }` em `arquivoDoLimiar()`, que vale para toda sessão desta máquina
+ *    (terminal, app, Claude e Codex), inclusive as que ninguém abriu com ambiente próprio;
+ * 3. o padrão.
+ * Valor fora da faixa ou ilegível é ignorado e passa ao próximo. O arquivo só traz o limiar: o
+ * modo sem usuário (`CONTEXT_TOOLS_HANDOFF_AUTO`) nunca sai dele.
  */
 export function limiarDeContexto(env = process.env) {
-  const n = Number(env.CONTEXT_TOOLS_HANDOFF_THRESHOLD);
-  return Number.isInteger(n) && n >= 50000 && n <= 2000000 ? n : LIMIAR_PADRAO;
+  const daVariavel = limiarValido(env.CONTEXT_TOOLS_HANDOFF_THRESHOLD);
+  if (daVariavel !== null) return daVariavel;
+  const doArquivo = safe(() => limiarValido(JSON.parse(readFileSync(arquivoDoLimiar(env), 'utf8'))?.threshold), null);
+  return doArquivo ?? LIMIAR_PADRAO;
 }
 
 /**

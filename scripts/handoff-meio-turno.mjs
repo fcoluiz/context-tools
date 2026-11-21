@@ -23,7 +23,7 @@ import { resolveRoot, isMain, runtimeHost, loadConfig } from './lib/roots.mjs';
 import { sessionId, estadoDoAviso, comandoDoHandoff, LIMIAR_PADRAO, limiarDeContexto, modoSemUsuario } from './lib/handoff-estado.mjs';
 import { transcriptDaSessao, contextoAtual, metricasDaSessao } from './lib/sessao.mjs';
 
-/** O padrão; em uso vale `limiarDeContexto()` (`CONTEXT_TOOLS_HANDOFF_THRESHOLD`), o mesmo do `Stop`. */
+/** O padrão; em uso vale `limiarDeContexto()` (variável ou `handoff.json`), o mesmo do `Stop`. */
 const LIMIAR = LIMIAR_PADRAO;
 
 async function main() {

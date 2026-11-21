@@ -233,6 +233,14 @@ context warning at `Stop`. An agent that cannot edit the handoff file (a read-on
 state folder its permissions protect) is told to answer the four questions in its final message
 instead, and that message becomes the answer in the handoff.
 
+**Machine-wide threshold.** Sessions nobody started with their own environment (the terminal, the
+desktop app) read the threshold from `~/.context-tools/handoff.json` (`{ "threshold": <tokens> }`,
+same 50k–2M range; `CONTEXT_TOOLS_HOME` moves the folder). The variable still wins over the file,
+and an out-of-range or unreadable value is ignored. The file carries only the threshold: it never
+turns on `CONTEXT_TOOLS_HANDOFF_AUTO`, so a session with someone at the keyboard still gets the
+question. It applies to Claude and Codex alike (in Codex, the context warning at `Stop` remains
+limited to unattended sessions). Other keys in the file are left for whoever writes it.
+
 **The warning also arrives mid-turn.** The `Stop` hook only runs when a turn ends, and an agent
 often works through a whole task list in one turn without stopping to ask. Measured on 2026-10-24 in
 local transcripts, in 116 sessions from the previous 30 days that crossed 200k: between crossing the

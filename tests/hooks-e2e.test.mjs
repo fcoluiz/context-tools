@@ -2166,6 +2166,47 @@ test('E2E: sessão sem usuário — limiar configurável, bloqueia UMA vez para 
   }
 });
 
+test('E2E: limiar da máquina em handoff.json — vale sem a variável, a variável vence, e o modo sem usuário nunca sai dele', () => {
+  // Uma sessão aberta no terminal ou no app não tem o ambiente de quem orquestra: o limiar vem do
+  // arquivo da pasta do usuário. Só o limiar: quem está no teclado continua recebendo a pergunta.
+  const raiz = repo({ comMapa: false, comMudanca: true });
+  const transcritos = mkdtempSync(join(tmpdir(), 'ctx-transc-'));
+  const home = mkdtempSync(join(tmpdir(), 'ctx-home-'));
+  const arquivo = join(home, 'handoff.json');
+  const uso = (n) => JSON.stringify({
+    type: 'assistant', timestamp: new Date(17e11 + n * 60000).toISOString(),
+    message: { usage: { cache_read_input_tokens: 260000, cache_creation_input_tokens: 100 } },
+  });
+  let n = 0;
+  const stop = (extra = {}) => {
+    const sid = `sessao-arquivo-${n++}`;
+    writeFileSync(join(transcritos, `${sid}.jsonl`), Array.from({ length: 40 }, (_, i) => uso(i)).join('\n') + '\n');
+    return rodar('handoff.mjs', ['--stop-report', `--root=${raiz}`], raiz,
+      { CLAUDE_CODE_SESSION_ID: sid, CONTEXT_TOOLS_TRANSCRIPTS: transcritos, CONTEXT_TOOLS_HOME: home, CONTEXT_TOOLS_HANDOFF_AUTO: '', CONTEXT_TOOLS_HANDOFF_THRESHOLD: '', ...extra });
+  };
+  try {
+    writeFileSync(arquivo, JSON.stringify({ threshold: 300000, auto: true, outra: 'chave' }));
+    assert.equal(stop().stdout.trim(), '', 'o limiar do arquivo (300k > 260k) tem de calar');
+    assert.match(stop({ CONTEXT_TOOLS_HANDOFF_THRESHOLD: '250000' }).stdout, /Session at \d+k tokens/, 'a variável vence o arquivo');
+
+    writeFileSync(arquivo, JSON.stringify({ threshold: 250000, auto: true }));
+    const comArquivo = stop();
+    assert.match(comArquivo.stdout, /Session at \d+k tokens/, `esperava o aviso, veio: ${comArquivo.stdout}`);
+    assert.doesNotMatch(comArquivo.stdout, /Unattended session|"decision"/, 'o arquivo não liga o modo sem usuário');
+    assert.equal(stop({ CONTEXT_TOOLS_HANDOFF_THRESHOLD: '300000' }).stdout.trim(), '', 'a variável vence também para cima');
+
+    // Fora da faixa ou ilegível: vale o padrão (200k), e avisa.
+    for (const ruim of [JSON.stringify({ threshold: 10 }), JSON.stringify({ threshold: 'x' }), '{ não é json']) {
+      writeFileSync(arquivo, ruim);
+      assert.match(stop().stdout, /Session at \d+k tokens/, `com ${ruim}, vale o padrão`);
+    }
+  } finally {
+    rmSync(raiz, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(transcritos, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});
+
 test('E2E: sessão sem usuário no Codex — mesmo bloqueio; sem poder gravar, a mensagem final vira a resposta', () => {
   // No Codex o aviso de contexto continua desligado para quem está no teclado, mas a sessão sem
   // usuário segue o limite de quem orquestra. Um agente em sandbox só de leitura não grava o

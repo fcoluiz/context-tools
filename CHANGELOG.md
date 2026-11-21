@@ -8,6 +8,13 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **Machine-wide handoff threshold.** Without `CONTEXT_TOOLS_HANDOFF_THRESHOLD`, the context
+  threshold now comes from `~/.context-tools/handoff.json` (`{ "threshold": N }`, 50k–2M;
+  `CONTEXT_TOOLS_HOME` moves it), so it also reaches sessions opened in the terminal or the desktop
+  app, for Claude and Codex. The variable still wins; the file never turns on unattended mode.
+
 ## [2.17.0] — 2026-11-21
 
 ### Added

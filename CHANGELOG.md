@@ -8,14 +8,17 @@ reconstructed from git history.
 
 ## [Unreleased]
 
-## [2.17.0] — 2026-11-21
-
 ### Added
 
 - **Machine-wide handoff threshold.** Without `CONTEXT_TOOLS_HANDOFF_THRESHOLD`, the context
   threshold now comes from `~/.context-tools/handoff.json` (`{ "threshold": N }`, 50k–2M;
   `CONTEXT_TOOLS_HOME` moves it), so it also reaches sessions opened in the terminal or the desktop
   app, for Claude and Codex. The variable still wins; the file never turns on unattended mode.
+
+## [2.17.0] — 2026-11-21
+
+### Added
+
 - **`ct work`: many agent sessions, many worktrees.** `board` lists every worktree of the configured
   repositories with dirty files, commits ahead/behind production and whether the tip is already in
   production — by ancestry, merged PR with the same tip (gh), `git cherry`, squash patch-id or identical

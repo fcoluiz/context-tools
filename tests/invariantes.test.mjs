@@ -115,8 +115,9 @@ test('os três manifestos de hooks cobrem o mesmo conjunto de scripts', () => {
   // `pair.mjs` tem contrapartida, mas DENTRO do codex-hook.mjs (prompt, edição e Stop que já
   // existiam): hook novo no Codex Desktop fica desligado em silêncio até o usuário aprovar.
   // `delegate.mjs` (a trava dos subagentes `ct-*`) pelo mesmo motivo: no Codex ela roda dentro dos
-  // hooks de edição e de Bash do codex-hook.mjs.
-  const ferramentas = (mapa) => new Set(Object.values(mapa).flat().filter((s) => !/md-hint\.mjs$|^verify\.mjs$|^handoff-(lembrete|meio-turno)\.mjs$|^pair\.mjs$|^delegate\.mjs$/.test(s)));
+  // hooks de edição e de Bash do codex-hook.mjs. `work.mjs` (painel de worktrees) idem: no Codex vai
+  // junto da saída do handoff.mjs no SessionStart e no Stop (`withWorkHook` no codex-hook.mjs).
+  const ferramentas = (mapa) => new Set(Object.values(mapa).flat().filter((s) => !/md-hint\.mjs$|^verify\.mjs$|^handoff-(lembrete|meio-turno)\.mjs$|^pair\.mjs$|^delegate\.mjs$|^work\.mjs$/.test(s)));
   const noCodex = ferramentas(codexPlugin);
   const faltando = [...ferramentas(claude)].filter((script) => !noCodex.has(script));
   assert.deepEqual(faltando, [], 'ferramentas que o Claude roda em hook sem contrapartida no Codex');

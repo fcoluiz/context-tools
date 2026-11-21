@@ -52,6 +52,7 @@ export const VERBS = Object.freeze({
   brief: { script: 'brief.mjs', en: 'briefing for a cheap subagent (and its write scope)', pt: 'briefing para um subagente barato (e seu escopo de escrita)' },
   delegate: { script: 'delegate.mjs', en: 'delegated subagents: scope, status, clear, cost report', pt: 'subagentes delegados: escopo, estado, limpar, relatório de custo' },
   pair: { script: 'pair.mjs', en: 'two agents on one task: sessions, create, wait, send, stop', pt: 'dois agentes numa tarefa: sessões, criar, esperar, entregar, parar' },
+  work: { script: 'work.mjs', en: 'parallel worktrees: board, new, pr, close, tidy, rescue', pt: 'worktrees em paralelo: painel, nova, pr, encerrar, limpar, resgatar' },
 });
 
 function lang() {

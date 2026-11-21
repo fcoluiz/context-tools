@@ -8,6 +8,21 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Added
+
+- **`ct work`: many agent sessions, many worktrees.** `board` lists every worktree of the configured
+  repositories with dirty files, commits ahead/behind production and whether the tip is already in
+  production — by ancestry, merged PR with the same tip (gh), `git cherry`, squash patch-id or identical
+  content, and says which — plus open PRs and the files touched by 2+ open fronts. PRs that could not
+  be read are reported as such, never as zero. `new` warns about similar branches, worktrees and PRs
+  before creating a worktree from production without tracking it; `pr` pushes and opens a draft PR
+  with the configured checklist; `close` refuses dirty files, unmerged PRs and open checklist items;
+  `tidy` proposes a three-group triage and removes only clean worktrees already in production, only
+  with `--apply`; `rescue` saves a dirty worktree in a local commit. Never `--force`, `-D`,
+  `reset --hard` or `clean`. With `work.repos` in the config, `SessionStart` adds one summary line
+  from a cached board refreshed in the background, and `Stop` notes uncommitted files in the
+  session's checkout and a main checkout off production (Claude and Codex).
+
 ## [2.16.0] — 2026-11-20
 
 ### Added

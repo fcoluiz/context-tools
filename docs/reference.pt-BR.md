@@ -1005,6 +1005,7 @@ registrado.
 | `Stop` | Codex revisa somente as fontes alteradas nesta sessão que estão ligadas a mapas/documentos; fontes antigas do mesmo mapa continuam no relatório global | só para mudanças relevantes da sessão; mesma revisão em cooldown por 24h |
 | `Stop` | avisa se você editou A e não tocou em B, que muda junto historicamente | só quando ocorre |
 | `Stop` (Claude) | aponta código editado depois do último teste, com testes relacionados e o comando de teste | **uma vez por sessão**; calado sem estrutura de teste |
+| `SessionStart` / `Stop` — worktrees | com `work.repos` na config: uma linha de resumo do painel em cache (PRs abertas, arquivos em 2+ frentes, worktrees sujos já na produção, checkout principal fora da produção), atualizado em segundo plano quando velho; no `Stop`, arquivo não commitado no checkout da sessão e checkout principal fora da produção ou sujo. No Codex roda dentro dos hooks de handoff que já existem | calado sem `work.repos`; cada aviso do `Stop` uma vez por sessão em 6 h |
 | `Stop` | sessão que só **leu** código (sem editar código), 3 arquivos ou mais em 2+ pastas sem mapa nem documento `ai-context`, recebe uma linha sugerindo ao usuário pedir o registro do fluxo; offline, pela transcrição local do host, nunca escreve nada | **uma vez por sessão**; lê só os bytes que a transcrição ganhou desde o `Stop` anterior |
 
 Toda mensagem de hook passa por um ponto único de deduplicação: o mesmo (evento, sessão, texto) é
@@ -1150,6 +1151,71 @@ A dupla acaba quando o planejador aprova, quando as rodadas acabam, com `stop`, 
 Limites: uma sessão fechada para de responder (a dupla então expira por inatividade); edição feita
 por comando de shell não é interceptada. `CONTEXT_TOOLS_PAIR=0` desliga tudo, inclusive o registro de
 sessões.
+
+## Muitas sessões, muitos worktrees: `work`
+
+Várias sessões de agente em paralelo são várias branches e vários worktrees, e as falhas são de
+visibilidade, não de git: trabalho não commitado esquecido num worktree e achado muito depois, duas PRs
+que mexem no mesmo arquivo e só se encontram no merge, e "isto já está na produção?" respondido por uma
+nota que defasou. `ct work` mantém esse quadro num comando, lido do git e do `gh` a cada vez.
+
+| subcomando (alias pt) | o que faz | grava |
+|---|---|---|
+| `board` (`painel`) `[--all] [--json]` | por repositório configurado: todo worktree (`git worktree list --porcelain`) com caminho, branch, arquivos sujos (rastreados × novos), commits à frente/atrás de `<remoto>/<produção>`, e se o tip já está na produção e **por qual método**; as PRs abertas; e a **interseção** — arquivos tocados por 2+ frentes abertas (diff da branch `<produção>...<tip>` mais os arquivos rastreados sujos de cada worktree, mais os arquivos de cada PR aberta), com as frentes que colidem | só o cache dos hooks |
+| `new` (`nova`) `<slug> [--both] [--repo=<nome>] [--files=a,b] [--anyway]` | antes de criar, procura branch, worktree ou PR aberta com nome parecido (e, com `--files`, PRs abertas e colisões conhecidas nesses arquivos) e para mostrando o que achou; branch ou pasta que já existe é sempre recusada. Depois `git fetch <remoto> <produção>` e `git worktree add --no-track -b <prefixo><slug> -- <worktreeRoot>/<repo>-<slug> <remoto>/<produção>`. `--both` (`--ambos`) cria o par em todo repositório configurado com o mesmo slug | worktree + branch |
+| `pr <slug> [--both] [--title=<t>]` | o 1º push e uma PR **rascunho** com corpo vindo da config (`prTemplate`, `checklist` como itens `- [ ]`, "depende de" apontando para as PRs abertas antes na mesma chamada). Recusa sem commit à frente da produção | push + PR |
+| `close` (`encerrar`) `[<slug>] [--both] [--no-pr-check] [--dry-run]` | sem slug, o worktree que contém a pasta atual. Recusa com qualquer arquivo sujo (e lista quais), quando o tip não está na produção, quando a PR não foi mergeada ou o checklist tem item por marcar, e quando o `gh` não pôde ser lido (salvo `--no-pr-check`). Só então `git worktree remove` e `git branch -d` — nunca `--force`, nunca `-D`: depois de squash o git não vê a branch como mergeada, e mantê-la é o resultado honesto | remove o worktree |
+| `tidy` (`limpar`) `[--apply] [--json]` | um **plano** de triagem em três grupos: (a) limpos e já na produção → removíveis; (b) sujos → resumo do diff (mudança rastreada primeiro, depois os worktrees só com arquivos novos — muitas vezes estado de ferramenta fora do `.gitignore`) para um humano decidir; (c) com commits fora da produção → manter. `--apply` (`--aplicar`) remove só o grupo (a), conferindo de novo que cada um continua limpo logo antes | só com `--apply` |
+| `rescue` (`resgatar`) `<slug\|caminho>` | salva um worktree sujo num commit local de uma branch nova `rescue/<nome>-<data>`; a branch original fica intacta, nada é enviado | branch + commit |
+
+**"Já na produção"** não pode depender só de ancestralidade: depois de squash-merge ou rebase os
+commits da branch nunca entram na produção, só um equivalente. Os métodos vão do mais forte ao mais
+fraco, e o painel diz qual confirmou: `ancestry` (o tip é ancestral da produção), `pr` (PR mergeada desta
+branch com este **mesmo** tip — commit local depois do merge não conta; precisa do `gh`), `cherry` (todo
+commit tem equivalente na produção), `squash` (o diff inteiro da branch tem o patch-id de um dos 300
+últimos commits da produção), `content` (todo arquivo que a branch mudou está idêntico na produção). O
+painel nunca faz fetch: compara com o `<remoto>/<produção>` local. Toda leitura roda com
+`GIT_OPTIONAL_LOCKS=0`, então o `git status` não regrava o índice, e com até 8 processos git em paralelo.
+
+**PR que não pôde ser lida não é zero PR.** Sem `gh`, com remoto que não é GitHub, ou quando o `gh`
+falha (sem acesso à organização, por exemplo), o painel diz que não conseguiu ler e por quê.
+
+**Configuração**, em `.claude/context-tools.json` (Claude) ou `.codex/context-tools.json` (Codex) do
+workspace — procurada também nas pastas acima, então uma sessão aberta dentro de um worktree acha a do
+workspace:
+
+```json
+{
+  "work": {
+    "worktreeRoot": ".worktrees",
+    "cacheMinutes": 30,
+    "repos": [
+      { "path": "api", "remote": "origin", "production": "main", "branchPrefix": "feat/",
+        "prTemplate": "Tarefa: {slug}", "checklist": ["Migration: nenhuma / <nome>", "Rebuild: <alvos>", "Validado: <como>", "Depende de: {depends}"] },
+      { "path": "web", "production": "main" }
+    ]
+  }
+}
+```
+
+`path` e `worktreeRoot` são relativos ao workspace; `name` é o nome da pasta por padrão; `github`
+(`dono/nome`) sobrepõe o slug lido do remoto. Valores que chegariam à linha de comando do git
+(`remote`, `production`, `branchPrefix`) são recusados quando poderiam ser lidos como opção. Sem a chave
+`work`, os comandos usam o repositório da pasta atual, com produção vinda de `origin/HEAD`, e os hooks
+ficam calados.
+
+**Hooks.** O `SessionStart` acrescenta uma linha a partir do painel em cache ("3 PRs abertas; 2
+arquivos em 2+ frentes (`a.js` em 2); 4 worktrees sujos já na produção; checkout principal de api em
+feat/x, não main"). Um painel completo custa cerca de um segundo de `git status` por worktree, então o
+hook nunca o monta: com o cache mais velho que `cacheMinutes`, dispara uma atualização solta e mostra o
+anterior com a idade. O `Stop` confere o checkout da própria sessão e os checkouts principais (estes no
+máximo a cada 10 minutos) e aponta arquivo não commitado, checkout principal fora da produção ou sujo —
+cada aviso uma vez por sessão em 6 horas. No Codex os dois rodam dentro dos hooks de handoff que já
+existem; nada novo para aprovar. `"work": { "hooks": false }` desliga.
+
+No Windows (NTFS), o `git status` leva perto de um segundo por worktree num repositório médio, então um
+painel com uma centena de worktrees leva dezenas de segundos; a linha do `SessionStart`, lida do cache,
+leva bem menos de um segundo.
 
 ## Subagentes baratos: `delegate`
 

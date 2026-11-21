@@ -15,7 +15,7 @@
 //   - Nada de `reset --hard`, `clean`, `--force`, `branch -D` ou apagar pasta. Quem descarta é o humano.
 
 import { execFile, spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { loadConfig, safe, statePath } from './roots.mjs';
@@ -78,6 +78,13 @@ export async function pool(items, n, fn) {
 
 const firstLine = (s) => sanitizar(String(s || '').split(/\r?\n/).find((l) => l.trim()) || '', 160);
 const norm = (p) => String(p || '').replace(/\\/g, '/');
+/** O caminho real: expande o nome curto 8.3 do Windows e links como /var → /private/var do macOS. */
+export const realPath = (p) => { const r = resolve(p); try { return realpathSync.native(r); } catch { return r; } };
+/** Chave para comparar caminhos: o caminho real, sem diferença de caixa. */
+export const pathKey = (p) => realPath(p).toLowerCase();
+const SEP = process.platform === 'win32' ? '\\' : '/';
+/** `c` é `dir` ou fica dentro dele (os dois já passados por `pathKey`). */
+export const within = (c, dir) => c === dir || c.startsWith(dir.endsWith(SEP) ? dir : dir + SEP);
 
 // ── configuração ───────────────────────────────────────────────────────────────────────────────
 
@@ -470,13 +477,13 @@ export async function stopFindings(work, cwd, { now = Date.now(), throttleMs = 1
   const findings = [];
   const top = await git(cwd, ['rev-parse', '--show-toplevel']);
   const session = top.ok ? resolve(top.stdout.trim()) : null;
-  const mains = new Set(work.repos.map((r) => resolve(r.path).toLowerCase()));
+  const mains = new Set(work.repos.map((r) => pathKey(r.path)));
   if (session) {
     const st = await git(session, ['status', '--porcelain=v1', '-z', '-unormal']);
     if (st.ok) {
       const s = parseStatus(st.stdout);
       const files = [...s.tracked, ...s.untracked];
-      if (files.length && !mains.has(session.toLowerCase())) findings.push({ kind: 'session', path: session, files });
+      if (files.length && !mains.has(pathKey(session))) findings.push({ kind: 'session', path: session, files });
     }
   }
   const stateFile = statePath(work.root, STOP_STATE_FILE);
@@ -527,7 +534,7 @@ export async function similarWork(repo, slug, { files = [], board = null } = {})
     if (exact || score >= 0.5) hits.push({ kind, name: sanitizar(name, 100), exact, score: Math.round(score * 100) / 100, ...extra });
   };
   for (const wt of parseWorktrees(list.stdout)) {
-    if (resolve(wt.path).toLowerCase() === resolve(dir).toLowerCase()) hits.push({ kind: 'worktree-path', name: sanitizar(wt.path, 160), exact: true, score: 1 });
+    if (pathKey(wt.path) === pathKey(dir)) hits.push({ kind: 'worktree-path', name: sanitizar(wt.path, 160), exact: true, score: 1 });
     consider('worktree', wt.branch || '', { path: sanitizar(wt.path, 160) });
   }
   for (const b of refs.stdout.split(/\r?\n/).filter(Boolean)) consider('branch', b);
@@ -564,7 +571,7 @@ export async function createWorktree(repo, slug) {
 /** Acha o worktree de um repo por slug, por caminho, ou o que contém `cwd`. */
 export async function findWorktree(repo, { slug, path, cwd } = {}) {
   const list = parseWorktrees((await git(repo.path, ['worktree', 'list', '--porcelain'])).stdout);
-  const same = (a, b) => resolve(a).toLowerCase() === resolve(b).toLowerCase();
+  const same = (a, b) => pathKey(a) === pathKey(b);
   if (path) return list.find((w) => same(w.path, path)) || null;
   if (slug) {
     const dir = worktreeDirFor(repo, slug);
@@ -572,8 +579,8 @@ export async function findWorktree(repo, { slug, path, cwd } = {}) {
     return list.find((w) => same(w.path, dir)) || list.find((w) => w.branch === branch) || list.find((w) => w.branch === slug) || null;
   }
   if (cwd) {
-    const c = resolve(cwd).toLowerCase();
-    return list.filter((w) => c === resolve(w.path).toLowerCase() || c.startsWith(`${resolve(w.path).toLowerCase()}${process.platform === 'win32' ? '\\' : '/'}`))
+    const c = pathKey(cwd);
+    return list.filter((w) => within(c, pathKey(w.path)))
       .sort((a, b) => b.path.length - a.path.length)[0] || null;
   }
   return null;
@@ -730,6 +737,7 @@ export async function openDraftPr(repo, wt, { slug, title, depends = [] }) {
 }
 
 export function displayPath(root, p) {
-  const rel = relative(root, p);
+  let rel = relative(root, p);
+  if (rel.startsWith('..') || isAbsolute(rel)) rel = relative(realPath(root), realPath(p));
   return sanitizar(norm(rel && !rel.startsWith('..') && !isAbsolute(rel) ? rel : p), 140);
 }

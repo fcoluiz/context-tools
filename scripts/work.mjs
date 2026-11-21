@@ -64,15 +64,15 @@ async function loadWork(root) {
 }
 
 /** Repos pedidos: `--both`/`--ambos` = todos; `--repo=<nome>`; senão o que contém a pasta atual; senão o único. */
-function pickRepos(work, args, cwd = process.cwd()) {
+function pickRepos(L, work, args, cwd = process.cwd()) {
   const ok = work.repos.filter((r) => !r.error);
   if (flag(args, '--both', '--ambos', '--all-repos')) return ok;
   const name = value(args, '--repo');
   if (name) return ok.filter((r) => r.name === name);
-  const c = resolve(cwd).toLowerCase();
-  const inside = ok.filter((r) => c === r.path.toLowerCase() || c.startsWith(r.path.toLowerCase() + (process.platform === 'win32' ? '\\' : '/')));
+  const c = L.pathKey(cwd);
+  const inside = ok.filter((r) => L.within(c, L.pathKey(r.path)));
   if (inside.length) return inside;
-  const byWt = ok.filter((r) => c.startsWith(r.worktreeRoot.toLowerCase()) && resolve(cwd).slice(r.worktreeRoot.length + 1).startsWith(`${r.name}-`));
+  const byWt = ok.filter((r) => { const root = L.pathKey(r.worktreeRoot); return L.within(c, root) && c.slice(root.length + 1).startsWith(`${r.name.toLowerCase()}-`); });
   if (byWt.length === 1) return byWt;
   return ok.length === 1 ? ok : [];
 }
@@ -210,7 +210,7 @@ async function newCmd(work, args, t) {
   const L = await lib();
   const [slug] = positional(args);
   if (!L.validSlug(slug)) { console.log(t('wk.new.badSlug', { slug: L.sanitizar(slug || '', 60) })); return 1; }
-  const repos = pickRepos(work, args);
+  const repos = pickRepos(L, work, args);
   if (!repos.length) { console.log(t('wk.pickRepo', { list: work.repos.map((r) => r.name).join(', ') })); return 1; }
   const files = (value(args, '--files') || '').split(',').map((s) => s.trim()).filter(Boolean);
   const board = L.readBoardCache(work.root);
@@ -241,7 +241,7 @@ async function prCmd(work, args, t) {
   const L = await lib();
   const [slug] = positional(args);
   if (!L.validSlug(slug)) { console.log(t('wk.new.badSlug', { slug: L.sanitizar(slug || '', 60) })); return 1; }
-  const repos = pickRepos(work, args);
+  const repos = pickRepos(L, work, args);
   if (!repos.length) { console.log(t('wk.pickRepo', { list: work.repos.map((r) => r.name).join(', ') })); return 1; }
   const depends = [];
   let code = 0;
@@ -259,7 +259,7 @@ async function closeCmd(work, args, t) {
   const L = await lib();
   const [slug] = positional(args);
   if (slug && !L.validSlug(slug)) { console.log(t('wk.new.badSlug', { slug: L.sanitizar(slug, 60) })); return 1; }
-  const picked = slug ? pickRepos(work, args) : [];
+  const picked = slug ? pickRepos(L, work, args) : [];
   const repos = picked.length ? picked : work.repos.filter((r) => !r.error);
   let found = 0; let code = 0;
   for (const r of repos) {

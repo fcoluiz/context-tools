@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.17.0] — 2026-11-21
+
 ### Added
 
 - **`ct work`: many agent sessions, many worktrees.** `board` lists every worktree of the configured

@@ -8,6 +8,17 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Session baseline no longer grows without limit in large workspaces.** The per-session snapshot
+  of files that were already dirty (or, without Git, the file list) used to live inside the single
+  `.context-maps-session-baseline.json` shared by all sessions. In a workspace with several large
+  folders and many sessions in 24 h it grew to hundreds of megabytes. Every SessionStart rewrote
+  it whole, and every Stop re-parsed it once per repository and per map, which held minutes of CPU
+  and gigabytes of memory across concurrent hooks. The shared file now keeps only HEAD, times and
+  counts. Each session's snapshot goes to `.context-maps-session-baseline/<session>.json`, and it
+  is read once per process. Entries in the old format still work and move out on the next write.
+
 ## [2.18.0] — 2026-11-22
 
 ### Added

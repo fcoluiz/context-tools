@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -142,6 +143,34 @@ test('Stop automático cala quando baseline Git é antigo ou incompleto', () => 
       assert.equal(sessionChangedFiles(root), null, 'snapshot truncado não deve atribuir mudanças antigas à sessão');
     });
   } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('baseline Git guarda o retrato da sujeira fora do índice compartilhado e migra o formato antigo', () => {
+  const root = mkdtempSync(join(tmpdir(), 'context-tools-baseline-split-'));
+  const index = join(root, '.claude', '.context-maps-session-baseline.json');
+  const git = (...args) => execFileSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { stdio: 'ignore' });
+  const previousHost = process.env.CONTEXT_TOOLS_HOST;
+  try {
+    mkdirSync(join(root, 'src'), { recursive: true });
+    mkdirSync(join(root, '.claude'), { recursive: true });
+    writeFileSync(join(root, 'src', 'a.js'), 'export const a = 1;\n');
+    git('init', '-q'); git('add', '.'); git('commit', '-qm', 'base');
+    writeFileSync(join(root, 'src', 'old.js'), 'export const old = 1;\n');
+    // Outra sessão, gravada por versão antiga: retrato embutido no índice.
+    writeFileSync(index, JSON.stringify({ legacy: { [root]: { head: 'abc123', at: Date.now(), sujos: { 'src/old.js': 1 }, sujosCompleto: true } } }));
+    withSession(root, () => {
+      process.env.CONTEXT_TOOLS_HOST = 'claude';
+      recordSessionBaseline(root);
+      const text = readFileSync(index, 'utf8');
+      assert.doesNotMatch(text, /"sujos"/, 'nenhum retrato fica no índice lido por todas as sessões');
+      assert.ok(existsSync(join(root, '.claude', '.context-maps-session-baseline', 'legacy.json')), 'formato antigo migrado');
+      writeFileSync(join(root, 'src', 'new.js'), 'export const created = 1;\n');
+      assert.deepEqual(sessionChangedFiles(root).filter((f) => f.startsWith('src/')), ['src/new.js'], 'sujeira anterior continua fora; arquivo novo entra');
+    });
+  } finally {
+    if (previousHost === undefined) delete process.env.CONTEXT_TOOLS_HOST; else process.env.CONTEXT_TOOLS_HOST = previousHost;
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('baseline sem Git distingue exclusões herdadas de exclusões feitas na sessão', () => {

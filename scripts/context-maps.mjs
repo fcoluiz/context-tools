@@ -28,6 +28,7 @@ import { sessionWriteFiles } from './lib/session-write-journal.mjs';
 import { reviewFinding } from './lib/review-findings.mjs';
 import { readClaudeStopContinuation, readHookEvent } from './lib/hook-input.mjs';
 import { resetRereads } from './lib/reread.mjs';
+import { loadBaselineEntry, loadBaselineIndex, saveBaselineIndex } from './lib/session-baseline.mjs';
 const t = makeT(detectLang(safe(() => loadConfig(resolveRoot()), {})));
 
 const GIT_TIMEOUT_MS = 5000;
@@ -437,10 +438,6 @@ function filtrarPorRelevancia(repoPath, unmapped) {
 // 'HEAD' (comportamento anterior: só enxerga o que está sujo agora), nunca quebra nem inventa.
 const SESSION_BASELINE_TTL_MS = 24 * 60 * 60 * 1000; // sessão nunca dura mais que isso; poda o resto
 
-function sessionBaselineFile(root = workspaceRoot()) {
-  return statePath(root, '.context-maps-session-baseline.json');
-}
-
 function currentSessionId() {
   return process.env.CONTEXT_TOOLS_SESSION_ID
     || process.env.CLAUDE_CODE_SESSION_ID
@@ -448,8 +445,9 @@ function currentSessionId() {
     || null;
 }
 
+// Índice leve, lido uma vez por processo; os retratos pesados ficam por sessão (ver a lib).
 function loadBaselineStore(root = workspaceRoot()) {
-  return safe(() => JSON.parse(readFileSync(sessionBaselineFile(root), 'utf8')), {}) || {};
+  return loadBaselineIndex(root);
 }
 
 /**
@@ -512,11 +510,7 @@ function pruneAndSave(store, root = workspaceRoot()) {
   // ausente tudo degrada para 'HEAD', então a feature inteira (ver o que foi COMMITADO durante a
   // sessão) ficava morta exatamente nos projetos que ainda não usavam o plugin. Encontrado em
   // 2026-08-04 escrevendo o teste da sujeira herdada, que só falhava por causa disto.
-  const file = sessionBaselineFile(root);
-  safe(() => {
-    mkdirSync(dirname(file), { recursive: true });
-    writeFileSync(file, JSON.stringify(pruned));
-  }, null);
+  safe(() => saveBaselineIndex(root, pruned), null);
 }
 
 // Chamado no SessionStart. Só grava se ainda não existe entrada pra (sessão, repo) — assim uma
@@ -636,7 +630,7 @@ export function sessionChangedFiles(repoPath, pattern = null) {
     const files = sessionWriteFiles(workspaceRoot(), normalizedRepo, sid);
     return files === null ? null : (pattern ? files.filter((file) => pattern.test(file)) : files);
   }
-  const entry = loadBaselineStore()[sid]?.[normalizedRepo];
+  const entry = loadBaselineEntry(workspaceRoot(), sid, normalizedRepo);
   if (!entry) return null;
 
   let files;

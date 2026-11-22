@@ -8,6 +8,7 @@
 .coupling-state
 .coupling-sessions.json
 .context-maps-session-baseline.json
+.context-maps-session-baseline/
 .symbols-cache.json
 .context-tools-snapshot.json
 .pre-tool-state.json

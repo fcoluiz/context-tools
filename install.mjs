@@ -123,7 +123,7 @@ say(`  → ${copied} arquivo(s)${skill ? ' + 1 skill' : ''}\n`);
 // `tests/hooks-e2e.test.mjs` compara os dois e falha se um dia divergirem.
 const STATE_FILES_FALLBACK = [
   '.stop-report-state', '.context-maps-stop-state', '.coupling-state', '.coupling-sessions.json',
-  '.context-maps-session-baseline.json', '.symbols-cache.json', '.context-tools-snapshot.json',
+  '.context-maps-session-baseline.json', '.context-maps-session-baseline/', '.symbols-cache.json', '.context-tools-snapshot.json',
   '.pre-tool-state.json', '.context-tools-metrics.json', '.auto-review-candidates.json', '.documentation-cache.json', '.source-fingerprints.json',
   '.documentation-stop-state.json', '.handoff-aviso.json', '.mtime-probe*', 'handoff-*.md',
   '.context-maps-session-notice.json', '.documentation-session-notice.json', '.codex-auto-review-state.json',

@@ -54,6 +54,7 @@ import { updateNotice } from './update-check.mjs';
 import { localCopyNotice } from './lib/local-migration.mjs';
 import { fingerprintSourcesInRoot, parseSourceFingerprints, sameDigest, sameSource } from './lib/source-fingerprints.mjs';
 import { isClaudeStopContinuation, readHookEvent } from './lib/hook-input.mjs';
+import { loadBaselineEntry } from './lib/session-baseline.mjs';
 
 const git = (repo, args) => safe(() => execFileSync('git', args, {
   cwd: repo, encoding: 'utf8', timeout: 20000, maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'],
@@ -61,9 +62,7 @@ const git = (repo, args) => safe(() => execFileSync('git', args, {
 
 /** Entrada gravada no SessionStart para (sessão, repo): HEAD e a sujeira que já existia. */
 function entradaDaSessao(root, sid, repoPath) {
-  const arq = statePath(root, '.context-maps-session-baseline.json');
-  const store = safe(() => JSON.parse(readFileSync(arq, 'utf8')), null);
-  return (store && sid && store[sid] && store[sid][repoPath]) || null;
+  return loadBaselineEntry(root, sid, repoPath);
 }
 
 /** HEAD gravado no SessionStart, para saber o que ESTA sessão mexeu. */

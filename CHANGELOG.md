@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.18.0] — 2026-11-22
+
 ### Added
 
 - **Machine-wide handoff threshold.** Without `CONTEXT_TOOLS_HANDOFF_THRESHOLD`, the context

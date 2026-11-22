@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.18.1] — 2026-11-22
+
 ### Fixed
 
 - **Session baseline no longer grows without limit in large workspaces.** The per-session snapshot

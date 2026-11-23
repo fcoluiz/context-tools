@@ -259,15 +259,16 @@ function main() {
     const label = repo.name === '.' ? basename(repo.path) : repo.name;
 
     if (repo.git) {
+      // `--changed` olha o status antes do histórico: repo sem código alterado não paga o
+      // `git log` (o hook roda em todo Stop, em todos os repos do workspace).
+      const changed = changedMode ? new Set(
+        git(repo.path, ['status', '--porcelain']).split('\n').map((l) => l.slice(3).trim()).filter((s) => s && CODE_RE.test(s))
+      ) : null;
+      if (changed && !changed.size) continue;
       const { links, commits } = analyze(repo.path, cfg);
       if (!links.length) continue;
 
       if (changedMode) {
-        const status = git(repo.path, ['status', '--porcelain']);
-        const changed = new Set(
-          status.split('\n').map((l) => l.slice(3).trim()).filter((s) => s && CODE_RE.test(s))
-        );
-        if (!changed.size) continue;
         const warn = warnRows(t, links, changed, cfg);
         if (warn.length) hookLines.push(t('cou.warnHeader', { repo: label }), ...warn.slice(0, 6));
         continue;

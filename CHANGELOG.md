@@ -8,6 +8,13 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The coupling Stop hook skips the history of repositories with nothing changed.**
+  `coupling --changed --hook` used to read `git log` for every repository in the workspace on
+  every Stop, even when `git status` showed no changed code. It now checks the status first, so a
+  clean repository costs one `git status`.
+
 ## [2.18.1] — 2026-11-22
 
 ### Fixed

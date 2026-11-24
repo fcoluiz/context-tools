@@ -43,7 +43,7 @@ import {
   consumirHandoff, jaConsumidoPor, origemPorPrefixo, limparHandoffsAntigos, comandoDoHandoff,
   DIAS_RETENCAO, JANELA_AUTO_MS,
 } from './lib/handoff-estado.mjs';
-import { buildIndex } from './symbols.mjs';
+import { bareName, parseFile } from './symbols.mjs';
 import {
   transcriptDaSessao, metricasDaSessao, multiplicadorDeCusto,
   transcriptsRecentes, vereditoDaDivisao, fatosDaSessao,
@@ -120,8 +120,9 @@ function isPluginState(root, rel) {
  * `registerFeedback` e `_routeUnreadableMedia`" diz onde retomar. Cruza os intervalos de linha
  * do `git diff -U0` com os intervalos que o índice já guarda para cada símbolo (`line`..`end`).
  *
- * Usa o cache: em projeto acima do limiar, `buildIndex` custa ~130 ms com cache quente contra
- * 1,7 s reconstruindo. Como isto roda no `Stop`, sem cache não valeria a pena.
+ * Lê só os arquivos tocados (`parseFile`), não o índice do projeto: o índice varre a raiz
+ * inteira, e num workspace sem Git na raiz, com cópias e worktrees ao lado, isso custava minutos
+ * e centenas de MB a cada `Stop` e a cada ferramenta do `PostToolUse`.
  */
 /**
  * Acima disto o nome do símbolo para de informar mais que o nome do arquivo — e o handoff já
@@ -140,22 +141,31 @@ function isPluginState(root, rel) {
  */
 const MAX_SPAN_ATRIBUIVEL = 200;
 
-function simbolosTocados(repoPath, ref, arquivos, indice) {
-  if (!indice) return new Map();
-  // Índice por arquivo → lista de {nome, ini, fim}, para não varrer `defs` por arquivo.
-  const porArquivo = new Map();
-  for (const [nome, locs] of indice.defs) {
-    for (const l of locs) {
-      const f = String(l.file).replace(/\\/g, '/');
-      if (!porArquivo.has(f)) porArquivo.set(f, []);
-      porArquivo.get(f).push({ nome, ini: l.line, fim: l.end || l.line, kind: l.kind });
-    }
+/** `git diff` de vários arquivos → `arquivo → trecho do patch`, pelo `+++ b/<arquivo>`. */
+function patchPorArquivo(patch) {
+  const out = new Map();
+  for (const bloco of patch.split(/^(?=diff --git )/m)) {
+    const m = bloco.match(/^\+\+\+ b\/(.+?)\r?$/m);
+    if (m) out.set(m[1], bloco);
   }
+  return out;
+}
+
+function simbolosTocados(repoPath, ref, arquivos) {
+  if (!arquivos.length) return new Map();
+  // UM `git diff` para todos: num repo com milhares de não versionados cada chamada custa
+  // segundos (o git varre a árvore), e uma por arquivo somava minutos.
+  // `-U0`: só as linhas que mudaram, sem contexto — senão o intervalo incha e pega vizinho.
+  const patches = patchPorArquivo(git(repoPath, ['-c', 'core.quotePath=false', '-C', repoPath, 'diff', '-U0', '--no-color', '--no-ext-diff', ref, '--', ...arquivos]));
   const out = new Map();
   for (const arq of arquivos) {
-    // `-U0`: só as linhas que mudaram, sem contexto — senão o intervalo incha e pega vizinho.
-    const patch = git(repoPath, ['-C', repoPath, 'diff', '-U0', ref, '--', arq]);
+    const patch = patches.get(arq);
     if (!patch) continue;
+    const cands = [];
+    for (const [line, kind, end] of safe(() => parseFile(join(repoPath, arq)), []) || []) {
+      const nome = bareName(kind);
+      if (nome) cands.push({ nome, ini: line, fim: end || line, kind });
+    }
     const faixas = [];
     for (const m of patch.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)) {
       const ini = parseInt(m[1], 10);
@@ -167,8 +177,6 @@ function simbolosTocados(repoPath, ref, arquivos, indice) {
       faixas.push([ini, ini + Math.max(0, n - 1)]);
     }
     if (!faixas.length) continue;
-    // O `file` do índice pode vir prefixado pelo nome do repo (workspace multi-repo).
-    const cands = porArquivo.get(arq) || porArquivo.get([...porArquivo.keys()].find((k) => k.endsWith('/' + arq)) || '') || [];
     const nomes = new Set();
     for (const [a, b] of faixas) {
       // Só símbolos de tamanho ÚTIL, e entre os que sobram o MENOR — que é o mais interno e
@@ -464,6 +472,10 @@ export function comRespostaFinal(doc, resposta) {
  */
 function avisoDaFase1(root, sid, m, t, salvar) {
   const destino = caminhoDoHandoff(root, sid);
+  // O "já avisei" vai ANTES de montar: o hook de `PostToolUse` roda a cada ferramenta, e montar
+  // pode levar minutos num workspace grande. Gravado depois, cada ferramenta chamada nesse meio
+  // tempo via estado vazio e abria outro processo montando o mesmo handoff.
+  salvar({ aviso: Date.now() });
   // `mkdirSync` ANTES de gravar, e a ordem é load-bearing: em projeto que ainda não tem
   // `.claude/`, o `writeFileSync` falha, o `safe` engole e o handoff nunca é escrito — morto em
   // silêncio, exatamente nos projetos que acabaram de instalar o plugin. Este bug já existiu
@@ -473,7 +485,6 @@ function avisoDaFase1(root, sid, m, t, salvar) {
     writeFileSync(destino, montar(root, sid, t));
     return true;
   }, false);
-  salvar({ aviso: Date.now() });
 
   const linhas = [t('ses.aviso', {
     ctx: Math.round(m.contexto / 1000),
@@ -696,17 +707,19 @@ function metaDoHandoff(doc) {
   return meta;
 }
 
+/** Quantos arquivos por repo o handoff lista; os símbolos só são buscados para esses. */
+const MAX_ARQUIVOS_LISTADOS = 40;
+
 /** Por repositório, os arquivos que esta sessão tocou e, em cada um, os símbolos. */
 function arquivosDaSessao(root, sid) {
-  // Índice construído UMA vez para todos os repos: o custo é construir, não consultar.
-  // Com cache quente são ~130 ms; sem, seria proibitivo para algo que roda no Stop.
-  const indice = safe(() => buildIndex(root, loadConfig(root)), null);
   const out = [];
   for (const repo of findRepos(root, { requireGit: true })) {
     const arquivos = tocados(root, sid, repo);
     if (!arquivos.length) continue;
     const ref = baselineDaSessao(root, sid, repo.path) || 'HEAD';
-    const simbolos = safe(() => simbolosTocados(repo.path, ref, arquivos, indice), new Map());
+    // Um `git diff` e uma leitura por arquivo: com milhares de não versionados (pasta de
+    // artefatos fora do `.gitignore`), buscar todos custava minutos para listar só 40.
+    const simbolos = safe(() => simbolosTocados(repo.path, ref, arquivos.slice(0, MAX_ARQUIVOS_LISTADOS)), new Map());
     out.push({ repo, arquivos, simbolos });
   }
   return out;
@@ -813,13 +826,13 @@ function montar(root, sid, t) {
     algumArquivo = true;
     linhas.push('');
     linhas.push(`## ${repo.name === '.' ? t('ho.repo') : repo.name} — ${arquivos.length} ${t('ho.arquivos')}`);
-    for (const a of arquivos.slice(0, 40)) {
+    for (const a of arquivos.slice(0, MAX_ARQUIVOS_LISTADOS)) {
       const s = simbolos.get(a);
       // O símbolo é o que faz este bloco valer: dizer "mexeu no arquivo de 14 mil linhas"
       // não ajuda a retomar; dizer QUAL função, sim.
       linhas.push(s && s.length ? `- \`${a}\` → ${s.map((x) => `\`${x}\``).join(', ')}` : `- \`${a}\``);
     }
-    if (arquivos.length > 40) linhas.push(`- … +${arquivos.length - 40}`);
+    if (arquivos.length > MAX_ARQUIVOS_LISTADOS) linhas.push(`- … +${arquivos.length - MAX_ARQUIVOS_LISTADOS}`);
 
     const mapas = mapasRelevantes(repo.path, arquivos);
     if (mapas.length) {

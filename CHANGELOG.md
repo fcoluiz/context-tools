@@ -8,6 +8,17 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The automatic handoff no longer piles up processes or indexes the whole workspace.** When a
+  session crossed the context threshold, the `PostToolUse` hook built the handoff before
+  recording that it had warned, so every tool call made while the handoff was being built
+  started another copy. Building it also indexed every file under the workspace root (copies and
+  worktrees included) and ran one `git diff` per touched file, which took minutes in a workspace
+  whose root is not a Git repository, or in a repository with thousands of untracked files. Now
+  the warning is recorded first. Symbols are read only from the touched files that the handoff
+  lists, at most 40 per repository, with a single `git diff` per repository.
+
 ## [2.18.2] — 2026-11-22
 
 ### Fixed

@@ -2279,3 +2279,19 @@ test('ultimaResposta e comRespostaFinal: evento primeiro, depois o transcript; s
     assert.equal(comRespostaFinal(['## b', '- **P1:** a'].join('\n'), 'r'), null, 'nada em branco: não sobrescreve');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('handoff: o "já avisei" é gravado ANTES de montar, para o PostToolUse não empilhar processos', async () => {
+  const raiz = repo({ comMudanca: true });
+  try {
+    const { avisoDaFase1 } = await import('../scripts/handoff.mjs');
+    const { caminhoDoHandoff } = await import('../scripts/lib/handoff-estado.mjs');
+    const { makeT } = await import('../scripts/lib/i18n.mjs');
+    const sid = 'ordem-0001';
+    const destino = caminhoDoHandoff(raiz, sid);
+    let handoffJaExistia = null;
+    const salvar = () => { handoffJaExistia = existsSync(destino); };
+    avisoDaFase1(raiz, sid, { contexto: 250000, msgs: 10, horas: 1, reescritas: 0 }, makeT('en'), salvar);
+    assert.equal(handoffJaExistia, false, 'salvar precisa vir antes de montar o handoff');
+    assert.ok(existsSync(destino), 'o handoff continua sendo gerado');
+  } finally { rmSync(raiz, { recursive: true, force: true }); }
+});

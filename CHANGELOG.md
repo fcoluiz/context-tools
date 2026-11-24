@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.18.3] — 2026-11-24
+
 ### Fixed
 
 - **The automatic handoff no longer piles up processes or indexes the whole workspace.** When a

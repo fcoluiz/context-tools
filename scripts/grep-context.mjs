@@ -17,7 +17,7 @@
 
 import { extname, isAbsolute, relative, resolve } from 'node:path';
 import { resolveRoot, safe, loadConfig, isMain, lerTexto, sanitizeModelText } from './lib/roots.mjs';
-import { writeHookOutput } from './lib/hook-output.mjs';
+import { writeHookOutput, claimToolUse } from './lib/hook-output.mjs';
 import { isTestFile } from './lib/verification.mjs';
 import { readHookInput } from './lib/hook-input.mjs';
 
@@ -179,7 +179,10 @@ export async function executarGrepContext(entrada) {
 }
 
 async function main() {
-  const saida = await executarGrepContext(await readHookInput());
+  const entrada = await readHookInput();
+  // Uma entrada por padrão de comando no hooks.json: a mesma chamada pode disparar duas cópias.
+  if (!claimToolUse(resolveRoot(), safe(() => JSON.parse(entrada), null), 'grep-context')) return;
+  const saida = await executarGrepContext(entrada);
   if (saida) writeHookOutput(resolveRoot(), saida);
 }
 

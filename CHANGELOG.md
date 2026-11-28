@@ -8,6 +8,21 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Hooks no longer saturate the disk when many sessions are open.** Three causes, measured on a
+  machine with 32 sessions and the disk at 100%:
+  - The `PreToolUse` and `PostToolUse` search hooks have one `hooks.json` entry per command
+    (`grep *`, `head *`, …), so `cd x && grep y | head` started two copies, and each one built
+    the symbol index. The output dedupe did not catch it because the text carries the elapsed
+    milliseconds. Now the first copy claims the `tool_use_id` and the others exit.
+  - Building the index before a search had no limit: on a large project with no cache, under a
+    busy disk, one search took minutes. It now gets 1.5 s; past that the hook stays quiet, the
+    search runs, and the files already read stay in the cache, so the next search resumes from
+    there. Only one session builds the index of a project at a time; the others skip the answer.
+  - The coupling `Stop` hook read 12 months of `git log` on every turn of every session with
+    changed code. The analysis is now cached per `HEAD` for up to 6 hours.
+
 ## [2.18.3] — 2026-11-24
 
 ### Fixed

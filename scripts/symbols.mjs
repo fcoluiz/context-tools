@@ -314,8 +314,14 @@ function buildIndex(root, cfg, opts = {}) {
   const byFilePos = new Map();
   let reused = 0;
   let reread = 0;
+  // `deadlineMs` (só o hook passa): com o disco disputado por muitas sessões, montar o índice
+  // de um projeto grande sem cache levava minutos por busca. Passou do prazo, para e devolve
+  // `incomplete` — índice parcial responderia "não existe" com confiança, então quem chama cala.
+  // O que já foi lido entra no cache, e a próxima busca continua de onde esta parou.
+  let incomplete = false;
 
   for (const f of files) {
+    if (opts.deadlineMs && Date.now() > opts.deadlineMs) { incomplete = true; break; }
     const rel = relPath(root, f);
     const base = rel.split('/').pop().replace(INDEX_RE, '');
     if (base) {
@@ -356,10 +362,23 @@ function buildIndex(root, cfg, opts = {}) {
   // a cada consulta quando nada no projeto mudou.
   let gravacao = null;
   if (useCache) {
+    // Parada no prazo: o que não foi visitado mantém a entrada antiga. Ela continua sendo
+    // conferida por mtime+tamanho na próxima leitura, então guardá-la não arrisca frescor.
+    if (incomplete && cached) {
+      for (const [rel, prev] of Object.entries(cached)) if (!(rel in entries)) entries[rel] = prev;
+    }
     const antes = cached ? Object.keys(cached).length : -1;
     if (reread > 0 || antes !== Object.keys(entries).length) {
       gravacao = saveCache(root, parser, entries);
     }
+  }
+
+  if (incomplete) {
+    return {
+      defs, byFile, byFilePos, fileCount: files.length, files: [...files], snapshot: null,
+      repos: repoNomes, tier: useCache ? 'B' : 'A', reused, reread, incomplete: true,
+      cacheRecusadoPeloFs: volumeJustifica && !fsConfiavel, cacheRecusadoPorTamanho: 0, truncados,
+    };
   }
 
   const snapshotData = {

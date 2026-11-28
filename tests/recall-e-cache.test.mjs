@@ -10,12 +10,13 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, appendFileSync, unlinkSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, appendFileSync, unlinkSync, readFileSync, utimesSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import { buildIndex, CACHE_TIER_MIN_FILES, escopoLabel, reportOne, irmaosPorPrefixo } from '../scripts/symbols.mjs';
 import { findRepos, resolveExtraRepos, extraReposDoCodeWorkspace } from '../scripts/lib/roots.mjs';
+import { claimToolUse } from '../scripts/lib/hook-output.mjs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -552,5 +553,51 @@ test('ignoreDirs E2E: lido de .claude/context-tools.json pelo symbols.mjs e pelo
     assert.equal(hook.status, 0, hook.stderr);
     assert.match(hook.stdout, /UCadX\.pas/,`o hook precisa ter respondido: ${hook.stdout}`);
     assert.doesNotMatch(hook.stdout, /prototypes|Old-Copies/i, hook.stdout);
+  } finally { rmSync(raiz, { recursive: true, force: true }); }
+});
+
+test('cache: prazo vencido devolve índice incompleto e guarda o cache que já existia', () => {
+  const raiz = projetoGrande();
+  try {
+    assert.equal(buildIndex(raiz, {}, { deadlineMs: 1 }).incomplete, true, 'sem tempo: incompleto, não "não existe"');
+    const cheio = buildIndex(raiz, {});
+    assert.equal(cheio.incomplete, undefined);
+    writeFileSync(join(raiz, 'src', 'f0.js'), 'export function fn0Novo() {}\n');
+    const parcial = buildIndex(raiz, {}, { deadlineMs: 1 });
+    assert.equal(parcial.incomplete, true);
+    const depois = buildIndex(raiz, {});
+    assert.equal(depois.reread, 1, 'a parada no prazo não pode ter apagado as entradas do cache');
+    assert.ok(depois.defs.has('fn0Novo'));
+  } finally { rmSync(raiz, { recursive: true, force: true }); }
+});
+
+test('pre-tool: com a trava do índice ocupada por outra sessão, cala; trava velha não segura', () => {
+  const raiz = projetoVazio();
+  try {
+    writeFileSync(join(raiz, 'src', 'a.js'), 'export function GravarPedido() {}\n');
+    mkdirSync(join(raiz, '.claude'), { recursive: true });
+    const trava = join(raiz, '.claude', '.symbols-build.lock');
+    writeFileSync(trava, '');
+    const env = { ...process.env, CLAUDE_PROJECT_DIR: raiz, CONTEXT_TOOLS_HOST: 'claude' };
+    const hook = (sid) => spawnSync(process.execPath, [fileURLToPath(new URL('../scripts/pre-tool.mjs', import.meta.url))], {
+      cwd: raiz, encoding: 'utf8', env: { ...env, CONTEXT_TOOLS_SESSION_ID: sid },
+      input: JSON.stringify({ tool_name: 'Grep', tool_use_id: `${sid}-${Math.random()}`, tool_input: { pattern: 'GravarPedido' } }),
+    });
+    assert.equal(hook('trava-1').stdout.trim(), '', 'outra sessão montando: a busca segue sem resposta prévia');
+    const velho = (Date.now() - 5 * 60 * 1000) / 1000;
+    utimesSync(trava, velho, velho);
+    assert.match(hook('trava-1').stdout, /a\.js/, 'trava velha não segura, e a busca que calou ainda é respondida na mesma sessão');
+  } finally { rmSync(raiz, { recursive: true, force: true }); }
+});
+
+test('claimToolUse: só a primeira cópia do hook para a mesma chamada trabalha', () => {
+  const raiz = projetoVazio();
+  try {
+    const opts = { sessionId: 's', env: {} };
+    assert.equal(claimToolUse(raiz, { tool_use_id: 'toolu_1' }, 'pre-tool', opts), true);
+    assert.equal(claimToolUse(raiz, { tool_use_id: 'toolu_1' }, 'pre-tool', opts), false, 'cópia paralela da mesma chamada');
+    assert.equal(claimToolUse(raiz, { tool_use_id: 'toolu_1' }, 'grep-context', opts), true, 'outro hook, outra chave');
+    assert.equal(claimToolUse(raiz, { tool_use_id: 'toolu_2' }, 'pre-tool', opts), true);
+    assert.equal(claimToolUse(raiz, {}, 'pre-tool', opts), true, 'sem id não há como saber: trabalha');
   } finally { rmSync(raiz, { recursive: true, force: true }); }
 });

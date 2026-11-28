@@ -8,6 +8,8 @@ reconstructed from git history.
 
 ## [Unreleased]
 
+## [2.18.4] — 2026-11-28
+
 ### Fixed
 
 - **Hooks no longer saturate the disk when many sessions are open.** Three causes, measured on a

@@ -3,7 +3,7 @@
 // histórico de git em que dois arquivos mudam juntos e um mapa de contexto que cobre a definição.
 
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, appendFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, appendFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -112,4 +112,28 @@ test('impact: arquivo como alvo e nome inexistente', () => {
     const fora = spawnSync(process.execPath, [join(SCRIPTS, 'impact.mjs'), '../fora.js', `--root=${dir}`], { encoding: 'utf8', env: env(dir) }).stdout;
     assert.match(fora, /no definition and no project file/, 'caminho fora do projeto não é aceito como alvo');
   } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); }
+});
+
+test('coupling: o hook guarda a análise do git log por HEAD e refaz com commit novo', async () => {
+  const dir = projeto();
+  const antes = process.env.CONTEXT_TOOLS_STATE_DIR;
+  process.env.CONTEXT_TOOLS_STATE_DIR = join(dir, '.state');
+  try {
+    const { analyzeCached } = await import('../scripts/coupling.mjs');
+    const cfg = { since: '12 months ago', maxFilesPerCommit: 15, minTogether: 4, minConfidence: 0.5 };
+    const a = analyzeCached(dir, dir, cfg);
+    assert.ok(a.links.some((l) => [l.a, l.b].includes('src/tela.js')), JSON.stringify(a));
+    // Marca o que está guardado: se a segunda chamada devolver a marca, ela não rodou o git log.
+    const arq = join(dir, '.state', '.coupling-cache.json');
+    const guardado = JSON.parse(readFileSync(arq, 'utf8'));
+    for (const v of Object.values(guardado)) v.commits = -1;
+    writeFileSync(arq, JSON.stringify(guardado));
+    assert.equal(analyzeCached(dir, dir, cfg).commits, -1, 'mesmo HEAD: vem do cache');
+    appendFileSync(join(dir, 'src/msg.js'), '// outro\n');
+    git(dir, 'commit', '-q', '-am', 'novo');
+    assert.equal(analyzeCached(dir, dir, cfg).commits, 6, 'HEAD novo: refaz');
+  } finally {
+    if (antes === undefined) delete process.env.CONTEXT_TOOLS_STATE_DIR; else process.env.CONTEXT_TOOLS_STATE_DIR = antes;
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

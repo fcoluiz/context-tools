@@ -23,10 +23,10 @@
 // mesmo assim, e o processo custava 167 ms contra os 128 ms de um Node vazio. Carregar só
 // quando vai usar devolve esses ~39 ms a cada Grep descartado, e num projeto que o índice nem
 // consegue ler devolve 100% deles — que é justamente onde o plugin não pode cobrar nada.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, openSync, closeSync, statSync, unlinkSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { resolveRoot, safe, loadConfig, isMain, statePath } from './lib/roots.mjs';
-import { writeHookOutput } from './lib/hook-output.mjs';
+import { writeHookOutput, claimToolUse } from './lib/hook-output.mjs';
 import { readHookInput } from './lib/hook-input.mjs';
 
 // Identificador, ou alternância de identificadores. Qualquer metacaractere de regex
@@ -41,6 +41,37 @@ const PACK_BUDGET = 800;
 const PACK_ESCALATION_BUDGET = 2000;
 const MAX_PACK_BLOCO = 3200;
 
+// Prazo do índice dentro do hook. A busca roda de qualquer jeito, então esperar mais que isso
+// só atrasa a ferramenta; num projeto grande sem cache o resto é lido nas buscas seguintes.
+const INDEX_BUDGET_MS = 1500;
+// Trava mais velha que isso é de processo morto (o hook nunca passa do prazo acima por tanto).
+const LOCK_STALE_MS = 60 * 1000;
+
+/**
+ * Uma montagem de índice por raiz de cada vez. Com várias sessões no mesmo projeto, cada busca
+ * montava o índice em paralelo com as outras e todas disputavam o mesmo disco. Quem chega com
+ * a trava ocupada deixa a busca seguir sem resposta prévia. Devolve a função que solta a trava,
+ * ou null quando outra sessão está montando.
+ */
+function travarIndice(root) {
+  const arq = statePath(root, '.symbols-build.lock');
+  const soltar = () => safe(() => unlinkSync(arq), null);
+  for (let tentativa = 0; tentativa < 2; tentativa++) {
+    try {
+      mkdirSync(dirname(arq), { recursive: true });
+      closeSync(openSync(arq, 'wx'));
+      return soltar;
+    } catch (error) {
+      // Sem conseguir criar a trava por outro motivo, segue sem ela: perder a resposta seria pior.
+      if (error.code !== 'EEXIST') return () => {};
+      const idade = safe(() => Date.now() - statSync(arq).mtimeMs, 0);
+      if (idade < LOCK_STALE_MS) return null;
+      soltar();
+    }
+  }
+  return null;
+}
+
 /** Já respondemos este padrão nesta sessão? Repetir gasta token sem informar nada. */
 function jaRespondido(root, chave) {
   const arq = statePath(root, '.pre-tool-state.json');
@@ -51,6 +82,16 @@ function jaRespondido(root, chave) {
   store[chave] = agora;
   safe(() => { mkdirSync(dirname(arq), { recursive: true }); writeFileSync(arq, JSON.stringify(store)); }, null);
   return false;
+}
+
+/** Calou sem olhar o índice (trava ou prazo): a mesma busca, mais tarde, ainda merece resposta. */
+function esquecerResposta(root, chave) {
+  const arq = statePath(root, '.pre-tool-state.json');
+  safe(() => {
+    const store = JSON.parse(readFileSync(arq, 'utf8'));
+    delete store[chave];
+    writeFileSync(arq, JSON.stringify(store));
+  }, null);
 }
 
 function definicoesExatas(indice, padrao) {
@@ -105,7 +146,8 @@ export async function executarPreTool(entrada) {
     || process.env.CLAUDE_CODE_SESSION_ID
     || process.env.CLAUDE_SESSION_ID
     || 'sem-sessao';
-  if (jaRespondido(root, `${sid}|${padrao.toLowerCase()}`)) {
+  const chave = `${sid}|${padrao.toLowerCase()}`;
+  if (jaRespondido(root, chave)) {
     const { recordMetric } = await import('./lib/telemetry.mjs');
     recordMetric(root, 'pretool', { host: ferramenta, outcome: 'already-answered', patternLength: padrao.length });
     return '';
@@ -118,7 +160,19 @@ export async function executarPreTool(entrada) {
   const cfg = loadConfig(root);
   const t = makeT(detectLang(cfg));
   const t0 = Date.now();
-  const indice = buildIndex(root, cfg);
+  const trava = travarIndice(root);
+  if (!trava) {
+    esquecerResposta(root, chave);
+    recordMetric(root, 'pretool', { host: ferramenta, outcome: 'busy', patternLength: padrao.length, durationMs: handlerDurationMs() });
+    return '';
+  }
+  let indice;
+  try { indice = buildIndex(root, cfg, { deadlineMs: t0 + INDEX_BUDGET_MS }); } finally { trava(); }
+  if (indice.incomplete) {
+    esquecerResposta(root, chave);
+    recordMetric(root, 'pretool', { host: ferramenta, outcome: 'budget', patternLength: padrao.length, reread: indice.reread, durationMs: handlerDurationMs() });
+    return '';
+  }
   const linhas = reportOne(padrao, indice, { wantAll: false, ms: Date.now() - t0, t, beforeGrep: true });
   if (!linhas || !linhas.length) {
     recordMetric(root, 'pretool', { host: ferramenta, outcome: 'miss', patternLength: padrao.length, durationMs: handlerDurationMs() });
@@ -293,7 +347,9 @@ async function anotarResposta(root, sid, files) {
 }
 
 async function main() {
-  const saida = await executarPreTool(await readHookInput());
+  const entrada = await readHookInput();
+  if (!claimToolUse(resolveRoot(), safe(() => JSON.parse(entrada), null), 'pre-tool')) return;
+  const saida = await executarPreTool(entrada);
   if (saida) writeHookOutput(resolveRoot(), saida);
 }
 

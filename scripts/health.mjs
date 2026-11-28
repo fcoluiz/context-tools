@@ -422,6 +422,8 @@ const PRETOOL_MOTIVO = {
   'qualified-hint': ['avisou das chamadas sem o prefixo', 'flagged calls written without the prefix'],
   'qualified-none': ['calou: nenhuma chamada sem o prefixo', 'quiet: no call without the prefix'],
   reread: ['avisou de releitura sem mudança', 'flagged a re-read of an unchanged file'],
+  busy: ['calou: outra sessão estava montando o índice deste projeto', 'quiet: another session was building this project\'s index'],
+  budget: ['calou: o índice passou de 1,5 s; o que foi lido ficou no cache', 'quiet: the index took over 1.5 s; what was read stays cached'],
 };
 
 function latestSession(events) {

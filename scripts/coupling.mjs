@@ -13,7 +13,7 @@
 // Confiança é DIRECIONAL: "leva junto" = P(o outro mudar | este mudou). Sem isso o alerta vira
 // ruído — um controller que muda toda semana não "exige" a rota só porque a rota nunca muda sozinha.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, basename, dirname } from 'node:path';
 import { resolveRoot, findRepos, sourceDirs, resolveSourceDirs, safe, loadConfig, isMain, runtimeHost, statePath, stateDir, HISTORY_CODE_RE, sanitizeModelText } from './lib/roots.mjs';
@@ -113,6 +113,46 @@ export function analyze(repoPath, cfg = DEFAULTS) {
   if (cur.length && cur.length <= cfg.maxFilesPerCommit) commits.push([...new Set(cur)]);
 
   return { links: linksFromBaskets(commits, cfg), commits: commits.length };
+}
+
+// O Stop roda `--changed` em todo fim de turno, e o `git log` de 12 meses é o passo caro: com
+// muitas sessões abertas ele relia o mesmo histórico dezenas de vezes por minuto. O resultado só
+// muda com commit novo (HEAD), então fica guardado por HEAD; o prazo cobre a janela `since`, que anda.
+const ANALYSIS_CACHE_TTL_MS = 6 * 3600e3;
+const ANALYSIS_CACHE_MAX_LINKS = 5000;
+const ANALYSIS_CACHE_MAX_KEYS = 20;
+const analysisCachePath = (root) => statePath(root, '.coupling-cache.json');
+
+function headOf(repoPath) {
+  return safe(() => execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: repoPath, encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim(), '');
+}
+
+export function analyzeCached(root, repoPath, cfg = DEFAULTS, now = Date.now()) {
+  const head = headOf(repoPath);
+  if (!root || !head) return analyze(repoPath, cfg);
+  const key = JSON.stringify([repoPath, head, cfg.since, cfg.maxFilesPerCommit, cfg.minTogether, cfg.minConfidence]);
+  const store = safe(() => JSON.parse(readFileSync(analysisCachePath(root), 'utf8')), null) || {};
+  const hit = store[key];
+  if (hit && now - hit.at < ANALYSIS_CACHE_TTL_MS && Array.isArray(hit.links)) return { links: hit.links, commits: hit.commits };
+  const failuresBefore = falhasGit.length;
+  const result = analyze(repoPath, cfg);
+  // Falha do git não entra no cache: viraria "sem acoplamento" por horas.
+  if (falhasGit.length === failuresBefore && result.links.length <= ANALYSIS_CACHE_MAX_LINKS) {
+    const fresh = Object.entries(store)
+      .filter(([, v]) => v && now - v.at < ANALYSIS_CACHE_TTL_MS)
+      .sort((a, b) => b[1].at - a[1].at)
+      .slice(0, ANALYSIS_CACHE_MAX_KEYS - 1);
+    const next = Object.fromEntries([...fresh, [key, { at: now, ...result }]]);
+    safe(() => {
+      mkdirSync(stateDir(root), { recursive: true });
+      const tmp = `${analysisCachePath(root)}.${process.pid}.tmp`;
+      writeFileSync(tmp, JSON.stringify(next));
+      renameSync(tmp, analysisCachePath(root));
+    }, null);
+  }
+  return result;
 }
 
 export function analyzeWithStatus(repoPath, cfg = DEFAULTS) {
@@ -265,7 +305,7 @@ function main() {
         git(repo.path, ['status', '--porcelain']).split('\n').map((l) => l.slice(3).trim()).filter((s) => s && CODE_RE.test(s))
       ) : null;
       if (changed && !changed.size) continue;
-      const { links, commits } = analyze(repo.path, cfg);
+      const { links, commits } = hookMode ? analyzeCached(root, repo.path, cfg) : analyze(repo.path, cfg);
       if (!links.length) continue;
 
       if (changedMode) {

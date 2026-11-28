@@ -75,6 +75,18 @@ export function claimHookEmission(root, eventName, text, {
 }
 
 /**
+ * O mesmo hook pode rodar várias vezes para UMA chamada de ferramenta: o Bash tem uma entrada
+ * por comando (`grep *`, `head *`…) e `cd x && grep y | head` casa com duas. A deduplicação da
+ * saída não pega esse caso (o texto traz o tempo em ms, diferente em cada cópia), e cada cópia
+ * fazia o trabalho inteiro. A primeira a reivindicar o `tool_use_id` trabalha; as outras saem.
+ */
+export function claimToolUse(root, event, script, opts = {}) {
+  const id = event && typeof event === 'object' ? event.tool_use_id : '';
+  if (!root || !id) return true;
+  return claimHookEmission(root, `${script}:tool-use`, String(id), opts);
+}
+
+/**
  * Escreve a saída JSON do hook, deduplicada. Aceita objeto ou string JSON já serializada;
  * conteúdo sem `additionalContext`/`systemMessage` passa direto (não há o que repetir).
  */
